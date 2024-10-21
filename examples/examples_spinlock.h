@@ -5,7 +5,6 @@
 #include <iostream>
 #include <unistd.h>
 
-// make sure the path is included correct
 #include "../include/spinlock.h"
 
 namespace examples::spinlock {
@@ -47,4 +46,4 @@ namespace examples::spinlock {
 
         return 0;
     }
-} // namespace examples
+} // namespace examples::spinlock
