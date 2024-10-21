@@ -8,7 +8,8 @@ namespace {
     protected:
         SpinLockTest() = default;
 
-        // static bool Is3(int n) { return n == 3; }
+        void SetUp() override {}
+        void TearDown() override {}
     };
 
     TEST_F(SpinLockTest, Lock)
@@ -20,14 +21,14 @@ namespace {
         // try to lock and it wont succeed
         auto locked = lock1.try_lock();
         std::cout << "Test returned " << locked << "\n";
-        EXPECT_FALSE(locked);
+        ASSERT_FALSE(locked);
 
         // unlock first one
         lock1.unlock();
 
         // locking again will succeed
         locked = lock1.try_lock();
-        EXPECT_TRUE(locked);
+        ASSERT_TRUE(locked);
 
         lock1.unlock();
     }
