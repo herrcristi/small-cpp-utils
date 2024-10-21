@@ -10,26 +10,25 @@ namespace {
 
         void SetUp() override {}
         void TearDown() override {}
+
+        small::spinlock m_lock;
     };
 
     TEST_F(SpinLockTest, Lock)
     {
-        small::spinlock lock1;
-
-        lock1.lock();
+        m_lock.lock();
 
         // try to lock and it wont succeed
-        auto locked = lock1.try_lock();
-        std::cout << "Test returned " << locked << "\n";
+        auto locked = m_lock.try_lock();
         ASSERT_FALSE(locked);
 
-        // unlock first one
-        lock1.unlock();
+        // unlock
+        m_lock.unlock();
 
         // locking again will succeed
-        locked = lock1.try_lock();
+        locked = m_lock.try_lock();
         ASSERT_TRUE(locked);
 
-        lock1.unlock();
+        m_lock.unlock();
     }
 } // namespace
