@@ -41,7 +41,7 @@ namespace examples::spinlock {
             }
         }
 
-        std::cout << "spin lock finishing\n\n";
+        std::cout << "Spin lock finished\n\n";
 
         return 0;
     }

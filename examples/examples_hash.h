@@ -24,7 +24,7 @@ namespace examples::hash {
 
         std::cout << "hash after multiple rounds " << h2 << "\n";
 
-        std::cout << "hash finishing\n\n";
+        std::cout << "Hash finished\n\n";
 
         return 0;
     }

@@ -16,7 +16,7 @@ Contains useful everyday features that can be used in following ways:
 #
 
 -   base64 (quick functions for base64 encode & decode)
--   quick_hash (a quick hash function)
+-   quick_hash (a quick hash function for buffers and null termination strings)
 -   util functions (like small::icasecmp for use with map, set, etc)
 
 #
