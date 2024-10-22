@@ -1,17 +1,19 @@
 #pragma once
 
+#include <cstddef>
+
 namespace small {
     //
     // quick hash function for buffer
     //
-    inline unsigned long long quick_hash_b(const char *buffer, const int length, unsigned long long start_hash = 0)
+    inline unsigned long long quick_hash_b(const char *buffer, const std::size_t length, unsigned long long start_hash = 0)
     {
         if (buffer == nullptr) {
             return start_hash;
         }
 
         // h = h * 131 + char
-        for (int i = 0; i < length; ++i, ++buffer) {
+        for (std::size_t i = 0; i < length; ++i, ++buffer) {
             start_hash = (start_hash << 7) + (start_hash << 1) + start_hash + (unsigned char)*buffer;
         }
         return start_hash;
