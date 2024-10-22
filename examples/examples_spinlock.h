@@ -8,7 +8,6 @@
 #include "../include/spinlock.h"
 
 namespace examples::spinlock {
-
     //
     // spin lock example 1
     //
