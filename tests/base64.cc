@@ -12,12 +12,12 @@ namespace {
         void TearDown() override {}
 
         const std::string m_text = "some text";
-        const unsigned long long m_hash = 10048017132714414241ULL;
+        const std::string m_base64 = "c29tZSB0ZXh0";
     };
 
     TEST_F(Base64Test, Base64_Null_Terminating_String)
     {
-        // unsigned long long hash = small::quick_hash_z(m_text.c_str(), 0);
-        // ASSERT_EQ(hash, m_hash);
+        auto b64 = small::tobase64_s(m_text.c_str(), m_text.size());
+        ASSERT_EQ(b64, m_base64);
     }
 } // namespace

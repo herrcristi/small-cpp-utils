@@ -16,7 +16,7 @@ Contains useful everyday features that can be used in following ways:
 #
 
 -   base64 (quick functions for base64 encode & decode)
--   quick_hash (a quick hash function for buffers and null termination strings)
+-   qhash (a quick hash function for buffers and null termination strings)
 -   util functions (like small::icasecmp for use with map, set, etc)
 
 #
@@ -291,21 +291,22 @@ std::vector<char> vd64 = small::frombase64_v( b64 );
 
 #
 
-### quick_hash
+### qhash
 
 When you want to do a simple hash
 
 The following function is available
-`quick_hash`
+`qhash`
 
 Use it like this
 
 ```
-unsigned long long h = small::quick_hash( "some text", 9/*strlen(...)*/ );
+unsigned long long h = small::qhash( "some text", 9/*strlen(...)*/ );
 ...
 // or you can used like this
-unsigned long long h1 = small::quick_hash( "some ", 5/*strlen(...)*/ );
-unsigned long long h2 = small::quick_hash( "text",  4/*strlen(...)*/, h1/*continue from h1*/ );
+unsigned long long h1 = small::qhash( "some ", 5/*strlen(...)*/ );
+or
+unsigned long long h2 = small::qhashz( "text" /*null terminating string*/,  h1/*continue from h1*/ );
 ```
 
 #
