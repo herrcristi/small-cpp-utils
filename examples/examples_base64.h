@@ -9,7 +9,7 @@
 
 namespace examples::base64 {
     //
-    // base64 example 1
+    // example 1
     //
     int Example1()
     {
