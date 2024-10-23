@@ -15,16 +15,16 @@ namespace examples::hash {
     {
         std::cout << "Hash: \"some text\"\n";
 
-        unsigned long long hash = small::quick_hash_z("some text", 0);
+        unsigned long long hash = small::qhashz("some text");
 
         std::cout << "hash " << hash << "\n";
 
-        unsigned long long h1 = small::quick_hash_b("some ", 5 /*strlen*/, 0);
-        unsigned long long h2 = small::quick_hash_z("text", h1);
+        unsigned long long h1 = small::qhash("some ", 5 /*strlen*/, 0);
+        unsigned long long h2 = small::qhashz("text", h1);
 
         std::cout << "hash after multiple rounds " << h2 << "\n";
 
-        std::cout << "hash finishing\n\n";
+        std::cout << "Hash finished\n\n";
 
         return 0;
     }

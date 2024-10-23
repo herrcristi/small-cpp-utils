@@ -16,7 +16,7 @@ Contains useful everyday features that can be used in following ways:
 #
 
 -   base64 (quick functions for base64 encode & decode)
--   quick_hash (a quick hash function)
+-   qhash (a quick hash function for buffers and null termination strings)
 -   util functions (like small::icasecmp for use with map, set, etc)
 
 #
@@ -138,26 +138,6 @@ q.signal_exit();
 
 ```
 
-### spinlock (or critical_section)
-
-Spinlock is just like a mutex but it uses atomic lockless to do locking (based on std::atomic_flag).
-
-The following functions are available
-`lock, unlock, try_lock`
-
-Use it like this
-
-```
-small::spinlock lock; // small::critical_section lock;
-...
-{
-    std::unique_lock<small::spinlock> mlock( lock );
-
-    // do your work
-    ...
-}
-```
-
 #
 
 ### worker_thread
@@ -190,7 +170,7 @@ using qc = std::pair<int, std::string>;
 small::worker_thread<qc> workers( 2, []( auto& w/*this*/, auto& item, auto b/*extra param*/ ) -> void
 {
     {
-        std::unique_lock< small::worker_thread<qc>> mlock( w ); // use worker_thread to lock
+        std::unique_lock< small::worker_thread<qc>> mlock( w ); // use worker_thread to lock if needed
         ...
         //std::cout << "thread " << std::this_thread::get_id()
         // << "processing " << item.first << " " << item.second << " b=" << b << "\n";
@@ -224,6 +204,30 @@ workers.signal_exit();
 //
 
 ```
+
+#
+
+### spinlock (like critical_section)
+
+Spinlock is just like a mutex but it uses atomic lockless to do locking (based on std::atomic_flag).
+
+The following functions are available
+`lock, unlock, try_lock`
+
+Use it like this
+
+```
+small::spinlock lock; // small::critical_section lock;
+...
+{
+    std::unique_lock<small::spinlock> mlock( lock );
+
+    // do your fast work
+    ...
+}
+```
+
+#
 
 ## Classes
 
@@ -260,10 +264,11 @@ free( e1 );
 b.append( "world", 5 );
 b.clear();
 
-std::string s64 = small::tobase64_s( "hello world", 11 );
+constexpr std::stringview text{ "hello world" }
+std::string s64 = small::tobase64( text );
 b.clear();
-small::frombase64( s64.c_str(), (int)s64.size(), &b );
-b = small::frombase64_b( s64 );
+b = small::frombase64<small::buffer>( s64 );
+
 ```
 
 #
@@ -277,35 +282,35 @@ Functions to encode or decode base64
 The following functions are available
 `tobase64, frombase64`
 
-and additionals for string and vector<char>
-`tobase64_s, tobase64_v, frombase64_s, frombase64_v`
-and other can be addedUse it like this
+Use it like this
 
 ```
-std::string b64 = small::tobase64_s( "hello world" );
-std::vector<char> vb64 = small::tobase64_v( "hello world", 11 );
+constexpr std::stringview text{ "hello world" }
+std::string b64 = small::tobase64( text );
+std::vector<char> vb64 = small::tobase64<std::vector<char>>( text );
 
-std::string decoded = small::frombase64_s( b64 );
-std::vector<char> vd64 = small::frombase64_v( b64 );
+std::string decoded = small::frombase64( b64 );
+std::vector<char> vd64 = small::frombase64<std::vector<char>>( b64 );
 ```
 
 #
 
-### quick_hash
+### qhash
 
 When you want to do a simple hash
 
 The following function is available
-`quick_hash`
+`qhash`
 
 Use it like this
 
 ```
-unsigned long long h = small::quick_hash( "some text", 9/*strlen(...)*/ );
+unsigned long long h = small::qhash( "some text", 9/*strlen(...)*/ );
 ...
 // or you can used like this
-unsigned long long h1 = small::quick_hash( "some ", 5/*strlen(...)*/ );
-unsigned long long h2 = small::quick_hash( "text",  4/*strlen(...)*/, h1/*continue from h1*/ );
+unsigned long long h1 = small::qhash( "some ", 5/*strlen(...)*/ );
+or
+unsigned long long h2 = small::qhashz( "text" /*null terminating string*/,  h1/*continue from h1*/ );
 ```
 
 #
