@@ -15,7 +15,7 @@ namespace examples::hash {
     {
         std::cout << "Hash: \"some text\"\n";
 
-        unsigned long long hash = small::qhashz("some text", 0);
+        unsigned long long hash = small::qhashz("some text");
 
         std::cout << "hash " << hash << "\n";
 
