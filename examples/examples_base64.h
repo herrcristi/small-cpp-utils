@@ -15,7 +15,7 @@ namespace examples::base64 {
     {
         std::cout << "Base64\n";
 
-        std::string_view str{"hello world"};
+        constexpr std::string_view str{"hello world"};
 
         std::string b64 = small::tobase64(str);
         auto vb64 = small::tobase64<std::vector<char>>(str.data(), str.size());
