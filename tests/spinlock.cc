@@ -8,9 +8,16 @@ namespace {
     protected:
         SpinLockTest() = default;
 
-        void SetUp() override {}
-        void TearDown() override {}
+        void SetUp() override
+        {
+            // setup before test
+        }
+        void TearDown() override
+        {
+            // clean after test
+        }
 
+        // test data
         small::spinlock m_lock;
     };
 

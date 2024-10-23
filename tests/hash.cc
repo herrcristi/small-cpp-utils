@@ -8,8 +8,14 @@ namespace {
     protected:
         HashTest() = default;
 
-        void SetUp() override {}
-        void TearDown() override {}
+        void SetUp() override
+        {
+            // setup before test
+        }
+        void TearDown() override
+        {
+            // clean after test
+        }
 
         const std::string m_text = "some text";
         const unsigned long long m_hash = 10048017132714414241ULL;

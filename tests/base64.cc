@@ -8,8 +8,14 @@ namespace {
     protected:
         Base64Test() = default;
 
-        void SetUp() override {}
-        void TearDown() override {}
+        void SetUp() override
+        {
+            // setup before test
+        }
+        void TearDown() override
+        {
+            // clean after test
+        }
 
         const std::string m_text = "some text";
         const std::string m_base64 = "c29tZSB0ZXh0";
