@@ -9,7 +9,7 @@
 
 namespace examples::hash {
     //
-    // hash example 1
+    // example 1
     //
     int Example1()
     {
