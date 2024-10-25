@@ -32,19 +32,54 @@ namespace small {
     };
     // clang-format on
 
+    //
     // stricmp without locale
+    //
     inline int stricmp(const char *dst, const char *src)
     {
         int f = 0;
         int l = 0;
         do {
-            if (((f = (unsigned char)(*(dst++))) >= 'A') && (f <= 'Z'))
+            if (((f = (unsigned char)(*(dst++))) >= 'A') && (f <= 'Z')) {
                 f += 'a' - 'A';
-            if (((l = (unsigned char)(*(src++))) >= 'A') && (l <= 'Z'))
+            }
+            if (((l = (unsigned char)(*(src++))) >= 'A') && (l <= 'Z')) {
                 l += 'a' - 'A';
+            }
         } while (f && (f == l));
 
-        return (f - l);
+        if (f == l) {
+            return 0;
+        }
+        return f < l ? -1 : 1;
+    }
+
+    //
+    // strnicmp without locale
+    //
+    inline int strnicmp(const char *dst, const char *src, std::size_t num)
+    {
+        int f = 0;
+        int l = 0;
+        for (; num > 0; num--) {
+            if (((f = (unsigned char)(*(dst++))) >= 'A') && (f <= 'Z')) {
+                f += 'a' - 'A';
+            }
+            if (((l = (unsigned char)(*(src++))) >= 'A') && (l <= 'Z')) {
+                l += 'a' - 'A';
+            }
+
+            if (f && (f == l)) {
+                continue;
+            }
+
+            break;
+        }
+
+        if (num == 0 || f == l) {
+            return 0;
+        }
+        return f < l ? -1 : 1;
     }
 
     //
