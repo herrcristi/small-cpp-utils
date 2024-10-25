@@ -46,6 +46,16 @@ namespace small {
 
         inline const char * data            () const    { return m_buffer_data; }
         inline char *       data            ()          { return m_buffer_data; } // direct access
+        
+        inline const char * begin           () const noexcept { return data(); }
+        inline const char * end             () const noexcept { return data() + size(); }
+        inline const char * cbegin          () const noexcept { return data(); }
+        inline const char * cend            () const noexcept { return data() + size(); }
+        
+        inline const char * rbegin          () const noexcept { return end(); }
+        inline const char * rend            () const noexcept { return begin(); }
+        inline const char * crbegin         () const noexcept { return end(); }
+        inline const char * crend           () const noexcept { return begin(); }
         // clang-format on
 
         // clang-format off
