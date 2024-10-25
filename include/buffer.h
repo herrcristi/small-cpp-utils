@@ -14,11 +14,11 @@
 // small::buffer b;
 // b.clear();
 //
-// b.set( "ana", 3 );
-// b.set( "b", 1, 2 );
+// b.asign( "ana", 3 );
+// b.append( "b", 1 );
 //
 // char* e = b.extract(); // extract "anb"
-// free( e );
+// Buffer::free( e );
 //
 // small::buffer b1 = { 8192/*chunksize*/, "buffer", 6/*length*/ };
 // small::buffer b2 = { 8192/*chunksize*/, "buffer" };
@@ -32,76 +32,74 @@
 // b.clear( true );
 //
 // char* e1 = b.extract(); // extract ""
-// free( e1 );
+// Buffer::free( e1 );
 //
 // b.append( "world", 5 );
 // b.clear();
 //
-// std::string s64 = small::tobase64_s( "hello world", 11 );
+// constexpr std::stringview text{ "hello world" }
+// std::string s64 = small::tobase64( text );
 // b.clear();
-// small::frombase64( s64.c_str(), (int)s64.size(), &b );
-// b = small::frombase64_b( s64 );
+// b = small::frombase64<small::buffer>( s64 );
 //
 namespace small {
-    const size_t default_buffer_chunk_size = 4096;
+    const std::size_t DEFAULT_BUFFER_CHUNK_SIZE = 8192;
 
     // class for representing a buffer
     class buffer : public base_buffer
     {
     public:
         // buffer (allocates in chunks)
-        buffer(size_t chunk_size = default_buffer_chunk_size) { init(chunk_size); }
+        explicit buffer(std::size_t chunk_size = DEFAULT_BUFFER_CHUNK_SIZE)
+        {
+            init(chunk_size);
+        }
 
         // from buffer
         buffer(const buffer &o) noexcept : buffer()
         {
-            init(o.chunk_size_);
+            init(o.m_chunk_size);
             operator=(o);
         }
         buffer(buffer &&o) noexcept : buffer()
         {
-            init(o.chunk_size_);
+            init(o.m_chunk_size);
             operator=(std::forward<buffer>(o));
         }
 
+        // clang-format off
         // from char*
-        buffer(const char c) noexcept : buffer() { base_buffer::operator=(c); }
-        buffer(const char *s) noexcept : buffer() { base_buffer::operator=(s); }
-        buffer(const char *s, size_t s_length) noexcept : buffer() { set(0 /*from*/, s, s_length); }
-        buffer(const std::string &s) noexcept : buffer() { base_buffer::operator=(s); }
-        buffer(const std::string_view s) noexcept : buffer() { base_buffer::operator=(s); }
-        buffer(const std::vector<char> &v) noexcept : buffer() { base_buffer::operator=(v); }
-
-        // from wchar_t*
-        buffer(const wchar_t c) noexcept : buffer() { base_buffer::operator=(c); }
-        buffer(const wchar_t *s) noexcept : buffer() { base_buffer::operator=(s); }
-        buffer(const wchar_t *s, size_t s_length) noexcept : buffer() { set(0 /*from*/, s, s_length); }
-        buffer(const std::wstring &s) noexcept : buffer() { base_buffer::operator=(s); }
-        buffer(const std::wstring_view s) noexcept : buffer() { base_buffer::operator=(s); }
-        buffer(const std::vector<wchar_t> &v) noexcept : buffer() { base_buffer::operator=(v); }
+        buffer(const char c) noexcept                           : buffer() { base_buffer::operator=(c); }
+        buffer(const char *s) noexcept                          : buffer() { base_buffer::operator=(s); }
+        buffer(const char *s, std::size_t s_length) noexcept    : buffer() { set(0 /*from*/, s, s_length); }
+        buffer(const std::string s) noexcept                    : buffer() { base_buffer::operator=(s); }
+        buffer(const std::string_view s) noexcept               : buffer() { base_buffer::operator=(s); }
+        buffer(const std::vector<char> &v) noexcept             : buffer() { base_buffer::operator=(v); }
 
         // from char*
-        buffer(size_t chunk_size, const char c) noexcept : buffer(chunk_size) { operator=(c); }
-        buffer(size_t chunk_size, const char *s) noexcept : buffer(chunk_size) { operator=(s); }
-        buffer(size_t chunk_size, const char *s, size_t s_length) noexcept : buffer(chunk_size) { set(0 /*from*/, s, s_length); }
-        buffer(size_t chunk_size, const std::string &s) noexcept : buffer(chunk_size) { operator=(s); }
-        buffer(size_t chunk_size, const std::string_view s) noexcept : buffer(chunk_size) { operator=(s); }
-        buffer(size_t chunk_size, const std::vector<char> &v) noexcept : buffer(chunk_size) { operator=(v); }
-
-        // from wchar_t*
-        buffer(size_t chunk_size, const wchar_t c) noexcept : buffer(chunk_size) { operator=(c); }
-        buffer(size_t chunk_size, const wchar_t *s) noexcept : buffer(chunk_size) { operator=(s); }
-        buffer(size_t chunk_size, const wchar_t *s, size_t s_length) noexcept : buffer(chunk_size) { set(0 /*from*/, s, s_length); }
-        buffer(size_t chunk_size, const std::wstring &s) noexcept : buffer(chunk_size) { operator=(s); }
-        buffer(size_t chunk_size, const std::wstring_view s) noexcept : buffer(chunk_size) { operator=(s); }
-        buffer(size_t chunk_size, const std::vector<wchar_t> &v) noexcept : buffer(chunk_size) { operator=(v); }
+        buffer(std::size_t chunk_size, const char c) noexcept                          : buffer(chunk_size) { base_buffer::operator=(c); }
+        buffer(std::size_t chunk_size, const char *s) noexcept                         : buffer(chunk_size) { base_buffer::operator=(s); }
+        buffer(std::size_t chunk_size, const char *s, std::size_t s_length) noexcept   : buffer(chunk_size) { set(0 /*from*/, s, s_length); }
+        buffer(std::size_t chunk_size, const std::string &s) noexcept                  : buffer(chunk_size) { base_buffer::operator=(s); }
+        buffer(std::size_t chunk_size, const std::string_view s) noexcept              : buffer(chunk_size) { base_buffer::operator=(s); }
+        buffer(std::size_t chunk_size, const std::vector<char> &v) noexcept            : buffer(chunk_size) { base_buffer::operator=(v); }
+        // clang-format on
 
         // destructor
-        ~buffer() { free_chunk_buffer(); }
+        ~buffer() override
+        {
+            free_chunk_buffer();
+        }
 
         // chunk size
-        inline size_t get_chunk_size() const { return chunk_size_; }
-        inline void set_chunk_size(size_t chunk_size) { chunk_size_ = chunk_size; }
+        inline std::size_t get_chunk_size() const
+        {
+            return m_chunk_size;
+        }
+        inline void set_chunk_size(std::size_t chunk_size)
+        {
+            m_chunk_size = chunk_size;
+        }
 
         // clear / reserve / resize / shrink_to_fit fn are in base_buffer
 
@@ -116,15 +114,23 @@ namespace small {
         inline char *extract()
         {
             char *b = nullptr;
-            if (chunk_buffer_data_ == nullptr || chunk_buffer_data_ == get_empty_buffer()) {
+            if (m_chunk_buffer_data == nullptr || m_chunk_buffer_data == get_empty_buffer()) {
                 b = (char *)malloc(sizeof(char));
-                if (b)
+                if (b) {
                     *b = '\0';
+                }
             } else {
-                b = chunk_buffer_data_;
-                init(chunk_size_);
+                b = m_chunk_buffer_data;
+                init(m_chunk_size);
             }
             return b;
+        }
+
+        // add a static functions to be called to safely free this buffer from where it was allocated
+        static void free(char *&b)
+        {
+            ::free((void *)b);
+            b = nullptr;
         }
 
         // append    fn are in base_buffer
@@ -143,7 +149,7 @@ namespace small {
         inline buffer &operator=(const buffer &o) noexcept
         {
             if (this != &o) {
-                chunk_size_ = o.chunk_size_;
+                m_chunk_size = o.m_chunk_size;
                 ensure_size(o.size(), true /*shrink*/);
                 set(0 /*from*/, o.data(), o.size());
             }
@@ -154,274 +160,379 @@ namespace small {
         {
             if (this != &o) {
                 clear_buffer();
-                chunk_size_ = o.chunk_size_;
-                chunk_buffer_data_ = o.chunk_buffer_data_;
-                chunk_buffer_length_ = o.chunk_buffer_length_;
-                chunk_buffer_alloc_size_ = o.chunk_buffer_alloc_size_;
-                o.init(this->chunk_size_);
+                m_chunk_size = o.m_chunk_size;
+                m_chunk_buffer_data = o.m_chunk_buffer_data;
+                m_chunk_buffer_length = o.m_chunk_buffer_length;
+                m_chunk_buffer_alloc_size = o.m_chunk_buffer_alloc_size;
+                o.init(this->m_chunk_size);
             }
             return *this;
         }
 
         // swap
-        inline void swap(buffer &o)
+        inline void swap(buffer &o) noexcept
         {
-            std::swap(chunk_size_, o.chunk_size_);
-            std::swap(chunk_buffer_length_, o.chunk_buffer_length_);
-            std::swap(chunk_buffer_alloc_size_, o.chunk_buffer_alloc_size_);
-            // swap buffer has 4 cases
-            if (chunk_buffer_data_ != get_empty_buffer() && o.chunk_buffer_data_ != o.get_empty_buffer()) {
-                std::swap(chunk_buffer_data_, o.chunk_buffer_data_);
-            } else if (chunk_buffer_data_ == get_empty_buffer() && o.chunk_buffer_data_ == o.get_empty_buffer()) { /*do nothing*/
-            } else if (chunk_buffer_data_ != get_empty_buffer() && o.chunk_buffer_data_ == o.get_empty_buffer()) {
-                o.chunk_buffer_data_ = chunk_buffer_data_;
-                chunk_buffer_data_ = (char *)get_empty_buffer();
-            } else if (chunk_buffer_data_ == get_empty_buffer() && o.chunk_buffer_data_ != o.get_empty_buffer()) {
-                chunk_buffer_data_ = o.chunk_buffer_data_;
-                o.chunk_buffer_data_ = (char *)o.get_empty_buffer();
+            std::swap(m_chunk_size, o.m_chunk_size);
+            std::swap(m_chunk_buffer_length, o.m_chunk_buffer_length);
+            std::swap(m_chunk_buffer_alloc_size, o.m_chunk_buffer_alloc_size);
+            // swap buffer has 4 cases (due to empty buffer which is not static since there are only headers and no cpp)
+            if (m_chunk_buffer_data != get_empty_buffer() && o.m_chunk_buffer_data != o.get_empty_buffer()) {
+                std::swap(m_chunk_buffer_data, o.m_chunk_buffer_data);
+            } else if (m_chunk_buffer_data == get_empty_buffer() && o.m_chunk_buffer_data == o.get_empty_buffer()) { /*do nothing*/
+            } else if (m_chunk_buffer_data != get_empty_buffer() && o.m_chunk_buffer_data == o.get_empty_buffer()) {
+                o.m_chunk_buffer_data = m_chunk_buffer_data;
+                m_chunk_buffer_data = (char *)(get_empty_buffer());
+            } else if (m_chunk_buffer_data == get_empty_buffer() && o.m_chunk_buffer_data != o.get_empty_buffer()) {
+                m_chunk_buffer_data = o.m_chunk_buffer_data;
+                o.m_chunk_buffer_data = (char *)o.get_empty_buffer();
             }
+        }
+
+        //
+        // substr
+        //
+        inline buffer substr(std::size_t __pos = 0, std::size_t __n = std::string::npos) const noexcept(false)
+        {
+            return buffer(c_view().substr(__pos, __n));
+        }
+
+        // starts_with
+        inline bool starts_with(std::string_view __x) const noexcept
+        {
+            return this->substr(0, __x.size()) == __x;
+        }
+
+        inline bool starts_with(char __x) const noexcept
+        {
+            return !this->empty() && (this->front() == __x);
+        }
+
+        inline bool starts_with(const char *__x) const noexcept
+        {
+            return this->starts_with(std::string_view(__x));
+        }
+
+        // ends_with
+        inline bool ends_with(std::string_view __x) const noexcept
+        {
+            const auto __len = this->size();
+            const auto __xlen = __x.size();
+            return __len >= __xlen && memcmp(this->data() + this->size() - __xlen, __x.data(), __xlen) == 0;
+        }
+
+        inline bool ends_with(char __x) const noexcept
+        {
+            return !this->empty() && (this->back() == __x);
+        }
+
+        inline bool ends_with(const char *__x) const noexcept
+        {
+            return this->ends_with(std::string_view(__x));
+        }
+
+        // contains
+        inline bool contains(std::string_view __x) const noexcept
+        {
+            return this->find(__x) != std::string::npos;
+        }
+
+        inline bool contains(char __x) const noexcept
+        {
+            return this->find(__x) != std::string::npos;
+        }
+
+        inline bool contains(const char *__x) const noexcept
+        {
+            return this->find(__x) != std::string::npos;
+        }
+
+        // find
+        inline std::size_t find(std::string_view __str, std::size_t __pos = 0) const noexcept
+        {
+            return c_view().find(__str, __pos);
+        }
+
+        inline std::size_t find(char __c, std::size_t __pos = 0) const noexcept
+        {
+            return c_view().find(__c, __pos);
+        }
+
+        inline std::size_t find(const char *__str, std::size_t __pos, std::size_t __n) const noexcept
+        {
+            return c_view().find(__str, __pos, __n);
+        }
+
+        inline std::size_t find(const char *__str, std::size_t __pos = 0) const noexcept
+        {
+            return c_view().find(__str, __pos);
+        }
+
+        // rfind
+        inline std::size_t rfind(std::string_view __str, std::size_t __pos = std::string::npos) const noexcept
+        {
+            return c_view().rfind(__str, __pos);
+        }
+
+        inline std::size_t rfind(char __c, std::size_t __pos = std::string::npos) const noexcept
+        {
+            return c_view().rfind(__c, __pos);
+        }
+
+        inline std::size_t rfind(const char *__str, std::size_t __pos, std::size_t __n) const noexcept
+        {
+            return c_view().rfind(__str, __pos, __n);
+        }
+
+        inline std::size_t rfind(const char *__str, std::size_t __pos = std::string::npos) const noexcept
+        {
+            return c_view().rfind(__str, __pos);
+        }
+
+        // find_first_of
+        inline std::size_t find_first_of(std::string_view __str, std::size_t __pos = 0) const noexcept
+        {
+            return c_view().find_first_of(__str, __pos);
+        }
+
+        inline std::size_t find_first_of(char __c, std::size_t __pos = 0) const noexcept
+        {
+            return c_view().find_first_of(__c, __pos);
+        }
+
+        inline std::size_t find_first_of(const char *__str, std::size_t __pos, std::size_t __n) const noexcept
+        {
+            return c_view().find_first_of(__str, __pos, __n);
+        }
+
+        inline std::size_t find_first_of(const char *__str, std::size_t __pos = 0) const noexcept
+        {
+            return c_view().find_first_of(__str, __pos);
+        }
+
+        // find_last_of
+        inline std::size_t find_last_of(std::string_view __str, std::size_t __pos = std::string::npos) const noexcept
+        {
+            return c_view().find_last_of(__str, __pos);
+        }
+
+        inline std::size_t find_last_of(char __c, std::size_t __pos = std::string::npos) const noexcept
+        {
+            return c_view().find_last_of(__c, __pos);
+        }
+
+        inline std::size_t find_last_of(const char *__str, std::size_t __pos, std::size_t __n) const noexcept
+        {
+            return c_view().find_last_of(__str, __pos, __n);
+        }
+
+        inline std::size_t find_last_of(const char *__str, std::size_t __pos = std::string::npos) const noexcept
+        {
+            return c_view().find_last_of(__str, __pos);
+        }
+
+        // find_first_not_of
+        inline std::size_t find_first_not_of(std::string_view __str, std::size_t __pos = 0) const noexcept
+        {
+            return c_view().find_first_not_of(__str, __pos);
+        }
+
+        inline std::size_t find_first_not_of(char __c, std::size_t __pos = 0) const noexcept
+        {
+            return c_view().find_first_not_of(__c, __pos);
+        }
+
+        inline std::size_t find_first_not_of(const char *__str, std::size_t __pos, std::size_t __n) const noexcept
+        {
+            return c_view().find_first_not_of(__str, __pos, __n);
+        }
+
+        inline std::size_t find_first_not_of(const char *__str, std::size_t __pos = 0) const noexcept
+        {
+            return c_view().find_first_not_of(__str, __pos);
+        }
+
+        // find_last_not_of
+        inline std::size_t find_last_not_of(std::string_view __str, std::size_t __pos = std::string::npos) const noexcept
+        {
+            return c_view().find_last_not_of(__str, __pos);
+        }
+
+        inline std::size_t find_last_not_of(char __c, std::size_t __pos = std::string::npos) const noexcept
+        {
+            return c_view().find_last_not_of(__c, __pos);
+        }
+
+        inline std::size_t find_last_not_of(const char *__str, std::size_t __pos, std::size_t __n) const noexcept
+        {
+            return c_view().find_last_not_of(__str, __pos, __n);
+        }
+
+        inline std::size_t find_last_not_of(const char *__str, std::size_t __pos = std::string::npos) const noexcept
+        {
+            return c_view().find_last_not_of(__str, __pos);
         }
 
     private:
         // init
-        inline void init(size_t chunk_size)
+        inline void init(std::size_t chunk_size)
         {
-            chunk_size_ = chunk_size;
-            chunk_buffer_data_ = (char *)get_empty_buffer();
-            chunk_buffer_length_ = 0;
-            chunk_buffer_alloc_size_ = 0;
-            setup_buffer(chunk_buffer_data_, chunk_buffer_length_);
+            m_chunk_size = chunk_size;
+            m_chunk_buffer_data = (char *)get_empty_buffer();
+            m_chunk_buffer_length = 0;
+            m_chunk_buffer_alloc_size = 0;
+            setup_buffer(m_chunk_buffer_data, m_chunk_buffer_length);
         }
 
         // free_chunk_buffer
         inline void free_chunk_buffer()
         {
-            chunk_buffer_length_ = 0;
-            chunk_buffer_alloc_size_ = 0;
-            if (chunk_buffer_data_ && (chunk_buffer_data_ != get_empty_buffer())) {
-                free(chunk_buffer_data_);
-                chunk_buffer_data_ = (char *)get_empty_buffer();
+            m_chunk_buffer_length = 0;
+            m_chunk_buffer_alloc_size = 0;
+            if (m_chunk_buffer_data && (m_chunk_buffer_data != get_empty_buffer())) {
+                buffer::free(m_chunk_buffer_data);
+                m_chunk_buffer_data = (char *)get_empty_buffer();
             }
         }
 
         // ensure size returns new_length
-        inline size_t ensure_size(size_t new_size, const bool shrink = false)
+        inline std::size_t ensure_size(std::size_t new_size, const bool shrink = false)
         {
             // we always append a '\0' to the end so we can use as string
-            size_t new_alloc_size = ((new_size + sizeof(char) /*for '\0'*/ + (chunk_size_ - 1)) / chunk_size_) * chunk_size_;
+            std::size_t new_alloc_size = ((new_size + sizeof(char) /*for '\0'*/ + (m_chunk_size - 1)) / m_chunk_size) * m_chunk_size;
             bool reallocate = false;
             if (shrink) {
-                reallocate = (chunk_buffer_alloc_size_ == 0) || (new_alloc_size != chunk_buffer_alloc_size_); // we need another size
+                reallocate = (m_chunk_buffer_alloc_size == 0) || (new_alloc_size != m_chunk_buffer_alloc_size); // we need another size
             } else {
-                reallocate = (chunk_buffer_alloc_size_ == 0) || (new_alloc_size > chunk_buffer_alloc_size_); // we need bigger size
+                reallocate = (m_chunk_buffer_alloc_size == 0) || (new_alloc_size > m_chunk_buffer_alloc_size); // we need bigger size
             }
 
             // (re)allocate
             if (reallocate) {
-                chunk_buffer_data_ = (chunk_buffer_alloc_size_ == 0) ? (char *)malloc(new_alloc_size) : (char *)realloc(chunk_buffer_data_, new_alloc_size);
-                chunk_buffer_alloc_size_ = new_alloc_size;
+                m_chunk_buffer_data = (m_chunk_buffer_alloc_size == 0) ? (char *)malloc(new_alloc_size) : (char *)realloc(m_chunk_buffer_data, new_alloc_size);
+                m_chunk_buffer_alloc_size = new_alloc_size;
             }
 
             // failure
-            if (chunk_buffer_data_ == nullptr) {
-                init(chunk_size_);
+            if (m_chunk_buffer_data == nullptr) {
+                init(m_chunk_size);
                 return 0;
             }
             // return new_length of the buffer
-            chunk_buffer_data_[new_size] = '\0';
+            m_chunk_buffer_data[new_size] = '\0';
             return new_size;
         }
 
         // !! override functions
         void clear_impl() override
         {
-            chunk_buffer_length_ = 0;
-            chunk_buffer_data_[0] = '\0';
-            setup_buffer(chunk_buffer_data_, chunk_buffer_length_);
+            m_chunk_buffer_length = 0;
+            m_chunk_buffer_data[0] = '\0';
+            setup_buffer(m_chunk_buffer_data, m_chunk_buffer_length);
         }
 
-        void reserve_impl(size_t new_size) override
+        void reserve_impl(std::size_t new_size) override
         {
             ensure_size(new_size);
-            setup_buffer(chunk_buffer_data_, chunk_buffer_length_);
+            setup_buffer(m_chunk_buffer_data, m_chunk_buffer_length);
         }
 
-        void resize_impl(size_t new_size) override
+        void resize_impl(std::size_t new_size) override
         {
-            chunk_buffer_length_ = ensure_size(new_size);
-            setup_buffer(chunk_buffer_data_, chunk_buffer_length_);
+            m_chunk_buffer_length = ensure_size(new_size);
+            setup_buffer(m_chunk_buffer_data, m_chunk_buffer_length);
         }
 
         void shrink_impl() override
         {
-            chunk_buffer_length_ = ensure_size(size(), true /*shrink*/);
-            setup_buffer(chunk_buffer_data_, chunk_buffer_length_);
+            m_chunk_buffer_length = ensure_size(size(), true /*shrink*/);
+            setup_buffer(m_chunk_buffer_data, m_chunk_buffer_length);
+        }
+
+    protected:
+        // other operators
+
+        // +
+        friend inline buffer operator+(const buffer &b, const base_buffer &b2)
+        {
+            buffer br = b;
+            br.append(b2.data(), b2.size());
+            return br;
+        }
+        friend inline buffer operator+(buffer &&b, const base_buffer &b2)
+        {
+            buffer br(std::forward<buffer>(b));
+            br.append(b2.data(), b2.size());
+            return br;
+        }
+        friend inline buffer operator+(const base_buffer &b2, const buffer &b)
+        {
+            buffer br = b;
+            br.append(b2.data(), b2.size());
+            return br;
+        }
+
+        friend inline buffer operator+(const buffer &b, const char c)
+        {
+            buffer br = b;
+            br.append(&c, 1);
+            return br;
+        }
+        friend inline buffer operator+(const buffer &b, const char *s)
+        {
+            buffer br = b;
+            br.append(s, strlen(s));
+            return br;
+        }
+        friend inline buffer operator+(const buffer &b, const std::string_view s)
+        {
+            buffer br = b;
+            br.append(s.data(), s.size());
+            return br;
+        }
+        friend inline buffer operator+(const buffer &b, const std::vector<char> &v)
+        {
+            buffer br = b;
+            br.append(v.data(), v.size());
+            return br;
+        }
+
+        // +
+        friend inline buffer operator+(const char c, const buffer &b)
+        {
+            buffer br(b.get_chunk_size());
+            br.append(&c, 1);
+            br += b;
+            return br;
+        }
+        friend inline buffer operator+(const char *s, const buffer &b)
+        {
+            buffer br(b.get_chunk_size());
+            br.append(s, strlen(s));
+            br += b;
+            return br;
+        }
+        friend inline buffer operator+(const std::string_view s, const buffer &b)
+        {
+            buffer br(b.get_chunk_size());
+            br.append(s.data(), s.size());
+            br += b;
+            return br;
+        }
+        friend inline buffer operator+(const std::vector<char> &v, const buffer &b)
+        {
+            buffer br(b.get_chunk_size());
+            br.append(v.data(), v.size());
+            br += b;
+            return br;
         }
 
     private:
         // chunk size
-        size_t chunk_size_;
+        std::size_t m_chunk_size;
         // buffer use char* instead of vector<char> because it is much faster
-        char *chunk_buffer_data_;
-        size_t chunk_buffer_length_;
-        size_t chunk_buffer_alloc_size_;
+        char *m_chunk_buffer_data;
+        std::size_t m_chunk_buffer_length;
+        std::size_t m_chunk_buffer_alloc_size;
     };
-
-    // other operators
-
-    // +
-    inline buffer operator+(const buffer &b, const base_buffer &b2)
-    {
-        buffer br = b;
-        br.append(b2.data(), b2.size());
-        return br;
-    }
-    inline buffer operator+(buffer &&b, const buffer &b2)
-    {
-        buffer br(std::forward<buffer>(b));
-        br.append(b2.data(), b2.size());
-        return br;
-    }
-    inline buffer operator+(const base_buffer &b2, const buffer &b)
-    {
-        buffer br = b;
-        br.append(b2.data(), b2.size());
-        return br;
-    }
-
-    inline buffer operator+(const buffer &b, const char c)
-    {
-        buffer br = b;
-        br.append(&c, 1);
-        return br;
-    }
-    inline buffer operator+(const buffer &b, const char *s)
-    {
-        buffer br = b;
-        br.append(s, strlen(s));
-        return br;
-    }
-    inline buffer operator+(const buffer &b, const std::string &s)
-    {
-        buffer br = b;
-        br.append(s.c_str(), s.size());
-        return br;
-    }
-    inline buffer operator+(const buffer &b, const std::string_view s)
-    {
-        buffer br = b;
-        br.append(s.data(), s.size());
-        return br;
-    }
-    inline buffer operator+(const buffer &b, const std::vector<char> &v)
-    {
-        buffer br = b;
-        br.append(v.data(), v.size());
-        return br;
-    }
-
-    inline buffer operator+(const buffer &b, const wchar_t c)
-    {
-        buffer br = b;
-        br.append(&c, 1);
-        return br;
-    }
-    inline buffer operator+(const buffer &b, const wchar_t *s)
-    {
-        buffer br = b;
-        br.append(s, wcslen(s));
-        return br;
-    }
-    inline buffer operator+(const buffer &b, const std::wstring &s)
-    {
-        buffer br = b;
-        br.append(s.c_str(), s.size());
-        return br;
-    }
-    inline buffer operator+(const buffer &b, const std::wstring_view s)
-    {
-        buffer br = b;
-        br.append(s.data(), s.size());
-        return br;
-    }
-    inline buffer operator+(const buffer &b, const std::vector<wchar_t> &v)
-    {
-        buffer br = b;
-        br.append(v.data(), v.size());
-        return br;
-    }
-
-    // +
-    inline buffer operator+(const char c, const buffer &b)
-    {
-        buffer br(b.get_chunk_size());
-        br.append(&c, 1);
-        br += b;
-        return br;
-    }
-    inline buffer operator+(const char *s, const buffer &b)
-    {
-        buffer br(b.get_chunk_size());
-        br.append(s, strlen(s));
-        br += b;
-        return br;
-    }
-    inline buffer operator+(const std::string &s, const buffer &b)
-    {
-        buffer br(b.get_chunk_size());
-        br.append(s.c_str(), s.size());
-        br += b;
-        return br;
-    }
-    inline buffer operator+(const std::string_view s, const buffer &b)
-    {
-        buffer br(b.get_chunk_size());
-        br.append(s.data(), s.size());
-        br += b;
-        return br;
-    }
-    inline buffer operator+(const std::vector<char> &v, const buffer &b)
-    {
-        buffer br(b.get_chunk_size());
-        br.append(v.data(), v.size());
-        br += b;
-        return br;
-    }
-
-    inline buffer operator+(const wchar_t c, const buffer &b)
-    {
-        buffer br(b.get_chunk_size());
-        br.append(&c, 1);
-        br += b;
-        return br;
-    }
-    inline buffer operator+(const wchar_t *s, const buffer &b)
-    {
-        buffer br(b.get_chunk_size());
-        br.append(s, wcslen(s));
-        br += b;
-        return br;
-    }
-    inline buffer operator+(const std::wstring &s, const buffer &b)
-    {
-        buffer br(b.get_chunk_size());
-        br.append(s.c_str(), s.size());
-        br += b;
-        return br;
-    }
-    inline buffer operator+(const std::wstring_view s, const buffer &b)
-    {
-        buffer br(b.get_chunk_size());
-        br.append(s.data(), s.size());
-        br += b;
-        return br;
-    }
-    inline buffer operator+(const std::vector<wchar_t> &v, const buffer &b)
-    {
-        buffer br(b.get_chunk_size());
-        br.append(v.data(), v.size());
-        br += b;
-        return br;
-    }
 
 } // namespace small

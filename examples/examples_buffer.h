@@ -13,30 +13,42 @@ namespace examples::buffer {
     //
     int Example1()
     {
-
-        std::cout << "hello" << std::endl;
+        std::cout << "Buffer\n";
 
         small::buffer b;
         b.clear();
 
-        // b.set("ana", 3);
-        // b.set("b", 1, 2);
+        b.assign(std::string("ancx"));
+        std::cout << "assign ancx = " << b << "\n";
 
-        // char *e = b.extract(); // extract "anb"
-        // free(e);
+        b.set(2 /*from*/, "b", 1);
+        std::cout << "assign set b = " << b << "\n";
 
-        // b.append("hello", 5);
-        // b.clear(true);
+        b.insert(2 /*from*/, "a", 1);
+        std::cout << "assign insert a = " << b << "\n";
+
+        char *e = b.extract(); // extract "anab"
+        std::cout << "extract = " << e << "\n";
+        small::buffer::free(e);
+
+        b.append("hello");
+        std::cout << "append = " << b << "\n";
+        b.clear();
+        std::cout << "after clear = " << b << "\n";
 
         char *e1 = b.extract(); // extract ""
-        free(e1);
+        std::cout << "extracting empty = " << e1 << "\n";
+        small::buffer::free(e1);
 
         b.append("world", 5);
+        std::cout << "append world = " << b << "\n";
+
+        std::cout << "substr = " << b.substr(2, 2) << "\n";
+
         b.clear();
 
-        std::cout << "finishing" << std::endl;
-        std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+        std::cout << "Buffer finished\n\n";
 
         return 0;
     }
-}
+} // namespace examples::buffer

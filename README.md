@@ -244,8 +244,8 @@ and can be used like this
 small::buffer b;
 b.clear();
 
-b.set( "anc", 3 );
-b.set( "b", 1/*length*/, 2/*start from*/ );
+b.assign( "anc", 3 );
+b.set( 2/*start from*/, "b", 1/*length*/ );
 
 char* e = b.extract(); // extract "anb"
 free( e );
