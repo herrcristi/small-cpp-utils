@@ -15,10 +15,10 @@
 // b.clear();
 //
 // b.asign( "ana", 3 );
-// b.append( "b", 1 );
+// b.set( 2/*from*/, "b", 1 );
 //
 // char* e = b.extract(); // extract "anb"
-// Buffer::free( e );
+// small::buffer::free( e );
 //
 // small::buffer b1 = { 8192/*chunksize*/, "buffer", 6/*length*/ };
 // small::buffer b2 = { 8192/*chunksize*/, "buffer" };
@@ -32,7 +32,7 @@
 // b.clear( true );
 //
 // char* e1 = b.extract(); // extract ""
-// Buffer::free( e1 );
+// small::buffer::free( e1 );
 //
 // b.append( "world", 5 );
 // b.clear();
