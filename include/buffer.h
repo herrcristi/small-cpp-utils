@@ -344,11 +344,11 @@ namespace small {
 
     private:
         // chunk size
-        std::size_t m_chunk_size;
+        std::size_t m_chunk_size{DEFAULT_BUFFER_CHUNK_SIZE};
         // buffer use char* instead of vector<char> because it is much faster
-        char *m_chunk_buffer_data;
-        std::size_t m_chunk_buffer_length;
-        std::size_t m_chunk_buffer_alloc_size;
+        char *m_chunk_buffer_data{};
+        std::size_t m_chunk_buffer_length{};
+        std::size_t m_chunk_buffer_alloc_size{};
     };
 
 } // namespace small
