@@ -274,12 +274,6 @@ namespace small {
             br.append(b2.data(), b2.size());
             return br;
         }
-        friend inline buffer operator+(buffer &&b, const base_buffer &b2)
-        {
-            buffer br(std::forward<buffer>(b));
-            br.append(b2.data(), b2.size());
-            return br;
-        }
         friend inline buffer operator+(const base_buffer &b2, const buffer &b)
         {
             buffer br = b;
