@@ -221,6 +221,72 @@ namespace small {
         // operator
         inline operator std::string_view() const { return c_view(); }
 
+        // clang-format off
+        //
+        // substr
+        //
+        inline std::string_view substr(std::size_t __pos = 0, std::size_t __n = std::string::npos) const noexcept(false)
+        {
+            return c_view().substr(__pos, __n);
+        }
+
+        // starts_with
+        inline bool     starts_with     (std::string_view __x) const noexcept   { return substr(0, __x.size()) == __x; }
+        inline bool     starts_with     (char __x) const noexcept               { return !empty() && (front() == __x); }
+        inline bool     starts_with     (const char *__x) const noexcept        { return starts_with(std::string_view(__x)); }
+
+        // ends_with
+        inline bool     ends_with       (std::string_view __x) const noexcept 
+        {
+            const auto __len = this->size();
+            const auto __xlen = __x.size();
+            return __len >= __xlen && memcmp(data() + size() - __xlen, __x.data(), __xlen) == 0;
+        }
+        inline bool     ends_with       (char __x) const noexcept               { return !empty() && (back() == __x); }
+        inline bool     ends_with       (const char *__x) const noexcept        { return ends_with(std::string_view(__x)); }
+
+        // contains
+        inline bool     contains        (std::string_view __x) const noexcept   { return find(__x) != std::string::npos; }
+        inline bool     contains        (char __x) const noexcept               { return find(__x) != std::string::npos; }
+        inline bool     contains        (const char *__x) const noexcept        { return find(__x) != std::string::npos; }
+
+        // find
+        inline std::size_t find         (std::string_view __str, std::size_t __pos = 0) const noexcept          { return c_view().find(__str, __pos); }
+        inline std::size_t find         (char __c, std::size_t __pos = 0) const noexcept                        { return c_view().find(__c, __pos); }
+        inline std::size_t find         (const char *__str, std::size_t __pos, std::size_t __n) const noexcept  { return c_view().find(__str, __pos, __n); }
+        inline std::size_t find         (const char *__str, std::size_t __pos = 0) const noexcept               { return c_view().find(__str, __pos); }
+
+        // rfind
+        inline std::size_t rfind        (std::string_view __str, std::size_t __pos = std::string::npos) const noexcept { return c_view().rfind(__str, __pos); }
+        inline std::size_t rfind        (char __c, std::size_t __pos = std::string::npos) const noexcept        { return c_view().rfind(__c, __pos); }
+        inline std::size_t rfind        (const char *__str, std::size_t __pos, std::size_t __n) const noexcept  { return c_view().rfind(__str, __pos, __n); }
+        inline std::size_t rfind        (const char *__str, std::size_t __pos = std::string::npos) const noexcept{return c_view().rfind(__str, __pos); }
+
+        // find_first_of
+        inline std::size_t find_first_of(std::string_view __str, std::size_t __pos = 0) const noexcept          { return c_view().find_first_of(__str, __pos); }
+        inline std::size_t find_first_of(char __c, std::size_t __pos = 0) const noexcept                        { return c_view().find_first_of(__c, __pos); }
+        inline std::size_t find_first_of(const char *__str, std::size_t __pos, std::size_t __n) const noexcept  { return c_view().find_first_of(__str, __pos, __n); }
+        inline std::size_t find_first_of(const char *__str, std::size_t __pos = 0) const noexcept               { return c_view().find_first_of(__str, __pos); }
+
+        // find_last_of
+        inline std::size_t find_last_of (std::string_view __str, std::size_t __pos = std::string::npos) const noexcept { return c_view().find_last_of(__str, __pos); }
+        inline std::size_t find_last_of (char __c, std::size_t __pos = std::string::npos) const noexcept        { return c_view().find_last_of(__c, __pos); }
+        inline std::size_t find_last_of (const char *__str, std::size_t __pos, std::size_t __n) const noexcept  { return c_view().find_last_of(__str, __pos, __n); }
+        inline std::size_t find_last_of (const char *__str, std::size_t __pos = std::string::npos) const noexcept{return c_view().find_last_of(__str, __pos); }
+
+        // find_first_not_of
+        inline std::size_t find_first_not_of(std::string_view __str, std::size_t __pos = 0) const noexcept      { return c_view().find_first_not_of(__str, __pos); }
+        inline std::size_t find_first_not_of(char __c, std::size_t __pos = 0) const noexcept                    { return c_view().find_first_not_of(__c, __pos); }
+        inline std::size_t find_first_not_of(const char *__str, std::size_t __pos, std::size_t __n) const noexcept{return c_view().find_first_not_of(__str, __pos, __n); }
+        inline std::size_t find_first_not_of(const char *__str, std::size_t __pos = 0) const noexcept           { return c_view().find_first_not_of(__str, __pos); }
+
+        // find_last_not_of
+        inline std::size_t find_last_not_of(std::string_view __str, std::size_t __pos = std::string::npos) const noexcept { return c_view().find_last_not_of(__str, __pos); }
+        inline std::size_t find_last_not_of(char __c, std::size_t __pos = std::string::npos) const noexcept     { return c_view().find_last_not_of(__c, __pos); }
+        inline std::size_t find_last_not_of(const char *__str, std::size_t __pos, std::size_t __n) const noexcept{return c_view().find_last_not_of(__str, __pos, __n); }
+        inline std::size_t find_last_not_of(const char *__str, std::size_t __pos = std::string::npos) const noexcept{return c_view().find_last_not_of(__str, __pos); }
+        // clang-format on
+
     protected:
         // empty buffer
         inline const char *get_empty_buffer() const
