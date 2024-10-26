@@ -82,6 +82,9 @@ namespace {
         ASSERT_EQ(comp, false);
     }
 
+    //
+    // icasecmp used in a map
+    //
     TEST_F(UtilTest, icasecmp_map)
     {
         std::map<std::string, int, small::icasecmp> m;
