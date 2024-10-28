@@ -27,6 +27,7 @@ namespace {
     {
         small::buffer b = m_test;
         ASSERT_EQ(b, m_test);
+        ASSERT_EQ(b.get_chunk_size(), small::DEFAULT_BUFFER_CHUNK_SIZE);
 
         small::buffer b1{'a'};
         ASSERT_EQ(b1, "a");
@@ -43,6 +44,7 @@ namespace {
 
         small::buffer b5{0 /*alloc size*/, sv};
         ASSERT_EQ(b5, "abc");
+        ASSERT_EQ(b5.get_chunk_size(), 1);
     }
 
     TEST_F(BufferTest, buffer_operator_eq)
@@ -50,6 +52,7 @@ namespace {
         small::buffer b;
         b = m_test;
         ASSERT_EQ(b, m_test);
+        ASSERT_EQ(b.get_chunk_size(), small::DEFAULT_BUFFER_CHUNK_SIZE);
 
         small::buffer b1;
         b1 = 'a';
@@ -70,7 +73,10 @@ namespace {
 
         small::buffer b5(1UL);
         b5 = sv;
+        ASSERT_EQ(b5.get_chunk_size(), small::DEFAULT_BUFFER_CHUNK_SIZE);
         ASSERT_EQ(b5, "abc");
+        b5.set_chunk_size(1UL);
+        ASSERT_EQ(b5.get_chunk_size(), 1);
     }
 
 } // namespace
