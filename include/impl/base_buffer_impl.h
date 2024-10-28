@@ -82,22 +82,22 @@ namespace small {
             }
         }
 
-        inline void     assign          (const char c)                                      { set(0 /*startfrom*/, &c, 1); }
-        inline void     assign          (const char *s)                                     { set(0 /*startfrom*/, s, strlen(s)); }
+        inline void     assign          (const char c)                                      { set(0 /*startfrom*/, c); }
+        inline void     assign          (const char *s)                                     { set(0 /*startfrom*/, s); }
         inline void     assign          (const char *s, std::size_t len)                    { set(0 /*startfrom*/, s, len); }
-        inline void     assign          (const std::string_view s)                          { set(0 /*startfrom*/, s.data(), s.size()); }
-        inline void     assign          (const std::vector<char> &v)                        { set(0 /*startfrom*/, v.data(), v.size()); }
+        inline void     assign          (const std::string_view s)                          { set(0 /*startfrom*/, s); }
+        inline void     assign          (const std::vector<char> &v)                        { set(0 /*startfrom*/, v); }
         // clang-format on
 
         // clang-format off
         // append
-        inline void     append          (const base_buffer &b)                              { set(size() /*startfrom*/, b.data(), b.size()); }
+        inline void     append          (const base_buffer &b)                              { set(size() /*startfrom*/, b); }
 
-        inline void     append          (const char c)                                      { set(size() /*startfrom*/, &c, 1); }
-        inline void     append          (const char *s)                                     { set(size() /*startfrom*/, s, strlen(s)); }
+        inline void     append          (const char c)                                      { set(size() /*startfrom*/, c); }
+        inline void     append          (const char *s)                                     { set(size() /*startfrom*/, s); }
         inline void     append          (const char *s, std::size_t len)                    { set(size() /*startfrom*/, s, len); }
-        inline void     append          (const std::string_view s)                          { set(size() /*startfrom*/, s.data(), s.size()); }
-        inline void     append          (const std::vector<char> &v)                        { set(size() /*startfrom*/, v.data(), v.size()); }
+        inline void     append          (const std::string_view s)                          { set(size() /*startfrom*/, s); }
+        inline void     append          (const std::vector<char> &v)                        { set(size() /*startfrom*/, v); }
         // clang-format on
 
         // clang-format off
@@ -113,13 +113,13 @@ namespace small {
 
         // clang-format off
         // overwrite
-        inline void     overwrite       (std::size_t from, const base_buffer &b)            { set(from, b.data(), b.size()); }
+        inline void     overwrite       (std::size_t from, const base_buffer &b)            { set(from, b); }
 
-        inline void     overwrite       (std::size_t from, const char c)                    { set(from, &c, 1); }
-        inline void     overwrite       (std::size_t from, const char *s)                   { set(from, s, strlen(s)); }
+        inline void     overwrite       (std::size_t from, const char c)                    { set(from, c); }
+        inline void     overwrite       (std::size_t from, const char *s)                   { set(from, s); }
         inline void     overwrite       (std::size_t from, const char *s, std::size_t len)  { set(from, s, len); }
-        inline void     overwrite       (std::size_t from, const std::string_view s)        { set(from, s.data(), s.size()); }
-        inline void     overwrite       (std::size_t from, const std::vector<char> &v)      { set(from, v.data(), v.size()); }
+        inline void     overwrite       (std::size_t from, const std::string_view s)        { set(from, s); }
+        inline void     overwrite       (std::size_t from, const std::vector<char> &v)      { set(from, v); }
         // clang-format on
 
         // clang-format off
@@ -178,20 +178,20 @@ namespace small {
         inline base_buffer &operator=   (const base_buffer &o) = delete;
         inline base_buffer &operator=   (base_buffer &&o) = delete;
         // =
-        inline base_buffer &operator=   (const char c) noexcept             { set(0 /*from*/, &c, 1);               return *this; }
-        inline base_buffer &operator=   (const char *s) noexcept            { set(0 /*from*/, s, strlen(s));        return *this; }
-        inline base_buffer &operator=   (const std::string_view s) noexcept { set(0 /*from*/, s.data(), s.size());  return *this; }
-        inline base_buffer &operator=   (const std::vector<char> &v) noexcept{set(0 /*from*/, v.data(), v.size());  return *this; }
+        inline base_buffer &operator=   (const char c) noexcept             { set(0 /*from*/, c); return *this; }
+        inline base_buffer &operator=   (const char *s) noexcept            { set(0 /*from*/, s); return *this; }
+        inline base_buffer &operator=   (const std::string_view s) noexcept { set(0 /*from*/, s); return *this; }
+        inline base_buffer &operator=   (const std::vector<char> &v) noexcept{set(0 /*from*/, v); return *this; }
         // clang-format on
 
         // clang-format off
         // +=
-        inline base_buffer &operator+=  (const base_buffer &b) noexcept     { append(b.data(), b.size());           return *this; }
+        inline base_buffer &operator+=  (const base_buffer &b) noexcept     { append(b); return *this; }
 
-        inline base_buffer &operator+=  (const char c) noexcept             { append(&c, 1);                        return *this; }
-        inline base_buffer &operator+=  (const char *s) noexcept            { append(s, strlen(s));                 return *this; }
-        inline base_buffer &operator+=  (const std::string_view s) noexcept { append(s.data(), s.size());           return *this; }
-        inline base_buffer &operator+=  (const std::vector<char> &v) noexcept{append(v.data(), v.size());           return *this; }
+        inline base_buffer &operator+=  (const char c) noexcept             { append(c); return *this; }
+        inline base_buffer &operator+=  (const char *s) noexcept            { append(s); return *this; }
+        inline base_buffer &operator+=  (const std::string_view s) noexcept { append(s); return *this; }
+        inline base_buffer &operator+=  (const std::vector<char> &v) noexcept{append(v); return *this; }
         // clang-format on
 
         // clang-format off

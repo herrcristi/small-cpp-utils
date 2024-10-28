@@ -164,6 +164,7 @@ namespace small {
                 m_chunk_buffer_data = o.m_chunk_buffer_data;
                 m_chunk_buffer_length = o.m_chunk_buffer_length;
                 m_chunk_buffer_alloc_size = o.m_chunk_buffer_alloc_size;
+                setup_buffer(m_chunk_buffer_data, m_chunk_buffer_length);
                 o.init(this->m_chunk_size);
             }
             return *this;
@@ -192,7 +193,7 @@ namespace small {
         // init
         inline void init(std::size_t chunk_size)
         {
-            m_chunk_size = chunk_size;
+            m_chunk_size = std::max(chunk_size, std::size_t(1));
             m_chunk_buffer_data = (char *)get_empty_buffer();
             m_chunk_buffer_length = 0;
             m_chunk_buffer_alloc_size = 0;
