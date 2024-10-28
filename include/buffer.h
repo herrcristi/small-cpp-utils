@@ -268,74 +268,21 @@ namespace small {
     protected:
         // other operators
 
+        // clang-format off
         // +
-        friend inline buffer operator+(const buffer &b, const base_buffer &b2)
-        {
-            buffer br = b;
-            br.append(b2.data(), b2.size());
-            return br;
-        }
-        friend inline buffer operator+(const base_buffer &b2, const buffer &b)
-        {
-            buffer br = b;
-            br.append(b2.data(), b2.size());
-            return br;
-        }
-
-        friend inline buffer operator+(const buffer &b, const char c)
-        {
-            buffer br = b;
-            br.append(&c, 1);
-            return br;
-        }
-        friend inline buffer operator+(const buffer &b, const char *s)
-        {
-            buffer br = b;
-            br.append(s, strlen(s));
-            return br;
-        }
-        friend inline buffer operator+(const buffer &b, const std::string_view s)
-        {
-            buffer br = b;
-            br.append(s.data(), s.size());
-            return br;
-        }
-        friend inline buffer operator+(const buffer &b, const std::vector<char> &v)
-        {
-            buffer br = b;
-            br.append(v.data(), v.size());
-            return br;
-        }
+        friend inline buffer operator+  (const buffer &b, const base_buffer &b2)    { buffer br = b; br.append(b2); return br; }
+        friend inline buffer operator+  (const base_buffer &b2, const buffer &b)    { buffer br = b; br.append(b2); return br; }
+        friend inline buffer operator+  (const buffer &b, const char c)             { buffer br = b; br.append(c);  return br; }
+        friend inline buffer operator+  (const buffer &b, const char *s)            { buffer br = b; br.append(s);  return br; }
+        friend inline buffer operator+  (const buffer &b, const std::string_view s) { buffer br = b; br.append(s);  return br; }
+        friend inline buffer operator+  (const buffer &b, const std::vector<char> &v){buffer br = b; br.append(v);  return br; }
 
         // +
-        friend inline buffer operator+(const char c, const buffer &b)
-        {
-            buffer br(b.get_chunk_size());
-            br.append(&c, 1);
-            br += b;
-            return br;
-        }
-        friend inline buffer operator+(const char *s, const buffer &b)
-        {
-            buffer br(b.get_chunk_size());
-            br.append(s, strlen(s));
-            br += b;
-            return br;
-        }
-        friend inline buffer operator+(const std::string_view s, const buffer &b)
-        {
-            buffer br(b.get_chunk_size());
-            br.append(s.data(), s.size());
-            br += b;
-            return br;
-        }
-        friend inline buffer operator+(const std::vector<char> &v, const buffer &b)
-        {
-            buffer br(b.get_chunk_size());
-            br.append(v.data(), v.size());
-            br += b;
-            return br;
-        }
+        friend inline buffer operator+  (const char c, const buffer &b)             { buffer br(b.get_chunk_size()); br.append(c); br += b; return br; }
+        friend inline buffer operator+  (const char *s, const buffer &b)            { buffer br(b.get_chunk_size()); br.append(s); br += b; return br; }
+        friend inline buffer operator+  (const std::string_view s, const buffer &b) { buffer br(b.get_chunk_size()); br.append(s); br += b; return br; }
+        friend inline buffer operator+  (const std::vector<char> &v, const buffer &b){buffer br(b.get_chunk_size()); br.append(v); br += b; return br; }
+        // clang-format on
 
     private:
         // chunk size
