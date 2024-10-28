@@ -62,6 +62,9 @@ namespace {
         b2 = {"abc"};
         ASSERT_EQ(b2, "abc");
 
+        b2 = b1;
+        ASSERT_EQ(b2, "a");
+
         small::buffer b3;
         b3 = {"abc", 2};
         ASSERT_EQ(b3, "ab");
