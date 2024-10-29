@@ -237,4 +237,181 @@ namespace {
         ASSERT_EQ(b, "abc");
     }
 
+    TEST_F(BufferTest, buffer_append)
+    {
+        small::buffer b;
+        b.append(m_test);
+        ASSERT_EQ(b, m_test);
+
+        b.append('a');
+        ASSERT_EQ(b, m_test + "a");
+
+        b.append("b");
+        ASSERT_EQ(b, m_test + "ab");
+
+        b.append({"c", 1});
+        ASSERT_EQ(b, m_test + "abc");
+
+        b.append("de", 1);
+        ASSERT_EQ(b, m_test + "abcd");
+
+        constexpr std::string_view sv = "f";
+        b.append(sv);
+        ASSERT_EQ(b, m_test + "abcdf");
+    }
+
+    TEST_F(BufferTest, buffer_insert)
+    {
+        small::buffer b;
+        b.insert(0, m_test);
+        ASSERT_EQ(b, m_test);
+
+        b.insert(0, 'a');
+        ASSERT_EQ(b, "a" + m_test);
+
+        b.insert(0, "b");
+        ASSERT_EQ(b, "ba" + m_test);
+
+        b.insert(1, {"c", 1});
+        ASSERT_EQ(b, "bca" + m_test);
+
+        b.insert(1, "de", 1);
+        ASSERT_EQ(b, "bdca" + m_test);
+
+        constexpr std::string_view sv = "f";
+        b.insert(0, sv);
+        ASSERT_EQ(b, "fbdca" + m_test);
+    }
+
+    TEST_F(BufferTest, buffer_set)
+    {
+        small::buffer b;
+        b.set(0, m_test);
+        ASSERT_EQ(b, m_test);
+
+        b.set(0, 'a');
+        ASSERT_EQ(b, "a");
+
+        b.set(1, "b");
+        ASSERT_EQ(b, "ab");
+
+        b.set(1, {"c", 1});
+        ASSERT_EQ(b, "ac");
+
+        b.set(2, "de", 1);
+        ASSERT_EQ(b, "acd");
+
+        constexpr std::string_view sv = "f";
+        b.set(0, sv);
+        ASSERT_EQ(b, "f");
+
+        b.set(2, "g");
+        ASSERT_EQ(b, std::string_view("f\0g", 3));
+    }
+
+    TEST_F(BufferTest, buffer_overwrite_same_as_set)
+    {
+        small::buffer b;
+        b.overwrite(0, m_test);
+        ASSERT_EQ(b, m_test);
+
+        b.overwrite(0, 'a');
+        ASSERT_EQ(b, "a");
+
+        b.overwrite(1, "b");
+        ASSERT_EQ(b, "ab");
+
+        b.overwrite(1, {"c", 1});
+        ASSERT_EQ(b, "ac");
+
+        b.overwrite(2, "de", 1);
+        ASSERT_EQ(b, "acd");
+
+        constexpr std::string_view sv = "f";
+        b.overwrite(0, sv);
+        ASSERT_EQ(b, "f");
+
+        b.overwrite(2, "g");
+        ASSERT_EQ(b, std::string_view("f\0g", 3));
+    }
+
+    TEST_F(BufferTest, buffer_erase)
+    {
+        small::buffer b = "abcd";
+        ASSERT_EQ(b, "abcd");
+
+        b.erase(2);
+        ASSERT_EQ(b, "ab");
+
+        b.erase(0);
+        ASSERT_EQ(b, "");
+    }
+
+    TEST_F(BufferTest, buffer_erase_with_length)
+    {
+        small::buffer b = "abcd";
+        ASSERT_EQ(b, "abcd");
+
+        b.erase(2, 1);
+        ASSERT_EQ(b, "abd");
+
+        b.erase(0, 2);
+        ASSERT_EQ(b, "d");
+    }
+
+    TEST_F(BufferTest, buffer_is_eq)
+    {
+        small::buffer b = "abcd";
+        ASSERT_EQ(b, "abcd");
+        ASSERT_EQ(b.is_equal("abcd", 4), true);
+        ASSERT_EQ(b.compare("abcd", 4), 0);
+        ASSERT_EQ(b.compare("abc", 3), 1);
+        ASSERT_EQ(b.compare("abd", 3), -1);
+    }
+
+    TEST_F(BufferTest, buffer_at)
+    {
+        small::buffer b = "abcd";
+        ASSERT_EQ(b, "abcd");
+        ASSERT_EQ(b[0], 'a');
+        ASSERT_EQ(b[1], 'b');
+
+        ASSERT_EQ(b.at(2), 'c');
+        ASSERT_EQ(b.at(3), 'd');
+
+        ASSERT_EQ(b.front(), 'a');
+        ASSERT_EQ(b.back(), 'd');
+
+        b.erase(0);
+        ASSERT_EQ(b, "");
+        ASSERT_EQ(b.back(), '\0');
+    }
+
+    TEST_F(BufferTest, buffer_push_pop)
+    {
+        small::buffer b = "abcd";
+        ASSERT_EQ(b, "abcd");
+
+        b.push_back('e');
+        ASSERT_EQ(b, "abcde");
+
+        b.pop_back();
+        ASSERT_EQ(b, "abcd");
+
+        b.pop_back();
+        ASSERT_EQ(b, "abc");
+
+        b.pop_back();
+        ASSERT_EQ(b, "ab");
+
+        b.pop_back();
+        ASSERT_EQ(b, "a");
+
+        b.pop_back();
+        ASSERT_EQ(b, "");
+
+        b.pop_back();
+        ASSERT_EQ(b, "");
+    }
+
 } // namespace
