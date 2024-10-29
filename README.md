@@ -244,11 +244,11 @@ and can be used like this
 small::buffer b;
 b.clear();
 
-b.set( "anc", 3 );
-b.set( "b", 1/*length*/, 2/*start from*/ );
+b.assign( "anc", 3 );
+b.set( 2/*start from*/, "b", 1/*length*/ );
 
 char* e = b.extract(); // extract "anb"
-free( e );
+small::buffer::free( e );
 
 small::buffer b1 = { 8192/*chunksize*/, "buffer", 6/*specified length*/ };
 small::buffer b2 = { 8192/*chunksize*/, "buffer" };
@@ -259,7 +259,7 @@ b.append( "hello", 5 );
 b.clear( true );
 
 char* e1 = b.extract(); // extract ""
-free( e1 );
+small::buffer::free( e1 );
 
 b.append( "world", 5 );
 b.clear();

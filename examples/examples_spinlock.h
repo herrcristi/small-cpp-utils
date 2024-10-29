@@ -9,7 +9,7 @@
 
 namespace examples::spinlock {
     //
-    // spin lock example 1
+    // example 1
     //
     int Example1()
     {
