@@ -551,6 +551,22 @@ namespace {
     {
         small::buffer b = "abcd";
         ASSERT_EQ(b == "abcd", true);
-        }
+        ASSERT_EQ(b == "abcde", false);
+        ASSERT_EQ(b == m_test, false);
+
+        ASSERT_EQ(b != "abcd", false);
+        ASSERT_EQ(b != "abcde", true);
+        ASSERT_EQ(b != m_test, true);
+
+        ASSERT_EQ(b < "abcd", false);
+        ASSERT_EQ(b < "abcde", true);
+        ASSERT_EQ(b <= "abcd", true);
+        ASSERT_EQ(b <= "abcde", true);
+
+        ASSERT_EQ(b > "abcd", false);
+        ASSERT_EQ(b > "abcde", false);
+        ASSERT_EQ(b >= "abcd", true);
+        ASSERT_EQ(b >= "abcde", false);
+    }
 
 } // namespace
