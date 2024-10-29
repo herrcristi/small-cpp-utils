@@ -187,6 +187,8 @@ namespace small {
                 m_chunk_buffer_data = o.m_chunk_buffer_data;
                 o.m_chunk_buffer_data = (char *)o.get_empty_buffer();
             }
+            setup_buffer(m_chunk_buffer_data, m_chunk_buffer_length);
+            o.setup_buffer(o.m_chunk_buffer_data, o.m_chunk_buffer_length);
         }
 
     private:
