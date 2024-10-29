@@ -414,4 +414,143 @@ namespace {
         ASSERT_EQ(b, "");
     }
 
+    TEST_F(BufferTest, buffer_substr)
+    {
+        small::buffer b = "abcd";
+        ASSERT_EQ(b.substr(1), "bcd");
+        ASSERT_EQ(b.substr(1, 2), "bc");
+        ASSERT_EQ(b.substr(0, 5), "abcd");
+    }
+
+    TEST_F(BufferTest, buffer_starts_with)
+    {
+        small::buffer b = "abcd";
+        ASSERT_EQ(b.starts_with('a'), true);
+        ASSERT_EQ(b.starts_with({"b", 1}), false);
+        ASSERT_EQ(b.starts_with("abc"), true);
+        ASSERT_EQ(b.starts_with("abcd"), true);
+        ASSERT_EQ(b.starts_with("abcde"), false);
+    }
+
+    TEST_F(BufferTest, buffer_ends_with)
+    {
+        small::buffer b = "abcd";
+        ASSERT_EQ(b.ends_with('d'), true);
+        ASSERT_EQ(b.ends_with({"a", 1}), false);
+        ASSERT_EQ(b.ends_with("bcd"), true);
+        ASSERT_EQ(b.ends_with("abcd"), true);
+        ASSERT_EQ(b.ends_with("abcde"), false);
+    }
+
+    TEST_F(BufferTest, buffer_contains)
+    {
+        small::buffer b = "abcd";
+        ASSERT_EQ(b.contains('d'), true);
+        ASSERT_EQ(b.contains({"a", 1}), true);
+        ASSERT_EQ(b.contains({"e", 1}), false);
+        ASSERT_EQ(b.contains("bcd"), true);
+        ASSERT_EQ(b.contains("abcd"), true);
+        ASSERT_EQ(b.contains("abcde"), false);
+    }
+
+    TEST_F(BufferTest, buffer_find)
+    {
+        small::buffer b = "abcd";
+        ASSERT_EQ(b.find('d'), 3);
+        ASSERT_EQ(b.find({"a", 1}), 0);
+        ASSERT_EQ(b.find({"a", 1}, 2), std::string::npos);
+        ASSERT_EQ(b.find({"e", 1}), std::string::npos);
+
+        ASSERT_EQ(b.find("bcd"), 1);
+        ASSERT_EQ(b.find("bcd", 1, 3), 1);
+        ASSERT_EQ(b.find("bcd", 2), std::string::npos);
+        ASSERT_EQ(b.find("abcd"), 0);
+        ASSERT_EQ(b.find("abcde"), std::string::npos);
+    }
+
+    TEST_F(BufferTest, buffer_rfind)
+    {
+        small::buffer b = "abcd";
+        ASSERT_EQ(b.rfind('d'), 3);
+        ASSERT_EQ(b.rfind({"c", 1}), 2);
+        ASSERT_EQ(b.rfind({"a", 1}), 0);
+        ASSERT_EQ(b.rfind({"e", 1}), std::string::npos);
+
+        ASSERT_EQ(b.rfind("bcd"), 1);
+        ASSERT_EQ(b.rfind("bcd", 1, 3), 1);
+        ASSERT_EQ(b.rfind("bcd", 2, 3), 1);
+        ASSERT_EQ(b.rfind("bc", 2), 1);
+        ASSERT_EQ(b.rfind("bcd", 4), 1);
+        ASSERT_EQ(b.rfind("abcd"), 0);
+        ASSERT_EQ(b.rfind("abcde"), std::string::npos);
+    }
+
+    TEST_F(BufferTest, buffer_find_first_of)
+    {
+        small::buffer b = "abcd";
+        ASSERT_EQ(b.find_first_of('d'), 3);
+        ASSERT_EQ(b.find_first_of({"c", 1}), 2);
+        ASSERT_EQ(b.find_first_of({"a", 1}), 0);
+        ASSERT_EQ(b.find_first_of({"e", 1}), std::string::npos);
+
+        ASSERT_EQ(b.find_first_of("bcd"), 1);
+        ASSERT_EQ(b.find_first_of("bcd", 1, 3), 1);
+        ASSERT_EQ(b.find_first_of("bcd", 2), 2);
+        ASSERT_EQ(b.find_first_of("bcd", 4), std::string::npos);
+        ASSERT_EQ(b.find_first_of("abcd"), 0);
+        ASSERT_EQ(b.find_first_of("abcde"), 0);
+    }
+
+    TEST_F(BufferTest, buffer_find_last_of)
+    {
+        small::buffer b = "abcd";
+        ASSERT_EQ(b.find_last_of('d'), 3);
+        ASSERT_EQ(b.find_last_of({"c", 1}), 2);
+        ASSERT_EQ(b.find_last_of({"a", 1}), 0);
+        ASSERT_EQ(b.find_last_of({"e", 1}), std::string::npos);
+
+        ASSERT_EQ(b.find_last_of("bcd"), 3);
+        ASSERT_EQ(b.find_last_of("bcd", 1, 3), 1);
+        ASSERT_EQ(b.find_last_of("bcd", 2), 2);
+        ASSERT_EQ(b.find_last_of("bcd", 0), std::string::npos);
+        ASSERT_EQ(b.find_last_of("abcd"), 3);
+        ASSERT_EQ(b.find_last_of("abcde"), 3);
+    }
+
+    TEST_F(BufferTest, buffer_find_first_not_of)
+    {
+        small::buffer b = "abcd";
+        ASSERT_EQ(b.find_first_not_of('d'), 0);
+        ASSERT_EQ(b.find_first_not_of({"c", 1}), 0);
+        ASSERT_EQ(b.find_first_not_of({"a", 1}), 1);
+        ASSERT_EQ(b.find_first_not_of({"e", 1}), 0);
+
+        ASSERT_EQ(b.find_first_not_of("bcd"), 0);
+        ASSERT_EQ(b.find_first_not_of("bcd", 1, 3), std::string::npos);
+        ASSERT_EQ(b.find_first_not_of("bcd", 2), std::string::npos);
+        ASSERT_EQ(b.find_first_not_of("bcd", 4), std::string::npos);
+        ASSERT_EQ(b.find_first_not_of("abcd"), std::string::npos);
+        ASSERT_EQ(b.find_first_not_of("e"), 0);
+    }
+
+    TEST_F(BufferTest, buffer_find_last_not_of)
+    {
+        small::buffer b = "abcd";
+        ASSERT_EQ(b.find_last_not_of('d'), 2);
+        ASSERT_EQ(b.find_last_not_of({"c", 1}), 3);
+        ASSERT_EQ(b.find_last_not_of({"a", 1}), 3);
+        ASSERT_EQ(b.find_last_not_of({"e", 1}), 3);
+
+        ASSERT_EQ(b.find_last_not_of("bcd"), 0);
+        ASSERT_EQ(b.find_last_not_of("cd", 1), 1);
+        ASSERT_EQ(b.find_last_not_of("abcd"), std::string::npos);
+        ASSERT_EQ(b.find_last_not_of("abcde"), std::string::npos);
+    }
+
+    TEST_F(BufferTest, buffer_comparison)
+    {
+        small::buffer b = "abcd";
+        ASSERT_EQ(b == "abcd", true);
+        }
+
 } // namespace
