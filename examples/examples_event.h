@@ -5,6 +5,7 @@
 #include <unistd.h>
 
 #include "../include/event.h"
+#include "../include/util.h"
 
 namespace examples::event {
     //
@@ -12,13 +13,13 @@ namespace examples::event {
     //
     int Example1()
     {
-        std::cout << "hello" << std::endl;
+        std::cout << "Event\n";
 
         // small::event e( small::EventType::kEvent_Manual );
         small::event e;
         {
             std::unique_lock<small::event> mlock(e);
-            // do somthing
+            // do something
         }
 
         auto fn_t = [](auto i, small::event &e) {
@@ -53,8 +54,9 @@ namespace examples::event {
                 t[i].join();
         }
 
-        std::cout << "finishing" << std::endl;
-        std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+        small::sleep(3000);
+
+        std::cout << "Event finished\n";
 
         return 0;
     }

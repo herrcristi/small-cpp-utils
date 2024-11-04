@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <thread>
 
 namespace small {
     // to lower
@@ -92,5 +93,13 @@ namespace small {
             return small::stricmp(a.data(), b.data()) < 0;
         }
     };
+
+    //
+    // sleep
+    //
+    inline void sleep(int time_in_ms)
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(time_in_ms));
+    }
 
 } // namespace small

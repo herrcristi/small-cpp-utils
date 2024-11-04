@@ -45,6 +45,9 @@ namespace examples::buffer {
 
         std::cout << "substr = " << b.substr(2, 2) << "\n";
 
+        auto h = std::hash<std::string_view>{}(b);
+        std::cout << "hash = " << h << "\n";
+
         b.clear();
 
         std::cout << "Buffer finished\n\n";
