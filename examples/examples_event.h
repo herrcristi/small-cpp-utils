@@ -20,41 +20,39 @@ namespace examples::event {
         {
             std::unique_lock<small::event> mlock(e);
             // do something
+            std::cout << "Event is used as a mutex\n";
         }
 
-        auto fn_t = [](auto i, small::event &e) {
-            for (int t = 0; t < 5; ++t) {
+        auto fn_t = [](auto i, auto iterations, small::event &_e) {
+            for (int t = 0; t < iterations; ++t) {
                 {
-                    e.wait();
-
-                    // std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
-
+                    _e.wait();
                     std::cout << "thread=" << i << ", iteration=" << t << std::endl;
                 }
-                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                small::sleep(1 /*ms*/);
             }
         };
 
         // create thread
+        const int iterations = 3;
         std::thread t[3];
         for (size_t i = 0; i < sizeof(t) / sizeof(t[0]); ++i) {
-            t[i] = std::move(std::thread(fn_t, i, std::ref(e)));
+            t[i] = std::thread(fn_t, i, iterations, std::ref(e));
         }
 
         for (size_t i = 0; i < sizeof(t) / sizeof(t[0]); ++i) {
-            for (int j = 0; j < 5; ++j) {
+            for (int j = 0; j < iterations; ++j) {
                 e.set_event();
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                small::sleep(100 /*ms*/);
             }
         }
 
         // wait
         for (size_t i = 0; i < sizeof(t) / sizeof(t[0]); ++i) {
-            if (t[i].joinable())
+            if (t[i].joinable()) {
                 t[i].join();
+            }
         }
-
-        small::sleep(3000);
 
         std::cout << "Event finished\n";
 
