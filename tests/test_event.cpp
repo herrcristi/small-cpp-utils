@@ -16,12 +16,15 @@ namespace {
         void TearDown() override
         {
             // clean after test
-            if (m_thread.joinable()) {
-                m_thread.join();
+            for (int i = 0; i < m_threadCounts; ++i) {
+                if (m_thread[i].joinable()) {
+                    m_thread[i].join();
+                }
             }
         }
 
-        std::thread m_thread; // to be auto cleanup after each test
+        constexpr static int m_threadCounts{2};
+        std::thread m_thread[m_threadCounts]; // to be auto cleanup after each test
     };
 
     //
@@ -69,16 +72,45 @@ namespace {
         small::event event;
 
         // create thread
-        m_thread = std::thread([](small::event &e) {
+        m_thread[0] = std::thread([](small::event &e) {
             small::sleep(100);
             e.set_event();
         },
-                               std::ref(event));
+                                  std::ref(event));
 
         auto timeStart = small::timeNow();
 
         // wait to be signaled in the thread
         event.wait();
+        auto elapsed = small::timeDiffMs(timeStart);
+
+        ASSERT_GE(elapsed, 100 - 1); // due conversion
+    }
+
+    TEST_F(EventTest, Wait_Manual_Multiple_Threads)
+    {
+        // create manual event
+        small::event event(small::EventType::kEvent_Manual);
+
+        // create listening threads
+        m_thread[0] = std::thread([](small::event &e) {
+            e.wait();
+        },
+                                  std::ref(event));
+        m_thread[1] = std::thread([](small::event &e) {
+            e.wait();
+        },
+                                  std::ref(event));
+
+        auto timeStart = small::timeNow();
+
+        // signal event
+        small::sleep(100);
+        event.set_event();
+
+        m_thread[0].join();
+        m_thread[1].join();
+
         auto elapsed = small::timeDiffMs(timeStart);
 
         ASSERT_GE(elapsed, 100 - 1); // due conversion
@@ -93,11 +125,11 @@ namespace {
         small::event event;
 
         // create thread
-        m_thread = std::thread([](small::event &e) {
+        m_thread[0] = std::thread([](small::event &e) {
             small::sleep(100);
             e.set_event(); // signal
         },
-                               std::ref(event));
+                                  std::ref(event));
 
         auto timeStart = small::timeNow();
 
@@ -120,10 +152,10 @@ namespace {
         small::event event;
 
         // create thread
-        m_thread = std::thread([](small::event &e) {
+        m_thread[0] = std::thread([](small::event &e) {
             e.set_event(); // signal
         },
-                               std::ref(event));
+                                  std::ref(event));
 
         auto timeStart = small::timeNow();
 
