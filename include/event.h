@@ -149,7 +149,7 @@ namespace small {
         // wait_for with condition
         //
         template <typename _Rep, typename _Period, typename _Predicate>
-        inline bool wait_for(const std::chrono::duration<_Rep, _Period> &__rtime, _Predicate __p)
+        inline std::cv_status wait_for(const std::chrono::duration<_Rep, _Period> &__rtime, _Predicate __p)
         {
             using __dur = typename std::chrono::system_clock::duration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
