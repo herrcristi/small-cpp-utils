@@ -1,6 +1,8 @@
 #pragma once
 
+#include <chrono>
 #include <string>
+#include <thread>
 
 namespace small {
     // to lower
@@ -92,5 +94,30 @@ namespace small {
             return small::stricmp(a.data(), b.data()) < 0;
         }
     };
+
+    //
+    // sleep
+    //
+    inline void sleep(int time_in_ms)
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(time_in_ms));
+    }
+
+    //
+    // time utils
+    //
+    inline std::chrono::high_resolution_clock::time_point timeNow()
+    {
+        return std::chrono::high_resolution_clock::now();
+    }
+
+    inline long long timeDiffMs(std::chrono::high_resolution_clock::time_point start, std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now())
+    {
+        return std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    }
+    inline long long timeDiffNano(std::chrono::high_resolution_clock::time_point start, std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now())
+    {
+        return std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+    }
 
 } // namespace small

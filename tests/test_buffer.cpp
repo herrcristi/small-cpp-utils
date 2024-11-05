@@ -86,9 +86,9 @@ namespace {
     {
         struct AutoDelete
         {
-            char *m_e{};
-            explicit AutoDelete(char *e) : m_e(e) {}
-            ~AutoDelete() { small::buffer::free(m_e); };
+            char **m_e{};
+            explicit AutoDelete(char *&e) : m_e(&e) {}
+            ~AutoDelete() { small::buffer::free(*m_e); };
         };
 
         small::buffer b;
@@ -96,20 +96,26 @@ namespace {
         ASSERT_EQ(b, m_test);
 
         auto e = b.extract();
-        AutoDelete ad(e);
+        {
+            AutoDelete ad(e);
 
-        ASSERT_EQ(e, m_test);
-        ASSERT_EQ(b, "");
+            ASSERT_EQ(e, m_test);
+            ASSERT_EQ(b, "");
+        }
+        ASSERT_EQ(e, nullptr);
 
         small::buffer b1;
         ASSERT_EQ(b1, "");
 
         auto e1 = b1.extract();
-        AutoDelete ad1(e1);
-        b1 += 'a';
+        {
+            AutoDelete ad1(e1);
+            b1 += 'a';
 
-        ASSERT_EQ(b1, "a");
-        ASSERT_EQ(e1, std::string());
+            ASSERT_EQ(b1, "a");
+            ASSERT_EQ(e1, std::string());
+        }
+        ASSERT_EQ(e1, nullptr);
     }
 
     TEST_F(BufferTest, buffer_plus)
@@ -567,6 +573,14 @@ namespace {
         ASSERT_EQ(b > "abcde", false);
         ASSERT_EQ(b >= "abcd", true);
         ASSERT_EQ(b >= "abcde", false);
+    }
+
+    TEST_F(BufferTest, buffer_hash)
+    {
+        small::buffer b = m_test;
+        auto h = std::hash<std::string_view>{}(b);
+        ASSERT_EQ(h, 3766111187626408651);
+        ASSERT_EQ(h, std::hash<std::string>{}(m_test));
     }
 
 } // namespace
