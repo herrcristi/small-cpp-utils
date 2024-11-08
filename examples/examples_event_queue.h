@@ -40,10 +40,12 @@ namespace examples::event_queue {
         ret = q.wait_pop_front(&e);
         std::cout << "ret=" << static_cast<int>(ret) << ", pop " << e.first << "," << e.second << std::endl;
 
+        e = {};
         ret = q.wait_pop_front(&e);
         std::cout << "ret=" << static_cast<int>(ret) << ", pop " << e.first << "," << e.second << std::endl;
 
         // exit signaled
+        e = {};
         ret = q.wait_pop_front(&e);
         std::cout << "ret=" << static_cast<int>(ret) << ", pop " << e.first << "," << e.second << std::endl;
 
