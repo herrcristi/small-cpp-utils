@@ -49,7 +49,7 @@ namespace examples::event_queue {
 
         t.join();
 
-        std::cout << "Event Queue finished\n";
+        std::cout << "Event Queue finished\n\n";
 
         return 0;
     }

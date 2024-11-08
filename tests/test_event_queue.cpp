@@ -36,20 +36,37 @@ namespace {
     TEST_F(EventQueueTest, Lock)
     {
         small::event_queue<int> q;
-        q.lock();
+
+        // create thread
+        m_thread[0] = std::thread([](small::event_queue<int> &_q) {
+            std::unique_lock lock(_q);
+            _q.lock();         // locked again on same thread
+            small::sleep(300); // sleep inside lock
+            _q.unlock();
+        },
+                                  std::ref(q));
+
+        auto timeStart = small::timeNow();
+
+        // wait for the thread to start (not the best reliable method)
+        small::sleep(100);
 
         // try to lock and it wont succeed
         auto locked = q.try_lock();
         ASSERT_FALSE(locked);
 
+        // wait for the thread to stop
+        while (!locked) {
+            small::sleep(1);
+            locked = q.try_lock();
+        }
+        ASSERT_TRUE(locked);
+
         // unlock
         q.unlock();
 
-        // locking again will succeed
-        locked = q.try_lock();
-        ASSERT_TRUE(locked);
-
-        q.unlock();
+        auto elapsed = small::timeDiffMs(timeStart);
+        ASSERT_GE(elapsed, 300 - 1);
     }
 
     // //

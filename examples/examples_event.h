@@ -54,7 +54,7 @@ namespace examples::event {
             }
         }
 
-        std::cout << "Event finished\n";
+        std::cout << "Event finished\n\n";
 
         return 0;
     }
