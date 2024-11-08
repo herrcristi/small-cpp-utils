@@ -60,7 +60,7 @@ namespace small {
         //
         inline void set_event_type(const EventType &event_type = EventType::kEvent_Automatic)
         {
-            std::unique_lock<std::mutex> mlock(m_lock);
+            std::unique_lock<std::recursive_mutex> mlock(m_lock);
             m_event_type = event_type;
         }
 
@@ -69,7 +69,7 @@ namespace small {
         //
         inline void set_event()
         {
-            std::unique_lock<std::mutex> mlock(m_lock);
+            std::unique_lock<std::recursive_mutex> mlock(m_lock);
             m_event_value = true;
 
             bool notify_all = m_event_type == EventType::kEvent_Manual;
@@ -85,7 +85,7 @@ namespace small {
         //
         inline void reset_event()
         {
-            std::unique_lock<std::mutex> mlock(m_lock);
+            std::unique_lock<std::recursive_mutex> mlock(m_lock);
             m_event_value = false;
         }
 
@@ -94,7 +94,7 @@ namespace small {
         //
         inline void wait()
         {
-            std::unique_lock<std::mutex> mlock(m_lock);
+            std::unique_lock<std::recursive_mutex> mlock(m_lock);
 
             while (test_event_and_reset() == false) {
                 m_condition.wait(mlock);
@@ -108,7 +108,7 @@ namespace small {
         inline void wait(_Predicate __p)
         {
             for (; true; std::this_thread::sleep_for(std::chrono::milliseconds(1))) {
-                std::unique_lock<std::mutex> mlock(m_lock);
+                std::unique_lock<std::recursive_mutex> mlock(m_lock);
 
                 // both conditions must be met
 
@@ -165,7 +165,7 @@ namespace small {
         template <typename _Clock, typename _Duration>
         inline std::cv_status wait_until(const std::chrono::time_point<_Clock, _Duration> &__atime)
         {
-            std::unique_lock<std::mutex> mlock(m_lock);
+            std::unique_lock<std::recursive_mutex> mlock(m_lock);
 
             while (test_event_and_reset() == false) {
                 std::cv_status ret = m_condition.wait_until(mlock, __atime);
@@ -184,7 +184,7 @@ namespace small {
         inline std::cv_status wait_until(const std::chrono::time_point<_Clock, _Duration> &__atime, _Predicate __p)
         {
             for (; true; std::this_thread::sleep_for(std::chrono::milliseconds(1))) {
-                std::unique_lock<std::mutex> mlock(m_lock);
+                std::unique_lock<std::recursive_mutex> mlock(m_lock);
 
                 // both conditions must be met
 
@@ -241,8 +241,8 @@ namespace small {
         //
         // members
         //
-        std::mutex m_lock;                                   // mutex locker
-        std::condition_variable m_condition;                 // condition
+        std::recursive_mutex m_lock;                         // mutex locker
+        std::condition_variable_any m_condition;             // condition
         EventType m_event_type{EventType::kEvent_Automatic}; // for manual event
         std::atomic_bool m_event_value{};                    // event state
     };
