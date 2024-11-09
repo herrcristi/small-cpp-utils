@@ -51,7 +51,7 @@ namespace small {
         //
         inline size_t size()
         {
-            std::unique_lock<small::event> mlock(m_event);
+            std::unique_lock mlock(m_event);
             return m_queue.size();
         }
 
@@ -62,14 +62,14 @@ namespace small {
         //
         inline void clear()
         {
-            std::unique_lock<small::event> mlock(m_event);
+            std::unique_lock mlock(m_event);
             m_queue.clear();
         }
 
         // reset the event and clears all elements
         inline void reset()
         {
-            std::unique_lock<small::event> mlock(m_event);
+            std::unique_lock mlock(m_event);
             clear();
             m_exit_flag = false;
             m_event.set_event_type(EventType::kEvent_Automatic);
@@ -92,8 +92,8 @@ namespace small {
                 return;
             }
 
-            std::unique_lock<small::event> mlock(m_event);
-            m_queue.push_back(std::forward<T>(t));
+            std::unique_lock mlock(m_event);
+            m_queue.push_back(t);
             m_event.set_event();
         }
 
@@ -104,7 +104,7 @@ namespace small {
                 return;
             }
 
-            std::unique_lock<small::event> mlock(m_event);
+            std::unique_lock mlock(m_event);
             m_queue.push_back(std::forward<T>(t));
             m_event.set_event();
         }
@@ -117,7 +117,7 @@ namespace small {
                 return;
             }
 
-            std::unique_lock<small::event> mlock(m_event);
+            std::unique_lock mlock(m_event);
             m_queue.emplace_back(std::forward<_Args>(__args)...);
             m_event.set_event();
         }
@@ -127,7 +127,7 @@ namespace small {
         //
         inline void signal_exit()
         {
-            std::unique_lock<small::event> mlock(m_event);
+            std::unique_lock mlock(m_event);
             m_exit_flag.store(true);
             m_event.set_event_type(EventType::kEvent_Manual);
             m_event.set_event(); /*m_event.notify_all();*/
