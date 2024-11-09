@@ -17,7 +17,7 @@ Contains useful everyday features that can be used in following ways:
 
 -   base64 (quick functions for base64 encode & decode)
 -   qhash (a quick hash function for buffers and null termination strings)
--   util functions (like small::icasecmp for use with map, set, etc)
+-   util functions (like small::icasecmp for use with map/set, sleep, timeNow, timeDiff, rand, uuid, ...)
 
 #
 
@@ -349,5 +349,32 @@ Use it like this
 auto timeStart = small::timeNow();
 ...
 auto elapsed = small::timeDiffMs(timeStart);
+...
+```
+
+`rand8, rand16, rand32, rand64`
+
+Use it like this
+
+```
+auto r = small::rand64(); // 123123 random number
+...
+```
+
+`uuid128, uuid, uuidc`
+
+Use it like this
+
+```
+auto [r1,r2] = small::uuid128(); // returns a pair of uint64 numbers
+...
+// returns a uuid as a string 78f202f1bf7a12d46498c9f0e78dd8a3
+auto u = small::uuid();
+...
+// {78f202f1-bf7a-12d4-6498-c9f0e78dd8a3}
+auto u1 = small::uuid({.add_hyphen = true, .add_braces = true});
+...
+// 78F202F1BF7A12D46498C9F0E78DD8A3
+auto uc = small::uuidc();
 ...
 ```

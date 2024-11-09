@@ -1,6 +1,10 @@
 #pragma once
 
+#include <algorithm>
 #include <chrono>
+#include <iomanip>
+#include <random>
+#include <sstream>
 #include <string>
 #include <thread>
 
@@ -122,6 +126,120 @@ namespace small {
     inline long long timeDiffNano(std::chrono::high_resolution_clock::time_point start, std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now())
     {
         return std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+    }
+
+    //
+    // rand utils
+    //
+    inline unsigned char rand8()
+    {
+        std::random_device rd;  // a seed source for the random number engine
+        std::mt19937 gen(rd()); // mersenne_twister_engine seeded with rd()
+        std::uniform_int_distribution<> dis(0, 255);
+        return static_cast<unsigned char>(dis(gen));
+    }
+
+    inline unsigned short int rand16()
+    {
+        std::random_device rd;  // a seed source for the random number engine
+        std::mt19937 gen(rd()); // mersenne_twister_engine seeded with rd()
+        std::uniform_int_distribution<> dis(0, 65535);
+        return static_cast<unsigned short int>(dis(gen));
+    }
+
+    inline unsigned long rand32()
+    {
+        std::random_device rd;  // a seed source for the random number engine
+        std::mt19937 gen(rd()); // mersenne_twister_engine seeded with rd()
+        return gen();
+    }
+
+    inline unsigned long long rand64()
+    {
+        std::random_device rd;     // a seed source for the random number engine
+        std::mt19937_64 gen(rd()); // mersenne_twister_engine seeded with rd()
+        return gen();
+    }
+
+    //
+    // uuid
+    //
+    inline std::pair<unsigned long long, unsigned long long> uuid128()
+    {
+        // generate 2 random uint64 numbers
+        return {small::rand64(), small::rand64()};
+    }
+
+    inline std::string uuid_add_hyphen(std::string &u)
+    {
+        // add in reverse order
+        if (u.size() > 20) {
+            u.insert(20, 1, '-');
+        }
+        if (u.size() > 16) {
+            u.insert(16, "-");
+        }
+        if (u.size() > 12) {
+            u.insert(12, "-");
+        }
+        if (u.size() > 8) {
+            u.insert(8, "-");
+        }
+        return u;
+    }
+
+    inline std::string uuid_add_braces(std::string &u)
+    {
+        u.insert(0, 1, '{');
+        u.insert(u.size(), 1, '}');
+        return u;
+    }
+
+    inline std::string uuid_to_uppercase(std::string &u)
+    {
+        std::transform(u.begin(), u.end(), u.begin(), ::toupper);
+        return u;
+    }
+
+    struct ConfigUUID
+    {
+        bool add_hyphen{false};
+        bool add_braces{false};
+        bool to_uppercase{false};
+    };
+
+    inline std::string uuid(const ConfigUUID config = {})
+    {
+        // generate 2 random uint64 numbers
+        auto [r1, r2] = uuid128();
+
+        std::stringstream ss;
+        ss << std::hex << std::setfill('0');
+
+        ss << std::setw(16) << r1;
+        ss << std::setw(16) << r2;
+
+        auto u = ss.str();
+
+        if (config.add_hyphen) {
+            uuid_add_hyphen(u);
+        }
+
+        if (config.add_braces) {
+            uuid_add_braces(u);
+        }
+
+        if (config.to_uppercase) {
+            uuid_to_uppercase(u);
+        }
+
+        return u;
+    }
+
+    // return the uuid with uppercases
+    inline std::string uuidc()
+    {
+        return uuid({.to_uppercase = true});
     }
 
 } // namespace small
