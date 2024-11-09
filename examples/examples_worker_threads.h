@@ -17,24 +17,27 @@ namespace examples::worker_thread {
 
         using qc = std::pair<int, std::string>;
 
-        small::worker_thread<qc> workers(2 /*threads*/, [](auto &w /*this*/, auto &item, auto b /*extra param b*/) -> void {
+        small::worker_thread<qc> workers(0 /*dont start any threads*/, [](auto &w /*this*/, auto &item, auto b /*extra param b*/) {
+            // process item using the workers lock (not recommended)
         {
-            std::unique_lock< small::worker_thread<qc>> mlock( w );
+            std::unique_lock mlock( w );
 
-            std::cout << "thread " << std::this_thread::get_id()  << "processing " << item.first << " " << item.second << " b=" << b << "\n";
+            std::cout << "thread " << std::this_thread::get_id()  << " processing {" << item.first << ", \"" << item.second << "\"} and b=" << b << "\n";
         }
-        std::this_thread::sleep_for( std::chrono::milliseconds( 1000 ) ); }, 5 /*param b*/);
+        small::sleep( 300 ); }, 5 /*param b*/);
 
+        workers.start_threads(2); // manual start threads
+
+        // push
         workers.push_back({1, "a"});
-        // std::this_thread::sleep_for( std::chrono::seconds( 3 ) );
+        small::sleep(300);
+
         workers.push_back(std::make_pair(2, "b"));
         workers.emplace_back(3, "e");
-        std::this_thread::sleep_for(std::chrono::seconds(3));
 
-        workers.signal_exit();
-        std::this_thread::sleep_for(std::chrono::seconds(3));
+        std::cout << "will wait for workers to finish\n\n";
 
-        std::cout << "Finished Worker Thread example 1\n\n";
+        // workers will wait on destructor
 
         return 0;
     }
@@ -48,27 +51,28 @@ namespace examples::worker_thread {
 
         using qc = std::pair<int, std::string>;
 
-        // another way
-        // processing function for worker_thread
+        // another way for processing function for worker_thread
         struct WorkerThreadFunction
         {
             using qc = std::pair<int, std::string>;
-            void operator()(small::worker_thread<qc> &w, qc &a)
+            void operator()(small::worker_thread<qc> &w, qc &a) const
             {
                 {
                     std::unique_lock<small::worker_thread<qc>> mlock(w);
 
-                    std::cout << "thread " << std::this_thread::get_id() << "processing " << a.first << " " << a.second << std::endl;
+                    std::cout << "thread " << std::this_thread::get_id() << " processing {" << a.first << ", \"" << a.second << "\"}\n";
                 }
-                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                small::sleep(300);
             }
         };
 
-        small::worker_thread<qc> workers2(2, WorkerThreadFunction());
-        workers2.push_back({4, "d"});
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        small::worker_thread<qc> workers(2 /*threads*/, WorkerThreadFunction());
+        workers.push_back({4, "d"});
+        workers.signal_exit(); // after signal exit no push will be accepted
+        workers.push_back({5, "e"});
 
         std::cout << "Finished Worker Thread example 2\n\n";
+        // workers will wait on destructor
 
         return 0;
     }
