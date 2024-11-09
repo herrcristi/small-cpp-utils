@@ -115,6 +115,10 @@ namespace small {
     {
         return std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
     }
+    inline long long timeDiffMicro(std::chrono::high_resolution_clock::time_point start, std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now())
+    {
+        return std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+    }
     inline long long timeDiffNano(std::chrono::high_resolution_clock::time_point start, std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now())
     {
         return std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();

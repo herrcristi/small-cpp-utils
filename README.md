@@ -330,3 +330,24 @@ int r = small::stricmp( "a", "C" );
 ...
 std::map<std::string, int, small::icasecmp> m;
 ```
+
+`sleep`
+
+Use it like this
+
+```
+...
+small::sleep(100/*ms*/);
+...
+```
+
+`timeNow, timeDiffMs, timeDiffMicro, timeDiffNano`
+
+Use it like this
+
+```
+auto timeStart = small::timeNow();
+...
+auto elapsed = small::timeDiffMs(timeStart);
+...
+```
