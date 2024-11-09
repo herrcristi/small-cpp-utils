@@ -71,7 +71,6 @@ namespace small {
             std::unique_lock mlock(m_event);
             clear();
             m_exit_flag = false;
-            m_event.set_event_type(EventType::kEvent_Automatic);
             m_event.reset_event();
         }
 
@@ -128,8 +127,7 @@ namespace small {
         {
             std::unique_lock mlock(m_event);
             m_exit_flag.store(true);
-            m_event.set_event_type(EventType::kEvent_Manual);
-            m_event.set_event(); /*m_event.notify_all();*/
+            m_event.set_event(); /*will notify_all() because is manual*/
         }
         inline bool is_exit()
         {
@@ -152,6 +150,10 @@ namespace small {
 
             if (m_exit_flag.load() == true) {
                 return EnumEventQueue::kQueue_Exit;
+            }
+
+            if (m_queue.empty()) {
+                m_event.reset_event();
             }
 
             return EnumEventQueue::kQueue_Element;
@@ -186,6 +188,10 @@ namespace small {
                 return EnumEventQueue::kQueue_Exit;
             }
 
+            if (m_queue.empty()) {
+                m_event.reset_event();
+            }
+
             return ret == std::cv_status::no_timeout ? EnumEventQueue::kQueue_Element : EnumEventQueue::kQueue_Timeout;
         }
 
@@ -214,8 +220,8 @@ namespace small {
         //
         // members
         //
-        std::deque<T> m_queue;                // queue
-        small::event m_event;                 // event
-        std::atomic<bool> m_exit_flag{false}; // exit flag
+        std::deque<T> m_queue;                          // queue
+        small::event m_event{EventType::kEvent_Manual}; // event
+        std::atomic<bool> m_exit_flag{false};           // exit flag
     };
 } // namespace small

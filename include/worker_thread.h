@@ -90,9 +90,9 @@ namespace small {
 
         // clang-format off
         // use it as locker (std::unique_lock<small:worker_thread<T>> m...)
-        inline void lock            () { m_queue_items.lock(); }
-        inline void unlock          () { m_queue_items.unlock(); }
-        inline bool try_lock        () { return m_queue_items.try_lock(); }
+        inline void     lock        () { m_queue_items.lock(); }
+        inline void     unlock      () { m_queue_items.unlock(); }
+        inline bool     try_lock    () { return m_queue_items.try_lock(); }
         // clang-format on
 
         //

@@ -19,12 +19,12 @@ namespace examples::worker_thread {
 
         small::worker_thread<qc> workers(0 /*dont start any threads*/, [](auto &w /*this*/, auto &item, auto b /*extra param b*/) {
             // process item using the workers lock (not recommended)
-        {
-            std::unique_lock mlock( w );
+            {
+                std::unique_lock mlock( w );
 
-            std::cout << "thread " << std::this_thread::get_id()  << " processing {" << item.first << ", \"" << item.second << "\"} and b=" << b << "\n";
-        }
-        small::sleep( 300 ); }, 5 /*param b*/);
+                std::cout << "thread " << std::this_thread::get_id()  << " processing {" << item.first << ", \"" << item.second << "\"} and b=" << b << "\n";
+            } 
+            small::sleep(300); }, 5 /*param b*/);
 
         workers.start_threads(2); // manual start threads
 
@@ -34,6 +34,8 @@ namespace examples::worker_thread {
 
         workers.push_back(std::make_pair(2, "b"));
         workers.emplace_back(3, "e");
+        workers.emplace_back(4, "f");
+        workers.emplace_back(5, "g");
 
         std::cout << "will wait for workers to finish\n\n";
 
@@ -62,12 +64,14 @@ namespace examples::worker_thread {
 
                     std::cout << "thread " << std::this_thread::get_id() << " processing {" << a.first << ", \"" << a.second << "\"}\n";
                 }
-                small::sleep(300);
+                small::sleep(100);
             }
         };
 
         small::worker_thread<qc> workers(2 /*threads*/, WorkerThreadFunction());
         workers.push_back({4, "d"});
+        small::sleep(300);
+
         workers.signal_exit(); // after signal exit no push will be accepted
         workers.push_back({5, "e"});
 
