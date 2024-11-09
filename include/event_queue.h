@@ -25,7 +25,6 @@
 // ...
 // // on main thread no more processing
 // q.signal_exit();
-// q.wait();
 //
 
 namespace small {
