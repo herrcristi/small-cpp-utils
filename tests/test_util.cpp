@@ -118,9 +118,11 @@ namespace {
         small::sleep(100 /*ms*/);
 
         auto timeElapsedMs = small::timeDiffMs(timeStart);
+        auto timeElapsedMicro = small::timeDiffMicro(timeStart);
         auto timeElapsedNano = small::timeDiffNano(timeStart);
 
-        ASSERT_GE(timeElapsedMs, 100 - 1); // due conversion
+        ASSERT_GE(timeElapsedMs, 100 - 1);             // due conversion
+        ASSERT_GE(timeElapsedMicro, (100 - 1) * 1000); // due conversion
         ASSERT_GE(timeElapsedNano, (100 - 1) * 1000 * 1000);
     }
 
