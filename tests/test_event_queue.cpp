@@ -132,7 +132,8 @@ namespace {
         // push inside thread
         auto timeStart = small::timeNow();
         auto thread = std::jthread([](small::event_queue<int> &_q) {
-            small::sleep(300); // sleep inside lock
+            small::sleep(300);
+
             int value{5};
             _q.push_back(value);
         },
@@ -148,6 +149,43 @@ namespace {
         ASSERT_EQ(q.size(), 0);
 
         ASSERT_GE(elapsed, 300 - 1); // due conversion
+    }
+
+    TEST_F(EventQueueTest, Queue_Operations_Signal_Exit)
+    {
+        small::event_queue<int> q;
+        ASSERT_EQ(q.size(), 0);
+
+        q.push_back(5);
+        ASSERT_EQ(q.size(), 1);
+
+        // wait and pop
+        int value = {};
+        auto ret = q.wait_pop_front(&value);
+        ASSERT_EQ(ret, small::EnumEventQueue::kQueue_Element);
+        ASSERT_EQ(value, 5);
+        ASSERT_EQ(q.size(), 0);
+
+        // create thread
+        auto timeStart = small::timeNow();
+        auto thread = std::jthread([](small::event_queue<int> &_q) {
+            // signal after some time
+            small::sleep(300);
+            _q.signal_exit();
+        },
+                                   std::ref(q));
+
+        // check
+        value = {};
+        ret = q.wait_pop_front(&value);
+        auto elapsed = small::timeDiffMs(timeStart);
+
+        ASSERT_EQ(ret, small::EnumEventQueue::kQueue_Exit);
+        ASSERT_GE(elapsed, 300 - 1); // due conversion
+
+        // push is no longer accepted
+        q.push_back(5);
+        ASSERT_EQ(q.size(), 0);
     }
 
 } // namespace
