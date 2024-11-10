@@ -164,7 +164,7 @@ namespace small {
     //
     // uuid
     //
-    inline std::pair<unsigned long long, unsigned long long> uuid128()
+    inline std::pair<unsigned long long, unsigned long long> uuidp()
     {
         // generate 2 random uint64 numbers
         return {small::rand64(), small::rand64()};
@@ -211,7 +211,7 @@ namespace small {
     inline std::string uuid(const ConfigUUID config = {})
     {
         // generate 2 random uint64 numbers
-        auto [r1, r2] = uuid128();
+        auto [r1, r2] = uuidp();
 
         std::stringstream ss;
         ss << std::hex << std::setfill('0');

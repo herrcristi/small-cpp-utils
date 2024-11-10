@@ -366,12 +366,12 @@ auto r = small::rand64(); // 123123 random number
 ...
 ```
 
-`uuid128, uuid, uuidc`
+`uuidp, uuid, uuidc`
 
 Use it like this
 
 ```
-auto [r1,r2] = small::uuid128(); // returns a pair of uint64 numbers
+auto [r1,r2] = small::uuidp(); // returns a pair of uint64 numbers
 ...
 // returns a uuid as a string 78f202f1bf7a12d46498c9f0e78dd8a3
 auto u = small::uuid();

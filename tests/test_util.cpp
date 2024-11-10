@@ -203,7 +203,7 @@ namespace {
 
     TEST_F(UtilTest, uuid)
     {
-        auto [r1, r2] = small::uuid128();
+        auto [r1, r2] = small::uuidp();
         ASSERT_NE(r1, 0);
         ASSERT_NE(r2, 0);
 
