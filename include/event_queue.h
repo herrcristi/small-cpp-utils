@@ -87,7 +87,7 @@ namespace small {
         //
         inline void push_back(const T &t)
         {
-            if (is_exit_force() || is_exit_when_done()) {
+            if (is_push_forbidden()) {
                 return;
             }
 
@@ -99,7 +99,7 @@ namespace small {
         // push_back move semantics
         inline void push_back(T &&t)
         {
-            if (is_exit_force() || is_exit_when_done()) {
+            if (is_push_forbidden()) {
                 return;
             }
 
@@ -112,7 +112,7 @@ namespace small {
         template <typename... _Args>
         inline void emplace_back(_Args &&...__args)
         {
-            if (is_exit_force() || is_exit_when_done()) {
+            if (is_push_forbidden()) {
                 return;
             }
 
@@ -221,6 +221,14 @@ namespace small {
         }
 
     private:
+        //
+        // check if push is allowed/forbidden
+        //
+        inline bool is_push_forbidden()
+        {
+            return is_exit_force() || is_exit_when_done();
+        }
+
         //
         // check for front element
         //
