@@ -47,8 +47,8 @@
 // // no more work, wait to be finished
 // auto ret = workers.wait_for( std::chrono::seconds(30) ); // auto ret = workers.wait();
 // if  ( ret ==  small::EnumEventQueue:: kQueue_Timeout ) {
-//     // when finishing after signal_exit the work is aborted
-//     workers.signal_exit();
+//     // when finishing after signal_exit_force the work is aborted
+//     workers.signal_exit_force();
 // }
 // //
 
@@ -75,8 +75,7 @@ namespace small {
 
         ~worker_thread()
         {
-            signal_exit();
-            stop_threads();
+            wait();
         }
 
         // clang-format off
@@ -163,9 +162,44 @@ namespace small {
         //
         // signal exit
         //
-        inline void signal_exit ()  { m_queue_items.signal_exit(); }
-        inline bool is_exit     ()  { return m_queue_items.is_exit(); }
+        inline void signal_exit_force       ()  { m_queue_items.signal_exit_force(); }
+        inline void signal_exit_when_done   ()  { m_queue_items.signal_exit_when_done(); }
+        
+        // to be used in processing function
+        inline bool is_exit                 ()  { return m_queue_items.is_exit_force(); }
         // clang-format on
+
+        //
+        // wait for threads to finish processing
+        //
+        inline EnumEventQueue wait()
+        {
+            signal_exit_when_done();
+            stop_threads();
+            return EnumEventQueue::kQueue_Exit;
+        }
+
+        // wait some time then signal exit
+        template <typename _Rep, typename _Period>
+        inline EnumEventQueue wait_for(const std::chrono::duration<_Rep, _Period> &__rtime)
+        {
+            using __dur = typename std::chrono::system_clock::duration;
+            auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
+            if (__reltime < __rtime) {
+                ++__reltime;
+            }
+            return wait_until(std::chrono::system_clock::now() + __reltime);
+        }
+
+        // wait until then signal exit
+        template <typename _Clock, typename _Duration>
+        inline EnumEventQueue wait_until(const std::chrono::time_point<_Clock, _Duration> &__atime)
+        {
+            // TODO
+            signal_exit_when_done();
+            stop_threads();
+            return EnumEventQueue::kQueue_Exit;
+        }
 
     private:
         // some prevention

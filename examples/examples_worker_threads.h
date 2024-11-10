@@ -36,10 +36,9 @@ namespace examples::worker_thread {
         workers.emplace_back(3, "e");
         workers.emplace_back(4, "f");
         workers.emplace_back(5, "g");
+        workers.wait(); // wait here for workers to finish
 
-        std::cout << "will wait for workers to finish\n\n";
-
-        // workers will wait on destructor
+        std::cout << "Worker Thread example 1 finish\n\n";
 
         return 0;
     }
@@ -72,11 +71,11 @@ namespace examples::worker_thread {
         workers.push_back({4, "d"});
         small::sleep(300);
 
-        workers.signal_exit(); // after signal exit no push will be accepted
+        workers.signal_exit_force(); // after signal exit no push will be accepted
         workers.push_back({5, "e"});
 
         std::cout << "Finished Worker Thread example 2\n\n";
-        // workers will wait on destructor
+        // workers will be joined on destructor
 
         return 0;
     }
