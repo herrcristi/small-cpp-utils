@@ -23,8 +23,8 @@
 // }
 //
 // ...
-// // on main thread no more processing
-// q.signal_exit();
+// // on main thread no more processing (aborting work)
+// q.signal_exit_force(); // q.signal_exit_when_done()
 //
 
 namespace small {
@@ -54,7 +54,7 @@ namespace small {
             return m_queue.size();
         }
 
-        inline bool empty() const { return size() == 0; }
+        inline bool empty() { return size() == 0; }
 
         //
         // clear only removes elements from queue but does not reset the event
@@ -70,8 +70,8 @@ namespace small {
         {
             std::unique_lock mlock(m_event);
             clear();
-            m_exit_flag = false;
-            m_event.set_event_type(EventType::kEvent_Automatic);
+            m_is_exit_force = false;
+            m_is_exit_when_done = false;
             m_event.reset_event();
         }
 
@@ -87,7 +87,7 @@ namespace small {
         //
         inline void push_back(const T &t)
         {
-            if (is_exit()) {
+            if (is_push_forbidden()) {
                 return;
             }
 
@@ -99,7 +99,7 @@ namespace small {
         // push_back move semantics
         inline void push_back(T &&t)
         {
-            if (is_exit()) {
+            if (is_push_forbidden()) {
                 return;
             }
 
@@ -112,7 +112,7 @@ namespace small {
         template <typename... _Args>
         inline void emplace_back(_Args &&...__args)
         {
-            if (is_exit()) {
+            if (is_push_forbidden()) {
                 return;
             }
 
@@ -124,16 +124,26 @@ namespace small {
         //
         // exit
         //
-        inline void signal_exit()
+        inline void signal_exit_force()
         {
             std::unique_lock mlock(m_event);
-            m_exit_flag.store(true);
-            m_event.set_event_type(EventType::kEvent_Manual);
-            m_event.set_event(); /*m_event.notify_all();*/
+            m_is_exit_force.store(true);
+            m_event.set_event(); /*will notify_all() because is manual*/
         }
-        inline bool is_exit()
+        inline bool is_exit_force()
         {
-            return m_exit_flag.load() == true;
+            return m_is_exit_force.load() == true;
+        }
+
+        inline void signal_exit_when_done()
+        {
+            std::unique_lock mlock(m_event);
+            m_is_exit_when_done.store(true);
+            m_event.set_event(); /*will notify_all() because is manual*/
+        }
+        inline bool is_exit_when_done()
+        {
+            return m_is_exit_when_done.load() == true;
         }
 
         //
@@ -141,20 +151,29 @@ namespace small {
         //
         inline EnumEventQueue wait_pop_front(T *elem)
         {
-            if (m_exit_flag.load() == true) {
+            if (is_exit_force()) {
                 return EnumEventQueue::kQueue_Exit;
             }
 
-            // wait
-            m_event.wait([this, elem]() -> bool {
-                return test_and_get_front(elem);
-            });
+            for (; true;) {
+                // wait for event to be set
+                // multiple threads may wait and when element is pushed all are awaken
+                // but not all will have an element to process
+                m_event.wait();
 
-            if (m_exit_flag.load() == true) {
-                return EnumEventQueue::kQueue_Exit;
+                // check queue and element
+                auto [is_exit, has_elem] = test_and_get_front(elem);
+
+                if (is_exit) {
+                    return EnumEventQueue::kQueue_Exit;
+                }
+
+                if (has_elem) {
+                    return EnumEventQueue::kQueue_Element;
+                }
+
+                // continue to wait
             }
-
-            return EnumEventQueue::kQueue_Element;
         }
 
         // wait pop_front_for and return that element
@@ -173,49 +192,92 @@ namespace small {
         template <typename _Clock, typename _Duration>
         inline EnumEventQueue wait_pop_front_until(const std::chrono::time_point<_Clock, _Duration> &__atime, T *elem)
         {
-            if (m_exit_flag.load() == true) {
+            if (is_exit_force()) {
                 return EnumEventQueue::kQueue_Exit;
             }
 
-            // wait
-            auto ret = m_event.wait_until(__atime, [this, elem]() -> bool {
-                return test_and_get_front(elem);
-            });
+            for (; true;) {
+                // wait for event to be set
+                // multiple threads may wait and when element is pushed all are awaken
+                // but not all will have an element to process
+                auto ret = m_event.wait_until(__atime);
+                if (ret == std::cv_status::timeout) {
+                    return EnumEventQueue::kQueue_Timeout;
+                }
 
-            if (m_exit_flag.load() == true) {
-                return EnumEventQueue::kQueue_Exit;
+                // check queue and element
+                auto [is_exit, has_elem] = test_and_get_front(elem);
+
+                if (is_exit) {
+                    return EnumEventQueue::kQueue_Exit;
+                }
+
+                if (has_elem) {
+                    return EnumEventQueue::kQueue_Element;
+                }
+
+                // continue to wait
             }
-
-            return ret == std::cv_status::no_timeout ? EnumEventQueue::kQueue_Element : EnumEventQueue::kQueue_Timeout;
         }
 
     private:
         //
+        // check if push is allowed/forbidden
+        //
+        inline bool is_push_forbidden()
+        {
+            return is_exit_force() || is_exit_when_done();
+        }
+
+        //
         // check for front element
         //
-        inline bool test_and_get_front(T *elem)
+        inline std::pair<bool /*is_exit*/, bool /*has_elem*/> test_and_get_front(T *elem)
         {
-            if (m_exit_flag.load() == true) {
-                return true;
+            if (is_exit_force()) {
+                return {true /*is_exit*/, false /*has_elem*/};
             }
 
+            std::unique_lock mlock(m_event);
+
+            // check again after locking
+            if (is_exit_force()) {
+                return {true /*is_exit*/, false /*has_elem*/};
+            }
+
+            // check queue size
             if (m_queue.empty()) {
-                return false;
+                if (is_exit_when_done()) {
+                    // exit but dont reset event to allow other threads to exit
+                    return {true /*is_exit*/, false /*has_elem*/};
+                }
+
+                // reset event
+                m_event.reset_event();
+                return {false /*is_exit*/, false /*has_elem*/};
             }
 
+            // get elem
             if (elem) {
                 *elem = std::move(m_queue.front());
             }
             m_queue.pop_front();
-            return true;
+
+            // reset event if empty queue
+            if (m_queue.empty() && !is_exit_when_done()) {
+                m_event.reset_event();
+            }
+
+            return {false /*is_exit*/, true /*has_elem*/};
         }
 
     private:
         //
         // members
         //
-        std::deque<T> m_queue;                // queue
-        small::event m_event;                 // event
-        std::atomic<bool> m_exit_flag{false}; // exit flag
+        std::deque<T> m_queue;                          // queue
+        small::event m_event{EventType::kEvent_Manual}; // event
+        std::atomic<bool> m_is_exit_force{false};       // force exit
+        std::atomic<bool> m_is_exit_when_done{false};   // exit when queue is zero
     };
 } // namespace small

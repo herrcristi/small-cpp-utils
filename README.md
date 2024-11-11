@@ -108,7 +108,8 @@ Wait for items
 
 Signal exit when we no longer want to use the queue
 
-`signal_exit, is_exit`
+`signal_exit_force, is_exit_force` // exit immediatly ignoring what is left in the queue
+`signal_exit_when_done, is_exit_when_done` // exit when queue is empty
 
 Use it like this
 
@@ -134,7 +135,7 @@ if ( ret == small::EnumEventQueue::kQueue_Element )
 
 ...
 // on main thread, no more processing
-q.signal_exit();
+q.signal_exit_force();
 
 ```
 
@@ -156,10 +157,10 @@ To use it as a locker
 
 `lock, unlock, try_lock`
 
-Signal exit when we no longer want to use worker threads, useful when we have multiple objects that do some stuff that takes some time on destructor,
-so until it is the turn of the destructor of this element, the working threads might be closed.
+Signal exit when we no longer want to use worker threads,
 
-`signal_exit, is_exit`
+`signal_exit_force, is_exit`
+`signal_exit_when_done`
 
 Use it like this
 
@@ -176,6 +177,10 @@ small::worker_thread<qc> workers( 2, []( auto& w/*this*/, auto& item, auto b/*ex
         // << "processing " << item.first << " " << item.second << " b=" << b << "\n";
     }
 }, 5/*extra param*/ );
+...
+workers.wait(); // manually wait at this point otherwise wait is done in the destructor
+...
+...
 ...
 // or like this
 small::worker_thread<qc> workers2( 1, WorkerThreadFunction() );
@@ -199,8 +204,8 @@ workers.push_back( { 1, "a" } );
 workers.push_back( std::make_pair( 2, "b" ) );
 workers.emplace_back( 3, "e" );
 ...
-// when finishing after signal_exit the work is aborted
-workers.signal_exit();
+// when finishing after signal_exit_force the work is aborted
+workers.signal_exit_force();
 //
 
 ```
@@ -361,12 +366,12 @@ auto r = small::rand64(); // 123123 random number
 ...
 ```
 
-`uuid128, uuid, uuidc`
+`uuidp, uuid, uuidc`
 
 Use it like this
 
 ```
-auto [r1,r2] = small::uuid128(); // returns a pair of uint64 numbers
+auto [r1,r2] = small::uuidp(); // returns a pair of uint64 numbers
 ...
 // returns a uuid as a string 78f202f1bf7a12d46498c9f0e78dd8a3
 auto u = small::uuid();

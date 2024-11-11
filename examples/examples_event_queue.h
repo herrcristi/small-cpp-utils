@@ -19,23 +19,23 @@ namespace examples::event_queue {
 
         std::thread t([](small::event_queue<qc> &_q) {
             std::this_thread::sleep_for(std::chrono::milliseconds(300));
-            std::cout << "push {1, \"B\"}" << std::endl;
+            std::cout << "push {1, \"A\"}" << std::endl;
             _q.push_back({1, "B"});
 
             std::this_thread::sleep_for(std::chrono::milliseconds(300));
-            std::cout << "push {2, \"a\"}" << std::endl;
+            std::cout << "push {2, \"b\"}" << std::endl;
             _q.emplace_back(2, "a");
 
             std::this_thread::sleep_for(std::chrono::milliseconds(300));
-            std::cout << "signal exit" << std::endl;
-            _q.signal_exit();
+            std::cout << "signal exit force" << std::endl;
+            _q.signal_exit_force();
         },
                       std::ref(q));
 
         qc e;
         // timeout
         auto ret = q.wait_pop_front_for(std::chrono::milliseconds(1), &e);
-        std::cout << "ret=" << static_cast<int>(ret) << ", pop " << e.first << "," << e.second << std::endl;
+        std::cout << "ret=" << static_cast<int>(ret) << "\n";
 
         ret = q.wait_pop_front(&e);
         std::cout << "ret=" << static_cast<int>(ret) << ", pop " << e.first << "," << e.second << std::endl;
@@ -44,10 +44,10 @@ namespace examples::event_queue {
         ret = q.wait_pop_front(&e);
         std::cout << "ret=" << static_cast<int>(ret) << ", pop " << e.first << "," << e.second << std::endl;
 
-        // exit signaled
+        // force exit signaled
         e = {};
         ret = q.wait_pop_front(&e);
-        std::cout << "ret=" << static_cast<int>(ret) << ", pop " << e.first << "," << e.second << std::endl;
+        std::cout << "ret=" << static_cast<int>(ret) << "\n";
 
         t.join();
 
