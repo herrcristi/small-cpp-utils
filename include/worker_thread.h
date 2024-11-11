@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <future>
 #include <thread>
 #include <vector>
 
@@ -112,12 +113,10 @@ namespace small {
                 return;
             }
 
-            // create threads
-            m_threads.resize(threads_count);
-            for (auto &th : m_threads) {
-                if (!th.joinable()) {
-                    th = std::thread(/*[&]() { thread_function(); }*/ &worker_thread::thread_function, this);
-                }
+            // create threads and save their future results
+            m_threads_futures.resize(threads_count);
+            for (auto &tf : m_threads_futures) {
+                tf = std::async(std::launch::async, &worker_thread::thread_function, this);
             }
 
             // mark threads were created
@@ -175,7 +174,9 @@ namespace small {
         inline EnumEventQueue wait()
         {
             signal_exit_when_done();
-            stop_threads();
+            for (auto &th : m_threads_futures) {
+                th.wait();
+            }
             return EnumEventQueue::kQueue_Exit;
         }
 
@@ -195,9 +196,13 @@ namespace small {
         template <typename _Clock, typename _Duration>
         inline EnumEventQueue wait_until(const std::chrono::time_point<_Clock, _Duration> &__atime)
         {
-            // TODO
             signal_exit_when_done();
-            stop_threads();
+            for (auto &th : m_threads_futures) {
+                auto ret = th.wait_until(__atime);
+                if (ret == std::future_status::timeout) {
+                    return EnumEventQueue::kQueue_Timeout;
+                }
+            }
             return EnumEventQueue::kQueue_Exit;
         }
 
@@ -232,31 +237,11 @@ namespace small {
             }
         }
 
-        //
-        // stop threads
-        //
-        inline void stop_threads()
-        {
-            std::vector<std::thread> threads;
-            {
-                std::unique_lock mlock(m_queue_items);
-                threads = std::move(m_threads);
-                m_threads_flag_created.store(false);
-            }
-
-            // wait for threads to stop
-            for (auto &th : threads) {
-                if (th.joinable()) {
-                    th.join();
-                }
-            }
-        }
-
     private:
         //
         // members
         //
-        std::vector<std::thread> m_threads;               // threads
+        std::vector<std::future<void>> m_threads_futures; // threads futures (needed to wait for)
         std::atomic<bool> m_threads_flag_created{};       // threads flag
         small::event_queue<T> m_queue_items;              // queue of items
         std::function<void(T &)> m_processing_function{}; // processing Function

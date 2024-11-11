@@ -36,7 +36,10 @@ namespace examples::worker_thread {
         workers.emplace_back(3, "e");
         workers.emplace_back(4, "f");
         workers.emplace_back(5, "g");
-        workers.wait(); // wait here for workers to finish
+
+        auto ret = workers.wait_for(std::chrono::milliseconds(0)); // wait to finished
+        std::cout << "wait for with timeout, ret = " << static_cast<int>(ret) << "\n";
+        workers.wait(); // wait here for workers to finish due to exit flag
 
         std::cout << "Worker Thread example 1 finish\n\n";
 
