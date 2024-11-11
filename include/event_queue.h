@@ -54,7 +54,7 @@ namespace small {
             return m_queue.size();
         }
 
-        inline bool empty() const { return size() == 0; }
+        inline bool empty() { return size() == 0; }
 
         //
         // clear only removes elements from queue but does not reset the event

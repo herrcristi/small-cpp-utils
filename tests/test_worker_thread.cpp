@@ -66,126 +66,83 @@ namespace {
         ASSERT_GE(elapsed, 300 - 1);
     }
 
-    // //
-    // // queue
-    // //
-    // TEST_F(EventQueueTest, Queue_Operations)
-    // {
-    //     small::event_queue<int> q;
-    //     ASSERT_EQ(q.size(), 0);
+    //
+    // workers
+    //
+    TEST_F(WorkerThreadTest, Worker_Operations)
+    {
+        auto timeStart = small::timeNow();
 
-    //     // push
-    //     q.push_back(5);
-    //     ASSERT_EQ(q.size(), 1);
+        // create workers
+        small::worker_thread<int> workers(0 /*no threads*/, [](auto &w /*this*/, auto &item, auto b /*extra param b*/) {
+            small::sleep(300);
+            // process item using the workers lock (not recommended)
+        },
+                                          5 /*param b*/);
 
-    //     // pop
-    //     int value{};
-    //     auto ret = q.wait_pop_front(&value);
-    //     ASSERT_EQ(ret, small::EnumEventQueue::kQueue_Element);
-    //     ASSERT_EQ(value, 5);
+        // push
+        workers.push_back(5);
+        ASSERT_GE(workers.size(), 1); // because the thread is not started
 
-    //     // check size
-    //     ASSERT_EQ(q.size(), 0);
-    // }
+        workers.start_threads(1); // start thread
 
-    // TEST_F(EventQueueTest, Queue_Operations_Timeout)
-    // {
-    //     small::event_queue<int> q;
-    //     ASSERT_EQ(q.size(), 0);
+        // wait_until
+        auto ret = workers.wait_for(std::chrono::milliseconds(0));
+        ASSERT_EQ(ret, small::EnumEventQueue::kQueue_Timeout);
 
-    //     // wait with timeout (since no elements)
-    //     auto timeStart = small::timeNow();
-    //     int value{};
-    //     auto ret = q.wait_pop_front_for(std::chrono::milliseconds(300), &value);
-    //     ASSERT_EQ(ret, small::EnumEventQueue::kQueue_Timeout);
+        // wait to finish
+        ret = workers.wait();
+        ASSERT_EQ(ret, small::EnumEventQueue::kQueue_Exit);
 
-    //     auto elapsed = small::timeDiffMs(timeStart);
-    //     ASSERT_GE(elapsed, 300 - 1); // due conversion
+        // check size
+        ASSERT_EQ(workers.size(), 0);
 
-    //     // push
-    //     q.emplace_back(5);
-    //     ASSERT_EQ(q.size(), 1);
+        auto elapsed = small::timeDiffMs(timeStart);
+        ASSERT_GE(elapsed, 300 - 1); // due conversion
 
-    //     // pop
-    //     value = {};
-    //     ret = q.wait_pop_front_for(std::chrono::milliseconds(300), &value);
-    //     ASSERT_EQ(ret, small::EnumEventQueue::kQueue_Element);
-    //     ASSERT_EQ(value, 5);
+        // push after wait is not allowed
+        workers.push_back(1);
+        ASSERT_EQ(workers.size(), 0);
+    }
 
-    //     ASSERT_EQ(q.size(), 0);
+    TEST_F(WorkerThreadTest, Worker_Operations_Force_Exit)
+    {
+        auto timeStart = small::timeNow();
 
-    //     // pop again
-    //     value = {};
-    //     timeStart = small::timeNow();
-    //     ret = q.wait_pop_front_until(timeStart + std::chrono::milliseconds(300), &value);
-    //     elapsed = small::timeDiffMs(timeStart);
+        // create workers
+        small::worker_thread<int> workers(1 /*threads*/, [](auto &w /*this*/, auto &item, auto b /*extra param b*/) {
+            small::sleep(300);
+            if (w.is_exit()) {
+                return;
+            }
+            small::sleep(300);
+            // process item using the workers lock (not recommended)
+        },
+                                          5 /*param b*/);
 
-    //     ASSERT_GE(elapsed, 300 - 1); // due conversion
-    //     ASSERT_EQ(ret, small::EnumEventQueue::kQueue_Timeout);
-    // }
+        // push
+        workers.push_back(5);
+        workers.push_back(6);
+        small::sleep(100); // wait for the thread to start and execute first sleep
 
-    // TEST_F(EventQueueTest, Queue_Operations_Thread)
-    // {
-    //     small::event_queue<int> q;
-    //     ASSERT_EQ(q.size(), 0);
+        workers.signal_exit_force();
+        ASSERT_EQ(workers.size(), 1);
 
-    //     // push inside thread
-    //     auto timeStart = small::timeNow();
-    //     auto thread = std::jthread([](small::event_queue<int> &_q) {
-    //         small::sleep(300);
+        // push after exit will not work
+        workers.push_back(5);
+        ASSERT_EQ(workers.size(), 1);
 
-    //         int value{5};
-    //         _q.push_back(value);
-    //     },
-    //                                std::ref(q));
+        // wait to finish
+        auto ret = workers.wait();
+        ASSERT_EQ(ret, small::EnumEventQueue::kQueue_Exit);
 
-    //     // wait and pop
-    //     int value = {};
-    //     auto ret = q.wait_pop_front(&value);
-    //     auto elapsed = small::timeDiffMs(timeStart);
+        // check size
+        ASSERT_EQ(workers.size(), 1);
 
-    //     ASSERT_EQ(ret, small::EnumEventQueue::kQueue_Element);
-    //     ASSERT_EQ(value, 5);
-    //     ASSERT_EQ(q.size(), 0);
-
-    //     ASSERT_GE(elapsed, 300 - 1); // due conversion
-    // }
-
-    // TEST_F(EventQueueTest, Queue_Operations_Signal_Exit)
-    // {
-    //     small::event_queue<int> q;
-    //     ASSERT_EQ(q.size(), 0);
-
-    //     q.push_back(5);
-    //     ASSERT_EQ(q.size(), 1);
-
-    //     // wait and pop
-    //     int value = {};
-    //     auto ret = q.wait_pop_front(&value);
-    //     ASSERT_EQ(ret, small::EnumEventQueue::kQueue_Element);
-    //     ASSERT_EQ(value, 5);
-    //     ASSERT_EQ(q.size(), 0);
-
-    //     // create thread
-    //     auto timeStart = small::timeNow();
-    //     auto thread = std::jthread([](small::event_queue<int> &_q) {
-    //         // signal after some time
-    //         small::sleep(300);
-    //         _q.signal_exit();
-    //     },
-    //                                std::ref(q));
-
-    //     // check
-    //     value = {};
-    //     ret = q.wait_pop_front(&value);
-    //     auto elapsed = small::timeDiffMs(timeStart);
-
-    //     ASSERT_EQ(ret, small::EnumEventQueue::kQueue_Exit);
-    //     ASSERT_GE(elapsed, 300 - 1); // due conversion
-
-    //     // push is no longer accepted
-    //     q.push_back(5);
-    //     ASSERT_EQ(q.size(), 0);
-    // }
+        // elapsed only 300 and not 600
+        auto elapsed = small::timeDiffMs(timeStart);
+        ASSERT_GE(elapsed, 300 - 1); // due conversion
+        ASSERT_LT(elapsed, 600 - 1); // due conversion
+    }
 
 } // namespace

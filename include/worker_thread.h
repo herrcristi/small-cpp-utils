@@ -81,9 +81,9 @@ namespace small {
 
         // clang-format off
         // size
-        inline size_t   size        () const { return m_queue_items.size();  }
+        inline size_t   size        () { return m_queue_items.size();  }
         // empty
-        inline bool     empty       () const { return size() == 0; }
+        inline bool     empty       () { return size() == 0; }
         // clear
         inline void     clear       () { m_queue_items.clear(); }
         // clang-format on
@@ -133,7 +133,7 @@ namespace small {
                 return;
             }
 
-            m_queue_items.push_back(std::forward<T>(t));
+            m_queue_items.push_back(t);
         }
 
         // push back with move semantics

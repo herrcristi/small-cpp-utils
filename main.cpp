@@ -28,6 +28,7 @@ int main()
 
     examples::worker_thread::Example1();
     examples::worker_thread::Example2();
+    examples::worker_thread::Example3_Perf();
 
     return 0;
 }

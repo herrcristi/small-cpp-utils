@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <condition_variable>
 #include <cstdio>
 #include <iostream>
@@ -78,6 +79,43 @@ namespace examples::worker_thread {
         workers.push_back({5, "e"});
 
         std::cout << "Finished Worker Thread example 2\n\n";
+        // workers will be joined on destructor
+
+        return 0;
+    }
+
+    //
+    //  perf example 3
+    //
+    int Example3_Perf()
+    {
+        std::cout << "Worker Thread example 3\n";
+
+        for (int threads = 1; threads <= 4; ++threads) {
+            auto timeStart = small::timeNow();
+
+            // create worker
+            small::worker_thread<int> workers(threads /*threads*/, [](auto &w /*this*/, int &elem) {
+                // nothing to do
+                elem++;
+            });
+
+            // add 1 million entries for worker
+            const int elements = 1'000'000;
+            for (int i = 0; i < elements; ++i) {
+                workers.push_back(i);
+            }
+
+            // wait for processing
+            workers.wait();
+
+            // time elapsed
+            auto elapsed = small::timeDiffMs(timeStart);
+            std::cout << "Processing with " << threads << " threads " << elements << " elements took " << elapsed << " ms"
+                      << ", at a rate of " << double(elements) / double(std::max(elapsed, 1LL)) << " elements/ms\n";
+        }
+        std::cout << "Locking has an important part!\n";
+        std::cout << "Finished Worker Thread example 3\n\n";
         // workers will be joined on destructor
 
         return 0;
