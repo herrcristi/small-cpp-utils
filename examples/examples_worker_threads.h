@@ -130,6 +130,27 @@ namespace examples::worker_thread {
             }
             std::cout << "\n";
         }
+
+        // Processing with 1 threads 100000 elements and bulk 1 took 8101 ms, at a rate of 12.3442 elements/ms
+        // Processing with 2 threads 100000 elements and bulk 1 took 4162 ms, at a rate of 24.0269 elements/ms
+        // Processing with 3 threads 100000 elements and bulk 1 took 2866 ms, at a rate of 34.8918 elements/ms
+        // Processing with 4 threads 100000 elements and bulk 1 took 2259 ms, at a rate of 44.2674 elements/ms
+
+        // Processing with 1 threads 100000 elements and bulk 2 took 4072 ms, at a rate of 24.558 elements/ms
+        // Processing with 2 threads 100000 elements and bulk 2 took 2166 ms, at a rate of 46.1681 elements/ms
+        // Processing with 3 threads 100000 elements and bulk 2 took 1417 ms, at a rate of 70.5716 elements/ms
+        // Processing with 4 threads 100000 elements and bulk 2 took 1065 ms, at a rate of 93.8967 elements/ms
+
+        // Processing with 1 threads 100000 elements and bulk 5 took 1718 ms, at a rate of 58.2072 elements/ms
+        // Processing with 2 threads 100000 elements and bulk 5 took 849 ms, at a rate of 117.786 elements/ms
+        // Processing with 3 threads 100000 elements and bulk 5 took 548 ms, at a rate of 182.482 elements/ms
+        // Processing with 4 threads 100000 elements and bulk 5 took 470 ms, at a rate of 212.766 elements/ms
+
+        // Processing with 1 threads 100000 elements and bulk 10 took 815 ms, at a rate of 122.699 elements/ms
+        // Processing with 2 threads 100000 elements and bulk 10 took 418 ms, at a rate of 239.234 elements/ms
+        // Processing with 3 threads 100000 elements and bulk 10 took 296 ms, at a rate of 337.838 elements/ms
+        // Processing with 4 threads 100000 elements and bulk 10 took 214 ms, at a rate of 467.29 elements/ms
+
         std::cout << "Locking has an important part if worker function is too quick!\n";
         std::cout << "Finished Worker Thread example 3\n\n";
         // workers will be joined on destructor
