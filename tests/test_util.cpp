@@ -126,6 +126,21 @@ namespace {
         ASSERT_GE(timeElapsedNano, (100 - 1) * 1000 * 1000);
     }
 
+    TEST_F(UtilTest, time_micro)
+    {
+        auto timeStart = small::timeNow();
+
+        small::sleepMicro(100 /*ms*/ * 1000);
+
+        auto timeElapsedMs = small::timeDiffMs(timeStart);
+        auto timeElapsedMicro = small::timeDiffMicro(timeStart);
+        auto timeElapsedNano = small::timeDiffNano(timeStart);
+
+        ASSERT_GE(timeElapsedMs, 100 - 1);             // due conversion
+        ASSERT_GE(timeElapsedMicro, (100 - 1) * 1000); // due conversion
+        ASSERT_GE(timeElapsedNano, (100 - 1) * 1000 * 1000);
+    }
+
     //
     // rand
     //

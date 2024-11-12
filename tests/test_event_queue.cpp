@@ -88,6 +88,26 @@ namespace {
         ASSERT_EQ(q.size(), 0);
     }
 
+    TEST_F(EventQueueTest, Queue_Operations_Vec)
+    {
+        small::event_queue<int> q;
+        ASSERT_EQ(q.size(), 0);
+
+        // push
+        q.push_back(5);
+        ASSERT_EQ(q.size(), 1);
+
+        // pop
+        std::vector<int> values;
+        auto ret = q.wait_pop_front(values, 10);
+        ASSERT_EQ(ret, small::EnumEventQueue::kQueue_Element);
+        ASSERT_EQ(values.size(), 1);
+        ASSERT_EQ(values[0], 5);
+
+        // check size
+        ASSERT_EQ(q.size(), 0);
+    }
+
     TEST_F(EventQueueTest, Queue_Operations_Timeout)
     {
         small::event_queue<int> q;
@@ -118,6 +138,43 @@ namespace {
         value = {};
         timeStart = small::timeNow();
         ret = q.wait_pop_front_until(timeStart + std::chrono::milliseconds(300), &value);
+        elapsed = small::timeDiffMs(timeStart);
+
+        ASSERT_GE(elapsed, 300 - 1); // due conversion
+        ASSERT_EQ(ret, small::EnumEventQueue::kQueue_Timeout);
+    }
+
+    TEST_F(EventQueueTest, Queue_Operations_Timeout_Vec)
+    {
+        small::event_queue<int> q;
+        ASSERT_EQ(q.size(), 0);
+
+        // wait with timeout (since no elements)
+        auto timeStart = small::timeNow();
+        std::vector<int> values;
+        auto ret = q.wait_pop_front_for(std::chrono::milliseconds(300), values, 10);
+        ASSERT_EQ(ret, small::EnumEventQueue::kQueue_Timeout);
+
+        auto elapsed = small::timeDiffMs(timeStart);
+        ASSERT_GE(elapsed, 300 - 1); // due conversion
+
+        // push
+        q.emplace_back(5);
+        q.emplace_back(15);
+        ASSERT_EQ(q.size(), 2);
+
+        // pop
+        ret = q.wait_pop_front_for(std::chrono::milliseconds(300), values, 10);
+        ASSERT_EQ(ret, small::EnumEventQueue::kQueue_Element);
+        ASSERT_EQ(values.size(), 2);
+        ASSERT_EQ(values[0], 5);
+        ASSERT_EQ(values[1], 15);
+
+        ASSERT_EQ(q.size(), 0);
+
+        // pop again
+        timeStart = small::timeNow();
+        ret = q.wait_pop_front_until(timeStart + std::chrono::milliseconds(300), values, 10);
         elapsed = small::timeDiffMs(timeStart);
 
         ASSERT_GE(elapsed, 300 - 1); // due conversion

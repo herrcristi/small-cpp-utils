@@ -18,12 +18,14 @@ namespace examples::worker_thread {
 
         using qc = std::pair<int, std::string>;
 
-        small::worker_thread<qc> workers(0 /*dont start any threads*/, [](auto &w /*this*/, auto &item, auto b /*extra param b*/) {
+        small::worker_thread<qc> workers({.threads_count = 0 /*dont start any threads*/}, [](auto &w /*this*/, const auto &items, auto b /*extra param b*/) {
             // process item using the workers lock (not recommended)
             {
                 std::unique_lock mlock( w );
-
-                std::cout << "thread " << std::this_thread::get_id()  << " processing {" << item.first << ", \"" << item.second << "\"} and b=" << b << "\n";
+                for(auto &[i, s]:items){
+                    std::cout << "thread " << std::this_thread::get_id()  
+                              << " processing {" << i << ", \"" << s << "\"} and b=" << b << "\n";
+                }
             } 
             small::sleep(300); }, 5 /*param b*/);
 
@@ -60,18 +62,21 @@ namespace examples::worker_thread {
         struct WorkerThreadFunction
         {
             using qc = std::pair<int, std::string>;
-            void operator()(small::worker_thread<qc> &w, qc &a) const
+            void operator()(small::worker_thread<qc> &w, const std::vector<qc> &items) const
             {
                 {
-                    std::unique_lock<small::worker_thread<qc>> mlock(w);
+                    std::unique_lock mlock(w);
 
-                    std::cout << "thread " << std::this_thread::get_id() << " processing {" << a.first << ", \"" << a.second << "\"}\n";
+                    for (auto &[i, s] : items) {
+                        std::cout << "thread " << std::this_thread::get_id()
+                                  << " processing {" << i << ", \"" << s << "\"}\n";
+                    }
                 }
                 small::sleep(100);
             }
         };
 
-        small::worker_thread<qc> workers(2 /*threads*/, WorkerThreadFunction());
+        small::worker_thread<qc> workers({.threads_count = 2}, WorkerThreadFunction());
         workers.push_back({4, "d"});
         small::sleep(300);
 
@@ -91,30 +96,61 @@ namespace examples::worker_thread {
     {
         std::cout << "Worker Thread example 3\n";
 
-        for (int threads = 1; threads <= 4; ++threads) {
-            auto timeStart = small::timeNow();
+        const auto bulks = {1, 2, 5, 10};
 
-            // create worker
-            small::worker_thread<int> workers(threads /*threads*/, [](auto &w /*this*/, int &elem) {
-                // nothing to do
-                elem++;
-            });
+        for (auto bulk_count : bulks) {
 
-            // add 1 million entries for worker
-            const int elements = 1'000'000;
-            for (int i = 0; i < elements; ++i) {
-                workers.push_back(i);
+            for (int threads = 1; threads <= 4; ++threads) {
+                auto timeStart = small::timeNow();
+
+                // create worker
+                small::worker_thread<int> workers({.threads_count = threads, .bulk_count = bulk_count}, [](auto &w /*this*/, const std::vector<int> &elems) {
+                    // simulate some work
+                    int sum = 0;
+                    for (auto &elem : elems) {
+                        sum += elem;
+                    }
+                    std::ignore = sum;
+                });
+
+                // add many entries for worker
+                const int elements = 100'000;
+                for (int i = 0; i < elements; ++i) {
+                    workers.push_back(i);
+                }
+
+                // wait for processing
+                workers.wait();
+
+                // time elapsed
+                auto elapsed = small::timeDiffMs(timeStart);
+                std::cout << "Processing with " << threads << " threads " << elements << " elements and bulk " << bulk_count
+                          << " took " << elapsed << " ms"
+                          << ", at a rate of " << double(elements) / double(std::max(elapsed, 1LL)) << " elements/ms\n";
             }
-
-            // wait for processing
-            workers.wait();
-
-            // time elapsed
-            auto elapsed = small::timeDiffMs(timeStart);
-            std::cout << "Processing with " << threads << " threads " << elements << " elements took " << elapsed << " ms"
-                      << ", at a rate of " << double(elements) / double(std::max(elapsed, 1LL)) << " elements/ms\n";
+            std::cout << "\n";
         }
-        std::cout << "Locking has an important part!\n";
+
+        // Processing with 1 threads 100000 elements and bulk 1 took 8101 ms, at a rate of 12.3442 elements/ms
+        // Processing with 2 threads 100000 elements and bulk 1 took 4162 ms, at a rate of 24.0269 elements/ms
+        // Processing with 3 threads 100000 elements and bulk 1 took 2866 ms, at a rate of 34.8918 elements/ms
+        // Processing with 4 threads 100000 elements and bulk 1 took 2259 ms, at a rate of 44.2674 elements/ms
+
+        // Processing with 1 threads 100000 elements and bulk 2 took 4072 ms, at a rate of 24.558 elements/ms
+        // Processing with 2 threads 100000 elements and bulk 2 took 2166 ms, at a rate of 46.1681 elements/ms
+        // Processing with 3 threads 100000 elements and bulk 2 took 1417 ms, at a rate of 70.5716 elements/ms
+        // Processing with 4 threads 100000 elements and bulk 2 took 1065 ms, at a rate of 93.8967 elements/ms
+
+        // Processing with 1 threads 100000 elements and bulk 5 took 1718 ms, at a rate of 58.2072 elements/ms
+        // Processing with 2 threads 100000 elements and bulk 5 took 849 ms, at a rate of 117.786 elements/ms
+        // Processing with 3 threads 100000 elements and bulk 5 took 548 ms, at a rate of 182.482 elements/ms
+        // Processing with 4 threads 100000 elements and bulk 5 took 470 ms, at a rate of 212.766 elements/ms
+
+        // Processing with 1 threads 100000 elements and bulk 10 took 815 ms, at a rate of 122.699 elements/ms
+        // Processing with 2 threads 100000 elements and bulk 10 took 418 ms, at a rate of 239.234 elements/ms
+        // Processing with 3 threads 100000 elements and bulk 10 took 296 ms, at a rate of 337.838 elements/ms
+        // Processing with 4 threads 100000 elements and bulk 10 took 214 ms, at a rate of 467.29 elements/ms
+
         std::cout << "Finished Worker Thread example 3\n\n";
         // workers will be joined on destructor
 

@@ -106,6 +106,10 @@ namespace small {
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(time_in_ms));
     }
+    inline void sleepMicro(int time_in_microseconds)
+    {
+        std::this_thread::sleep_for(std::chrono::microseconds(time_in_microseconds));
+    }
 
     //
     // time utils
@@ -201,14 +205,14 @@ namespace small {
         return u;
     }
 
-    struct ConfigUUID
+    struct config_uuid
     {
         bool add_hyphen{false};
         bool add_braces{false};
         bool to_uppercase{false};
     };
 
-    inline std::string uuid(const ConfigUUID config = {})
+    inline std::string uuid(const config_uuid config = {})
     {
         // generate 2 random uint64 numbers
         auto [r1, r2] = uuidp();

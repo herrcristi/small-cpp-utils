@@ -10,13 +10,15 @@
 // using qc = std::pair<int, std::string>;
 // ...
 // // with a lambda for processing working function
-// small::worker_thread<qc> workers( 0, []( auto& w/*this*/, auto& item, auto b/*extra param*/ ) -> void
+// small::worker_thread<qc> workers( {.threads_count = 0, .bulk_count = 2}, []( auto& w/*this*/, const auto& items, auto b/*extra param*/ ) -> void
 // {
 //     ...
 //     {
 //         std::unique_lock mlock( w ); // use worker_thread to lock
 //         ...
-//         //std::cout << "thread " << std::this_thread::get_id() << "processing " << item.first << " " << item.second << " b=" << b << "\n";
+//         for (auto &[i, s] : items) {
+//              std::cout << "thread " << std::this_thread::get_id() << " processing " << i << " " << s << " b=" << b << "\n";
+//         }
 //     }
 //     ...
 // }, 5 /*extra param*/ );
@@ -24,13 +26,13 @@
 // workers.start_threads(2); // manual start threads
 // ...
 // // or like this
-// small::worker_thread<qc> workers2( 1, WorkerThreadFunction() );
+// small::worker_thread<qc> workers2( {/*default 1 thread*/}, WorkerThreadFunction() );
 // ...
 // // where WorkerThreadFunction can be
 // struct WorkerThreadFunction
 // {
 //     using qc = std::pair<int, std::string>;
-//     void operator()( small::worker_thread<qc>& w /*worker_thread*/, qc& item )
+//     void operator()( small::worker_thread<qc>& w /*worker_thread*/, const std::vector<qc>& items )
 //     {
 //         ...
 //         // add extra in queue
@@ -57,6 +59,12 @@ namespace small {
     //
     // small class for worker threads
     //
+    struct config_worker_thread
+    {
+        int threads_count{1}; // how many threads for processing
+        int bulk_count{1};    // how many objects are processed at once
+    };
+
     template <class T>
     class worker_thread
     {
@@ -65,12 +73,13 @@ namespace small {
         // worker_thread
         //
         template <typename _Callable, typename... Args>
-        worker_thread(const int threads_count /*= 1*/, _Callable function, Args... extra_parameters)
-            : m_processing_function(std::bind(std::forward<_Callable>(function), std::ref(*this), std::placeholders::_1 /*item*/, std::forward<Args>(extra_parameters)...))
+        worker_thread(const config_worker_thread config, _Callable function, Args... extra_parameters)
+            : m_config(config),
+              m_processing_function(std::bind(std::forward<_Callable>(function), std::ref(*this), std::placeholders::_1 /*item*/, std::forward<Args>(extra_parameters)...))
         {
             // auto start threads if count > 0 otherwise threads should be manually started
-            if (threads_count) {
-                start_threads(threads_count);
+            if (config.threads_count) {
+                start_threads(config.threads_count);
             }
         }
 
@@ -107,6 +116,9 @@ namespace small {
 
             // lock
             std::unique_lock mlock(m_queue_items);
+
+            // save setting
+            m_config.threads_count = threads_count;
 
             // check again
             if (m_threads_flag_created.load() == true) {
@@ -220,10 +232,11 @@ namespace small {
         //
         inline void thread_function()
         {
-            T elem{};
+            std::vector<T> vec_elems;
+            const int bulk_count = std::max(m_config.bulk_count, 1);
             while (1) {
                 // wait
-                small::EnumEventQueue ret = m_queue_items.wait_pop_front /*_for*/ (/*std::chrono::minutes( 10 ),*/ &elem);
+                small::EnumEventQueue ret = m_queue_items.wait_pop_front(vec_elems, bulk_count);
 
                 if (ret == small::EnumEventQueue::kQueue_Exit) {
                     // force stop
@@ -232,8 +245,9 @@ namespace small {
                     // nothing to do
                 } else if (ret == small::EnumEventQueue::kQueue_Element) {
                     // process
-                    m_processing_function(std::ref(elem)); // bind the std::placeholders::_1
+                    m_processing_function(vec_elems); // bind the std::placeholders::_1
                 }
+                small::sleepMicro(1);
             }
         }
 
@@ -241,9 +255,10 @@ namespace small {
         //
         // members
         //
-        std::vector<std::future<void>> m_threads_futures; // threads futures (needed to wait for)
-        std::atomic<bool> m_threads_flag_created{};       // threads flag
-        small::event_queue<T> m_queue_items;              // queue of items
-        std::function<void(T &)> m_processing_function{}; // processing Function
+        config_worker_thread m_config;                                       // config
+        std::vector<std::future<void>> m_threads_futures;                    // threads futures (needed to wait for)
+        std::atomic<bool> m_threads_flag_created{};                          // threads flag
+        small::event_queue<T> m_queue_items;                                 // queue of items
+        std::function<void(const std::vector<T> &)> m_processing_function{}; // processing Function
     };
 } // namespace small

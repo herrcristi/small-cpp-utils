@@ -74,7 +74,7 @@ namespace {
         auto timeStart = small::timeNow();
 
         // create workers
-        small::worker_thread<int> workers(0 /*no threads*/, [](auto &w /*this*/, auto &item, auto b /*extra param b*/) {
+        small::worker_thread<int> workers({.threads_count = 0 /*no threads*/, .bulk_count = 2}, [](auto &w /*this*/, const auto &items, auto b /*extra param b*/) {
             small::sleep(300);
             // process item using the workers lock (not recommended)
         },
@@ -110,7 +110,7 @@ namespace {
         auto timeStart = small::timeNow();
 
         // create workers
-        small::worker_thread<int> workers(1 /*threads*/, [](auto &w /*this*/, auto &item, auto b /*extra param b*/) {
+        small::worker_thread<int> workers({/*default 1 thread*/}, [](auto &w /*this*/, auto &item, auto b /*extra param b*/) {
             small::sleep(300);
             if (w.is_exit()) {
                 return;
