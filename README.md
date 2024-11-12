@@ -168,13 +168,15 @@ Use it like this
 using qc = std::pair<int, std::string>;
 ...
 // with a lambda for processing working function
-small::worker_thread<qc> workers( 2, []( auto& w/*this*/, auto& item, auto b/*extra param*/ ) -> void
+small::worker_thread<qc> workers( {.threads_count = 2, .bulk_count = 10}, []( auto& w/*this*/, const auto& vec_items, auto b/*extra param*/ ) -> void
 {
     {
         std::unique_lock< small::worker_thread<qc>> mlock( w ); // use worker_thread to lock if needed
         ...
-        //std::cout << "thread " << std::this_thread::get_id()
-        // << "processing " << item.first << " " << item.second << " b=" << b << "\n";
+        // for(auto &[i, s]:items) {
+        //   std::cout << "thread " << std::this_thread::get_id()
+        //             << "processing " << i << " " << s << " b=" << b << "\n";
+        // }
     }
 }, 5/*extra param*/ );
 ...
@@ -183,13 +185,13 @@ workers.wait(); // manually wait at this point otherwise wait is done in the des
 ...
 ...
 // or like this
-small::worker_thread<qc> workers2( 1, WorkerThreadFunction() );
+small::worker_thread<qc> workers2( {/*default 1 thread*/}, WorkerThreadFunction() );
 ...
 // where WorkerThreadFunction can be
 struct WorkerThreadFunction
 {
     using qc = std::pair<int, std::string>;
-    void operator()( small::worker_thread<qc>& w/*worker_thread*/, qc& item )
+    void operator()( small::worker_thread<qc>& w/*worker_thread*/, const std::vector<qc>& items )
     {
         ...
         // add extra in queue
