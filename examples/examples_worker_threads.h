@@ -151,7 +151,6 @@ namespace examples::worker_thread {
         // Processing with 3 threads 100000 elements and bulk 10 took 296 ms, at a rate of 337.838 elements/ms
         // Processing with 4 threads 100000 elements and bulk 10 took 214 ms, at a rate of 467.29 elements/ms
 
-        std::cout << "Locking has an important part if worker function is too quick!\n";
         std::cout << "Finished Worker Thread example 3\n\n";
         // workers will be joined on destructor
 
