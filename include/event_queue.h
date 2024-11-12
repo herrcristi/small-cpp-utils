@@ -235,6 +235,17 @@ namespace small {
             return wait_pop_front_until(std::chrono::system_clock::now() + __reltime, elem);
         }
 
+        template <typename _Rep, typename _Period>
+        inline EnumEventQueue wait_pop_front_for(const std::chrono::duration<_Rep, _Period> &__rtime, std::vector<T> &vec_elems, int max_count = 1)
+        {
+            using __dur = typename std::chrono::system_clock::duration;
+            auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
+            if (__reltime < __rtime) {
+                ++__reltime;
+            }
+            return wait_pop_front_until(std::chrono::system_clock::now() + __reltime, vec_elems, max_count);
+        }
+
         // wait until
         template <typename _Clock, typename _Duration>
         inline EnumEventQueue wait_pop_front_until(const std::chrono::time_point<_Clock, _Duration> &__atime, T *elem)
