@@ -322,14 +322,13 @@ namespace small {
         //
         // check if push is allowed/forbidden
         //
-        inline bool
-        is_push_forbidden()
+        inline bool is_push_forbidden()
         {
             return is_exit_force() || is_exit_when_done();
         }
 
         //
-        // check for front element with bitwise
+        // check for front element
         //
         enum class Flags : unsigned int
         {

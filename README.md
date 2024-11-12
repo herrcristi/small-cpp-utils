@@ -173,7 +173,7 @@ small::worker_thread<qc> workers( {.threads_count = 2, .bulk_count = 10}, []( au
     {
         std::unique_lock< small::worker_thread<qc>> mlock( w ); // use worker_thread to lock if needed
         ...
-        // for(auto &[i, s]:items) {
+        // for(auto &[i, s]:vec_items) {
         //   std::cout << "thread " << std::this_thread::get_id()
         //             << "processing " << i << " " << s << " b=" << b << "\n";
         // }

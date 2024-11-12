@@ -113,7 +113,7 @@ namespace examples::worker_thread {
                     std::ignore = sum;
                 });
 
-                // add 1 million entries for worker
+                // add many entries for worker
                 const int elements = 100'000;
                 for (int i = 0; i < elements; ++i) {
                     workers.push_back(i);
@@ -130,7 +130,7 @@ namespace examples::worker_thread {
             }
             std::cout << "\n";
         }
-        std::cout << "Locking has an important part if worker functions is too quick!\n";
+        std::cout << "Locking has an important part if worker function is too quick!\n";
         std::cout << "Finished Worker Thread example 3\n\n";
         // workers will be joined on destructor
 
