@@ -126,7 +126,7 @@ namespace {
         ASSERT_GE(timeElapsedNano, (100 - 1) * 1000 * 1000);
     }
 
-    TEST_F(UtilTest, time)
+    TEST_F(UtilTest, time_micro)
     {
         auto timeStart = small::timeNow();
 
