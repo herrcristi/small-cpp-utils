@@ -15,7 +15,7 @@ namespace examples::event {
     {
         std::cout << "Event\n";
 
-        // small::event e( small::EventType::kEvent_Manual );
+        // small::event e( small::EventType::kManual );
         small::event e;
         {
             std::unique_lock<small::event> mlock(e);

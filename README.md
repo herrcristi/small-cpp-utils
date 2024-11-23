@@ -72,7 +72,7 @@ e.wait( [&]() -> bool {
 or
 
 ```
-small::event e( small::EventType::kEvent_Manual );
+small::event e( small::EventType::kManual );
 ...
 ...
 e.set_event();

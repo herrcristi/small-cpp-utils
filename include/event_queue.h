@@ -4,7 +4,6 @@
 #include <deque>
 
 #include "event.h"
-#include "lock.h"
 
 // a queue with events so we can wait for items to be available
 //
@@ -377,9 +376,9 @@ namespace small {
         //
         // members
         //
-        std::deque<T> m_queue;                          // queue
-        small::event m_event{EventType::kEvent_Manual}; // event
-        std::atomic<bool> m_is_exit_force{false};       // force exit
-        std::atomic<bool> m_is_exit_when_done{false};   // exit when queue is zero
+        std::deque<T> m_queue;                        // queue
+        small::event m_event{EventType::kManual};     // event
+        std::atomic<bool> m_is_exit_force{false};     // force exit
+        std::atomic<bool> m_is_exit_when_done{false}; // exit when queue is zero
     };
 } // namespace small

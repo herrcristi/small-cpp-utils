@@ -27,7 +27,7 @@
 // ...
 // ...
 // // create a manual event
-// small::event e( small::EventType::kEvent_Manual );
+// small::event e( small::EventType::kManual );
 //
 namespace small {
     //
@@ -35,8 +35,8 @@ namespace small {
     //
     enum class EventType
     {
-        kEvent_Automatic,
-        kEvent_Manual
+        kAutomatic,
+        kManual
     };
 
     //
@@ -48,7 +48,7 @@ namespace small {
         //
         // event
         //
-        event(const EventType &event_type = EventType::kEvent_Automatic)
+        event(const EventType &event_type = EventType::kAutomatic)
             : m_event_type(event_type)
         {
         }
@@ -63,9 +63,9 @@ namespace small {
         //
         // set type
         //
-        inline void set_event_type(const EventType &event_type = EventType::kEvent_Automatic)
+        inline void set_event_type(const EventType &event_type = EventType::kAutomatic)
         {
-            std::unique_lock<std::recursive_mutex> mlock(m_lock);
+            std::unique_lock l(m_lock);
             m_event_type = event_type;
         }
 
@@ -74,10 +74,10 @@ namespace small {
         //
         inline void set_event()
         {
-            std::unique_lock<std::recursive_mutex> mlock(m_lock);
+            std::unique_lock l(m_lock);
             m_event_value = true;
 
-            bool notify_all = m_event_type == EventType::kEvent_Manual;
+            bool notify_all = m_event_type == EventType::kManual;
             if (notify_all) {
                 m_lock.notify_all();
             } else {
@@ -90,7 +90,7 @@ namespace small {
         //
         inline void reset_event()
         {
-            std::unique_lock<std::recursive_mutex> mlock(m_lock);
+            std::unique_lock l(m_lock);
             m_event_value = false;
         }
 
@@ -99,7 +99,7 @@ namespace small {
         //
         inline void wait()
         {
-            std::unique_lock<std::recursive_mutex> mlock(m_lock);
+            std::unique_lock l(m_lock);
 
             while (test_event_and_reset() == false) {
                 m_lock.wait(mlock);
@@ -113,7 +113,7 @@ namespace small {
         inline void wait(_Predicate __p)
         {
             for (; true; std::this_thread::sleep_for(std::chrono::milliseconds(1))) {
-                std::unique_lock<std::recursive_mutex> mlock(m_lock);
+                std::unique_lock l(m_lock);
 
                 // both conditions must be met
 
@@ -170,7 +170,7 @@ namespace small {
         template <typename _Clock, typename _Duration>
         inline std::cv_status wait_until(const std::chrono::time_point<_Clock, _Duration> &__atime)
         {
-            std::unique_lock<std::recursive_mutex> mlock(m_lock);
+            std::unique_lock l(m_lock);
 
             while (test_event_and_reset() == false) {
                 std::cv_status ret = m_lock.wait_until(mlock, __atime);
@@ -189,7 +189,7 @@ namespace small {
         inline std::cv_status wait_until(const std::chrono::time_point<_Clock, _Duration> &__atime, _Predicate __p)
         {
             for (; true; std::this_thread::sleep_for(std::chrono::milliseconds(1))) {
-                std::unique_lock<std::recursive_mutex> mlock(m_lock);
+                std::unique_lock l(m_lock);
 
                 // both conditions must be met
 
@@ -234,7 +234,7 @@ namespace small {
         {
             if (m_event_value.load() == true) {
                 // automatic event resets the state
-                if (m_event_type == EventType::kEvent_Automatic) {
+                if (m_event_type == EventType::kAutomatic) {
                     m_event_value = false;
                 }
                 return true;
@@ -246,8 +246,8 @@ namespace small {
         //
         // members
         //
-        small::base_lock m_lock;                             // locker
-        EventType m_event_type{EventType::kEvent_Automatic}; // for manual event
-        std::atomic_bool m_event_value{};                    // event state
+        small::base_lock m_lock;                       // locker
+        EventType m_event_type{EventType::kAutomatic}; // for manual event
+        std::atomic_bool m_event_value{};              // event state
     };
 } // namespace small

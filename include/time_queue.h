@@ -4,8 +4,8 @@
 #include <deque>
 #include <queue>
 
+#include "base_lock.h"
 #include "event.h"
-#include "lock.h"
 
 // a queue with time events so we can wait for items to be available at specific time moments
 //
@@ -415,7 +415,7 @@ namespace small {
         //
         using PriorityQueueElemT = std::pair<std::chrono::time_point, T>;
         std::priority_queue<PriorityQueueElemT, std::vector<PriorityQueueElemT>> m_queue; // priority queue
-        small::event m_event{EventType::kEvent_Manual};                                   // event
+        small::event m_event{EventType::kManual};                                         // event
         std::atomic<bool> m_is_exit_force{false};                                         // force exit
         std::atomic<bool> m_is_exit_when_done{false};                                     // exit when queue is zero
     };
