@@ -54,6 +54,19 @@ namespace small {
         }
 
         //
+        // notify
+        //
+        inline void notify_one()
+        {
+            return m_condition.notify_one();
+        }
+
+        inline void notify_all()
+        {
+            return m_condition.notify_all();
+        }
+
+        //
         // wait requires lock ( std::unique_lock mlock( ... ); )
         //
         inline EnumLock wait()
