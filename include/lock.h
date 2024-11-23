@@ -10,7 +10,7 @@ namespace small {
     //
     enum class EnumLock
     {
-        kNoTimeout,
+        kElement, // as no timeout
         kTimeout,
         kExit,
     };
@@ -64,7 +64,7 @@ namespace small {
 
             m_condition.wait(m_lock);
 
-            return is_exit_force() ? EnumLock::kExit : EnumLock::kNoTimeout;
+            return is_exit_force() ? EnumLock::kExit : EnumLock::kElement;
         }
 
         //
@@ -79,7 +79,7 @@ namespace small {
 
             m_condition.wait(m_lock, __p);
 
-            return is_exit_force() ? EnumLock::kExit : EnumLock::kNoTimeout;
+            return is_exit_force() ? EnumLock::kExit : EnumLock::kElement;
         }
 
         // wait for requires lock ( std::unique_lock mlock( ... ); )
@@ -120,7 +120,7 @@ namespace small {
                 return EnumLock::kExit;
             }
 
-            return ret_w == std::cv_status::timeout ? EnumLock::kTimeout : EnumLock::kNoTimeout;
+            return ret_w == std::cv_status::timeout ? EnumLock::kTimeout : EnumLock::kElement;
         }
 
         template <typename _Clock, typename _Duration, typename _Predicate>
@@ -142,7 +142,7 @@ namespace small {
                 }
             }
 
-            return EnumLock::kNoTimeout;
+            return EnumLock::kElement;
         }
 
     private:
