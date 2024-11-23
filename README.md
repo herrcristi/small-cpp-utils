@@ -125,10 +125,10 @@ int e = 0;
 auto ret = q.wait_pop_front( &e );
 //auto ret = q.wait_pop_front_for( std::chrono::minutes( 1 ), &e );
 
-// ret can be small::EnumEventQueue::kQueue_Exit,
-// small::EnumEventQueue::kQueue_Timeout or ret == small::EnumEventQueue::kQueue_Element
+// ret can be small::EnumLock::kExit,
+// small::EnumLock::kTimeout or ret == small::EnumLock::kElement
 
-if ( ret == small::EnumEventQueue::kQueue_Element )
+if ( ret == small::EnumLock::kElement )
  {
      // do something with e
     ...
@@ -181,10 +181,10 @@ int e = 0;
 auto ret = q.wait_pop_front( &e );
 //auto ret = q.wait_pop_front_for( std::chrono::minutes( 1 ), &e );
 
-// ret can be small::EnumEventQueue::kQueue_Exit,
-// small::EnumEventQueue::kQueue_Timeout or ret == small::EnumEventQueue::kQueue_Element
+// ret can be small::EnumLock::kExit,
+// small::EnumLock::kTimeout or ret == small::EnumLock::kElement
 
-if ( ret == small::EnumEventQueue::kQueue_Element )
+if ( ret == small::EnumLock::kElement )
  {
      // do something with e
     ...

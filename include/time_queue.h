@@ -5,6 +5,7 @@
 #include <queue>
 
 #include "event.h"
+#include "lock.h"
 
 // a queue with time events so we can wait for items to be available at specific time moments
 //
@@ -15,9 +16,9 @@
 //
 // // on some thread
 // int e = 0;
-// auto ret = q.wait_pop_front( &e ); // ret can be small::EnumTimeQueue::kQueue_Exit, small::EnumTimeQueue::kQueue_Timeout or ret == small::EnumTimeQueue::kQueue_Element
+// auto ret = q.wait_pop_front( &e ); // ret can be small::EnumLock::kExit, small::EnumLock::kTimeout or ret == small::EnumLock::kElement
 // //auto ret = q.wait_pop_front_for( std::chrono::minutes( 1 ), &e );
-// if ( ret == small::EnumTimeQueue::kQueue_Element )
+// if ( ret == small::EnumLock::kElement )
 // {
 //      // do something with e
 //      ...
@@ -29,15 +30,6 @@
 //
 
 namespace small {
-    //
-    // return type
-    //
-    enum class EnumTimeQueue
-    {
-        kQueue_Element,
-        kQueue_Timeout,
-        kQueue_Exit,
-    };
 
     //
     // queue which is event controlled
@@ -185,10 +177,10 @@ namespace small {
         //
         // wait pop_front and return that element
         //
-        inline EnumTimeQueue wait_pop_front(T *elem)
+        inline EnumLock wait_pop_front(T *elem)
         {
             if (is_exit_force()) {
-                return EnumTimeQueue::kQueue_Exit;
+                return EnumLock::kExit;
             }
 
             for (; true;) {
@@ -202,21 +194,21 @@ namespace small {
                 auto ret_flag = test_and_get_front(elem);
 
                 if (ret_flag == Flags::kFlags_Exit_Force || ret_flag == Flags::kFlags_Exit_When_Done) {
-                    return EnumTimeQueue::kQueue_Exit;
+                    return EnumLock::kExit;
                 }
 
                 if (ret_flag == Flags::kFlags_Element) {
-                    return EnumTimeQueue::kQueue_Element;
+                    return EnumLock::kElement;
                 }
 
                 // continue to wait
             }
         }
 
-        inline EnumTimeQueue wait_pop_front(std::vector<T> &vec_elems, int max_count = 1)
+        inline EnumLock wait_pop_front(std::vector<T> &vec_elems, int max_count = 1)
         {
             if (is_exit_force()) {
-                return EnumTimeQueue::kQueue_Exit;
+                return EnumLock::kExit;
             }
 
             vec_elems.clear();
@@ -236,12 +228,12 @@ namespace small {
                     auto ret_flag = test_and_get_front(&elem);
 
                     if (ret_flag == Flags::kFlags_Exit_Force) {
-                        return EnumTimeQueue::kQueue_Exit;
+                        return EnumLock::kExit;
                     }
 
                     if (ret_flag == Flags::kFlags_Exit_When_Done) {
                         // return what was collected until now
-                        return vec_elems.size() ? EnumTimeQueue::kQueue_Element : EnumTimeQueue::kQueue_Exit;
+                        return vec_elems.size() ? EnumLock::kElement : EnumLock::kExit;
                     }
 
                     if (ret_flag != Flags::kFlags_Element) {
@@ -252,7 +244,7 @@ namespace small {
                 }
 
                 if (vec_elems.size()) {
-                    return EnumTimeQueue::kQueue_Element;
+                    return EnumLock::kElement;
                 }
 
                 // continue to wait
@@ -261,7 +253,7 @@ namespace small {
 
         // wait pop_front_for and return that element
         template <typename _Rep, typename _Period>
-        inline EnumTimeQueue wait_pop_front_for(const std::chrono::duration<_Rep, _Period> &__rtime, T *elem)
+        inline EnumLock wait_pop_front_for(const std::chrono::duration<_Rep, _Period> &__rtime, T *elem)
         {
             using __dur = typename std::chrono::system_clock::duration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
@@ -272,7 +264,7 @@ namespace small {
         }
 
         template <typename _Rep, typename _Period>
-        inline EnumTimeQueue wait_pop_front_for(const std::chrono::duration<_Rep, _Period> &__rtime, std::vector<T> &vec_elems, int max_count = 1)
+        inline EnumLock wait_pop_front_for(const std::chrono::duration<_Rep, _Period> &__rtime, std::vector<T> &vec_elems, int max_count = 1)
         {
             using __dur = typename std::chrono::system_clock::duration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
@@ -284,10 +276,10 @@ namespace small {
 
         // wait until
         template <typename _Clock, typename _Duration>
-        inline EnumTimeQueue wait_pop_front_until(const std::chrono::time_point<_Clock, _Duration> &__atime, T *elem)
+        inline EnumLock wait_pop_front_until(const std::chrono::time_point<_Clock, _Duration> &__atime, T *elem)
         {
             if (is_exit_force()) {
-                return EnumTimeQueue::kQueue_Exit;
+                return EnumLock::kExit;
             }
 
             for (; true;) {
@@ -296,7 +288,7 @@ namespace small {
                 // but not all will have an element to process
                 auto ret_w = m_event.wait_until(__atime);
                 if (ret_w == std::cv_status::timeout) {
-                    return EnumTimeQueue::kQueue_Timeout;
+                    return EnumLock::kTimeout;
                 }
 
                 // check queue and element
@@ -305,11 +297,11 @@ namespace small {
                 auto ret_flag = test_and_get_front(elem);
 
                 if (ret_flag == Flags::kFlags_Exit_Force || ret_flag == Flags::kFlags_Exit_When_Done) {
-                    return EnumTimeQueue::kQueue_Exit;
+                    return EnumLock::kExit;
                 }
 
                 if (ret_flag == Flags::kFlags_Element) {
-                    return EnumTimeQueue::kQueue_Element;
+                    return EnumLock::kElement;
                 }
 
                 // continue to wait
@@ -317,10 +309,10 @@ namespace small {
         }
 
         template <typename _Clock, typename _Duration>
-        inline EnumTimeQueue wait_pop_front_until(const std::chrono::time_point<_Clock, _Duration> &__atime, std::vector<T> &vec_elems, int max_count = 1)
+        inline EnumLock wait_pop_front_until(const std::chrono::time_point<_Clock, _Duration> &__atime, std::vector<T> &vec_elems, int max_count = 1)
         {
             if (is_exit_force()) {
-                return EnumTimeQueue::kQueue_Exit;
+                return EnumLock::kExit;
             }
 
             vec_elems.clear();
@@ -331,7 +323,7 @@ namespace small {
                 // but not all will have an element to process
                 auto ret = m_event.wait_until(__atime);
                 if (ret == std::cv_status::timeout) {
-                    return EnumTimeQueue::kQueue_Timeout;
+                    return EnumLock::kTimeout;
                 }
 
                 // check queue and element
@@ -342,12 +334,12 @@ namespace small {
                     auto ret_flag = test_and_get_front(&elem);
 
                     if (ret_flag == Flags::kFlags_Exit_Force) {
-                        return EnumTimeQueue::kQueue_Exit;
+                        return EnumLock::kExit;
                     }
 
                     if (ret_flag == Flags::kFlags_Exit_When_Done) {
                         // return what was collected until now
-                        return vec_elems.size() ? EnumTimeQueue::kQueue_Element : EnumTimeQueue::kQueue_Exit;
+                        return vec_elems.size() ? EnumLock::kElement : EnumLock::kExit;
                     }
 
                     if (ret_flag != Flags::kFlags_Element) {
@@ -358,7 +350,7 @@ namespace small {
                 }
 
                 if (vec_elems.size()) {
-                    return EnumTimeQueue::kQueue_Element;
+                    return EnumLock::kElement;
                 }
 
                 // continue to wait

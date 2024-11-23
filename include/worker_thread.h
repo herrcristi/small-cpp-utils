@@ -49,7 +49,7 @@
 // ...
 // // no more work, wait to be finished
 // auto ret = workers.wait_for( std::chrono::seconds(30) ); // auto ret = workers.wait();
-// if  ( ret ==  small::EnumEventQueue:: kQueue_Timeout ) {
+// if  ( ret ==  small::EnumLock:: kTimeout ) {
 //     // when finishing after signal_exit_force the work is aborted
 //     workers.signal_exit_force();
 // }
@@ -183,18 +183,18 @@ namespace small {
         //
         // wait for threads to finish processing
         //
-        inline EnumEventQueue wait()
+        inline EnumLock wait()
         {
             signal_exit_when_done();
             for (auto &th : m_threads_futures) {
                 th.wait();
             }
-            return EnumEventQueue::kQueue_Exit;
+            return EnumLock::kExit;
         }
 
         // wait some time then signal exit
         template <typename _Rep, typename _Period>
-        inline EnumEventQueue wait_for(const std::chrono::duration<_Rep, _Period> &__rtime)
+        inline EnumLock wait_for(const std::chrono::duration<_Rep, _Period> &__rtime)
         {
             using __dur = typename std::chrono::system_clock::duration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
@@ -206,16 +206,16 @@ namespace small {
 
         // wait until then signal exit
         template <typename _Clock, typename _Duration>
-        inline EnumEventQueue wait_until(const std::chrono::time_point<_Clock, _Duration> &__atime)
+        inline EnumLock wait_until(const std::chrono::time_point<_Clock, _Duration> &__atime)
         {
             signal_exit_when_done();
             for (auto &th : m_threads_futures) {
                 auto ret = th.wait_until(__atime);
                 if (ret == std::future_status::timeout) {
-                    return EnumEventQueue::kQueue_Timeout;
+                    return EnumLock::kTimeout;
                 }
             }
-            return EnumEventQueue::kQueue_Exit;
+            return EnumLock::kExit;
         }
 
     private:
@@ -236,14 +236,14 @@ namespace small {
             const int bulk_count = std::max(m_config.bulk_count, 1);
             while (1) {
                 // wait
-                small::EnumEventQueue ret = m_queue_items.wait_pop_front(vec_elems, bulk_count);
+                small::EnumLock ret = m_queue_items.wait_pop_front(vec_elems, bulk_count);
 
-                if (ret == small::EnumEventQueue::kQueue_Exit) {
+                if (ret == small::EnumLock::kExit) {
                     // force stop
                     break;
-                } else if (ret == small::EnumEventQueue::kQueue_Timeout) {
+                } else if (ret == small::EnumLock::kTimeout) {
                     // nothing to do
-                } else if (ret == small::EnumEventQueue::kQueue_Element) {
+                } else if (ret == small::EnumLock::kElement) {
                     // process
                     m_processing_function(vec_elems); // bind the std::placeholders::_1
                 }

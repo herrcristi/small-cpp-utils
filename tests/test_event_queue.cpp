@@ -81,7 +81,7 @@ namespace {
         // pop
         int value{};
         auto ret = q.wait_pop_front(&value);
-        ASSERT_EQ(ret, small::EnumEventQueue::kQueue_Element);
+        ASSERT_EQ(ret, small::EnumLock::kElement);
         ASSERT_EQ(value, 5);
 
         // check size
@@ -100,7 +100,7 @@ namespace {
         // pop
         std::vector<int> values;
         auto ret = q.wait_pop_front(values, 10);
-        ASSERT_EQ(ret, small::EnumEventQueue::kQueue_Element);
+        ASSERT_EQ(ret, small::EnumLock::kElement);
         ASSERT_EQ(values.size(), 1);
         ASSERT_EQ(values[0], 5);
 
@@ -117,7 +117,7 @@ namespace {
         auto timeStart = small::timeNow();
         int value{};
         auto ret = q.wait_pop_front_for(std::chrono::milliseconds(300), &value);
-        ASSERT_EQ(ret, small::EnumEventQueue::kQueue_Timeout);
+        ASSERT_EQ(ret, small::EnumLock::kTimeout);
 
         auto elapsed = small::timeDiffMs(timeStart);
         ASSERT_GE(elapsed, 300 - 1); // due conversion
@@ -129,7 +129,7 @@ namespace {
         // pop
         value = {};
         ret = q.wait_pop_front_for(std::chrono::milliseconds(300), &value);
-        ASSERT_EQ(ret, small::EnumEventQueue::kQueue_Element);
+        ASSERT_EQ(ret, small::EnumLock::kElement);
         ASSERT_EQ(value, 5);
 
         ASSERT_EQ(q.size(), 0);
@@ -141,7 +141,7 @@ namespace {
         elapsed = small::timeDiffMs(timeStart);
 
         ASSERT_GE(elapsed, 300 - 1); // due conversion
-        ASSERT_EQ(ret, small::EnumEventQueue::kQueue_Timeout);
+        ASSERT_EQ(ret, small::EnumLock::kTimeout);
     }
 
     TEST_F(EventQueueTest, Queue_Operations_Timeout_Vec)
@@ -153,7 +153,7 @@ namespace {
         auto timeStart = small::timeNow();
         std::vector<int> values;
         auto ret = q.wait_pop_front_for(std::chrono::milliseconds(300), values, 10);
-        ASSERT_EQ(ret, small::EnumEventQueue::kQueue_Timeout);
+        ASSERT_EQ(ret, small::EnumLock::kTimeout);
 
         auto elapsed = small::timeDiffMs(timeStart);
         ASSERT_GE(elapsed, 300 - 1); // due conversion
@@ -165,7 +165,7 @@ namespace {
 
         // pop
         ret = q.wait_pop_front_for(std::chrono::milliseconds(300), values, 10);
-        ASSERT_EQ(ret, small::EnumEventQueue::kQueue_Element);
+        ASSERT_EQ(ret, small::EnumLock::kElement);
         ASSERT_EQ(values.size(), 2);
         ASSERT_EQ(values[0], 5);
         ASSERT_EQ(values[1], 15);
@@ -178,7 +178,7 @@ namespace {
         elapsed = small::timeDiffMs(timeStart);
 
         ASSERT_GE(elapsed, 300 - 1); // due conversion
-        ASSERT_EQ(ret, small::EnumEventQueue::kQueue_Timeout);
+        ASSERT_EQ(ret, small::EnumLock::kTimeout);
     }
 
     TEST_F(EventQueueTest, Queue_Operations_Thread)
@@ -201,7 +201,7 @@ namespace {
         auto ret = q.wait_pop_front(&value);
         auto elapsed = small::timeDiffMs(timeStart);
 
-        ASSERT_EQ(ret, small::EnumEventQueue::kQueue_Element);
+        ASSERT_EQ(ret, small::EnumLock::kElement);
         ASSERT_EQ(value, 5);
         ASSERT_EQ(q.size(), 0);
 
@@ -220,7 +220,7 @@ namespace {
         // wait and pop
         int value = {};
         auto ret = q.wait_pop_front(&value);
-        ASSERT_EQ(ret, small::EnumEventQueue::kQueue_Element);
+        ASSERT_EQ(ret, small::EnumLock::kElement);
         ASSERT_EQ(value, 5);
         ASSERT_EQ(q.size(), 0);
 
@@ -238,7 +238,7 @@ namespace {
         ret = q.wait_pop_front(&value);
         auto elapsed = small::timeDiffMs(timeStart);
 
-        ASSERT_EQ(ret, small::EnumEventQueue::kQueue_Exit);
+        ASSERT_EQ(ret, small::EnumLock::kExit);
         ASSERT_GE(elapsed, 300 - 1); // due conversion
 
         // push is no longer accepted
@@ -258,7 +258,7 @@ namespace {
         // wait and pop
         int value = {};
         auto ret = q.wait_pop_front(&value);
-        ASSERT_EQ(ret, small::EnumEventQueue::kQueue_Element);
+        ASSERT_EQ(ret, small::EnumLock::kElement);
         ASSERT_EQ(value, 5);
         ASSERT_EQ(q.size(), 0);
 
@@ -276,7 +276,7 @@ namespace {
         ret = q.wait_pop_front(&value);
         auto elapsed = small::timeDiffMs(timeStart);
 
-        ASSERT_EQ(ret, small::EnumEventQueue::kQueue_Exit);
+        ASSERT_EQ(ret, small::EnumLock::kExit);
         ASSERT_GE(elapsed, 300 - 1); // due conversion
 
         // push is no longer accepted

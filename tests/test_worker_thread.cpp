@@ -88,11 +88,11 @@ namespace {
 
         // wait_until
         auto ret = workers.wait_for(std::chrono::milliseconds(0));
-        ASSERT_EQ(ret, small::EnumEventQueue::kQueue_Timeout);
+        ASSERT_EQ(ret, small::EnumLock::kTimeout);
 
         // wait to finish
         ret = workers.wait();
-        ASSERT_EQ(ret, small::EnumEventQueue::kQueue_Exit);
+        ASSERT_EQ(ret, small::EnumLock::kExit);
 
         // check size
         ASSERT_EQ(workers.size(), 0);
@@ -134,7 +134,7 @@ namespace {
 
         // wait to finish
         auto ret = workers.wait();
-        ASSERT_EQ(ret, small::EnumEventQueue::kQueue_Exit);
+        ASSERT_EQ(ret, small::EnumLock::kExit);
 
         // check size
         ASSERT_EQ(workers.size(), 1);
