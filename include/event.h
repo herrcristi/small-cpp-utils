@@ -97,20 +97,25 @@ namespace small {
         //
         // wait for event to be set
         //
-        inline void wait()
+        inline EnumLock wait()
         {
             std::unique_lock l(m_lock);
 
             while (test_event_and_reset() == false) {
-                m_lock.wait(mlock);
+                auto ret_w = m_lock.wait();
+                if (ret_w == EnumLock::kExit) {
+                    return EnumLock::kExit;
+                }
             }
+
+            return EnumLock::kElement;
         }
 
         //
         // wait with condition
         //
         template <typename _Predicate>
-        inline void wait(_Predicate __p)
+        inline EnumLock wait(_Predicate __p)
         {
             for (; true; std::this_thread::sleep_for(std::chrono::milliseconds(1))) {
                 std::unique_lock l(m_lock);
@@ -120,13 +125,16 @@ namespace small {
                 // wait for event first
                 // and dont consume the event if condition is not met
                 while (test_event() == false) {
-                    m_lock.wait(mlock);
+                    auto ret_w = m_lock.wait();
+                    if (ret_w == EnumLock::kExit) {
+                        return EnumLock::kExit;
+                    }
                 }
 
                 if (__p()) {
                     // reset event
                     test_event_and_reset();
-                    return;
+                    return EnumLock::kElement;
                 }
 
                 // event is signaled but condition not met, just throttle
@@ -134,13 +142,15 @@ namespace small {
                 m_lock.notify_one();
                 // release lock and just sleep for a bit
             }
+
+            return EnumLock::kTimeout;
         }
 
         //
         // wait for (it uses wait_until)
         //
         template <typename _Rep, typename _Period>
-        inline std::cv_status wait_for(const std::chrono::duration<_Rep, _Period> &__rtime)
+        inline EnumLock wait_for(const std::chrono::duration<_Rep, _Period> &__rtime)
         {
             using __dur = typename std::chrono::system_clock::duration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
@@ -154,7 +164,7 @@ namespace small {
         // wait_for with condition
         //
         template <typename _Rep, typename _Period, typename _Predicate>
-        inline std::cv_status wait_for(const std::chrono::duration<_Rep, _Period> &__rtime, _Predicate __p)
+        inline EnumLock wait_for(const std::chrono::duration<_Rep, _Period> &__rtime, _Predicate __p)
         {
             using __dur = typename std::chrono::system_clock::duration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
@@ -168,25 +178,25 @@ namespace small {
         // wait until
         //
         template <typename _Clock, typename _Duration>
-        inline std::cv_status wait_until(const std::chrono::time_point<_Clock, _Duration> &__atime)
+        inline EnumLock wait_until(const std::chrono::time_point<_Clock, _Duration> &__atime)
         {
             std::unique_lock l(m_lock);
 
             while (test_event_and_reset() == false) {
-                std::cv_status ret = m_lock.wait_until(mlock, __atime);
-                if (ret == std::cv_status::timeout) {
+                auto ret_w = m_lock.wait_until(__atime);
+                if (ret_w == EnumLock::kTimeout) {
                     // one last check
-                    return test_event_and_reset() == true ? std::cv_status::no_timeout : std::cv_status::timeout /*still timeout*/;
+                    return test_event_and_reset() == true ? EnumLock::kElement : EnumLock::kTimeout /*still timeout*/;
                 }
             }
-            return std::cv_status::no_timeout;
+            return EnumLock::kElement;
         }
 
         //
         // wait_until (with condition)
         //
         template <typename _Clock, typename _Duration, typename _Predicate>
-        inline std::cv_status wait_until(const std::chrono::time_point<_Clock, _Duration> &__atime, _Predicate __p)
+        inline EnumLock wait_until(const std::chrono::time_point<_Clock, _Duration> &__atime, _Predicate __p)
         {
             for (; true; std::this_thread::sleep_for(std::chrono::milliseconds(1))) {
                 std::unique_lock l(m_lock);
@@ -196,17 +206,17 @@ namespace small {
                 // wait for event first
                 // and dont consume the event if condition is not met
                 while (test_event() == false) {
-                    std::cv_status ret = m_lock.wait_until(mlock, __atime);
-                    if (ret == std::cv_status::timeout) {
+                    auto ret = m_lock.wait_until(__atime);
+                    if (ret == EnumLock::kTimeout) {
                         // one last check
-                        return __p() && test_event_and_reset() == true ? std::cv_status::no_timeout : std::cv_status::timeout /*still timeout*/;
+                        return __p() && test_event_and_reset() == true ? EnumLock::kElement : EnumLock::kTimeout /*still timeout*/;
                     }
                 }
 
                 if (__p()) {
                     // reset event
                     test_event_and_reset();
-                    return std::cv_status::no_timeout;
+                    return EnumLock::kElement;
                 }
 
                 // event is signaled but condition not met, just throttle
@@ -215,7 +225,7 @@ namespace small {
                 // release lock and just sleep for a bit
             }
 
-            return std::cv_status::timeout;
+            return EnumLock::kTimeout;
         }
 
     private:

@@ -287,7 +287,7 @@ namespace small {
                 // multiple threads may wait and when element is pushed all are awaken
                 // but not all will have an element to process
                 auto ret_w = m_event.wait_until(__atime);
-                if (ret_w == std::cv_status::timeout) {
+                if (ret_w == EnumLock::kTimeout) {
                     return EnumLock::kTimeout;
                 }
 
@@ -322,7 +322,7 @@ namespace small {
                 // multiple threads may wait and when element is pushed all are awaken
                 // but not all will have an element to process
                 auto ret = m_event.wait_until(__atime);
-                if (ret == std::cv_status::timeout) {
+                if (ret == EnumLock::kTimeout) {
                     return EnumLock::kTimeout;
                 }
 
