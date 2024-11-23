@@ -2,9 +2,9 @@
 
 #include <atomic>
 #include <chrono>
-#include <condition_variable>
-#include <mutex>
 #include <thread>
+
+#include "base_lock.h"
 
 // use it as an event
 //
@@ -30,13 +30,18 @@
 // small::event e( small::EventType::kEvent_Manual );
 //
 namespace small {
+    //
+    // event type
+    //
     enum class EventType
     {
         kEvent_Automatic,
         kEvent_Manual
     };
 
-    // event class based on mutex
+    //
+    // event class based on mutex lock
+    //
     class event
     {
     public:
@@ -74,9 +79,9 @@ namespace small {
 
             bool notify_all = m_event_type == EventType::kEvent_Manual;
             if (notify_all) {
-                m_condition.notify_all();
+                m_lock.notify_all();
             } else {
-                m_condition.notify_one();
+                m_lock.notify_one();
             }
         }
 
@@ -97,7 +102,7 @@ namespace small {
             std::unique_lock<std::recursive_mutex> mlock(m_lock);
 
             while (test_event_and_reset() == false) {
-                m_condition.wait(mlock);
+                m_lock.wait(mlock);
             }
         }
 
@@ -115,7 +120,7 @@ namespace small {
                 // wait for event first
                 // and dont consume the event if condition is not met
                 while (test_event() == false) {
-                    m_condition.wait(mlock);
+                    m_lock.wait(mlock);
                 }
 
                 if (__p()) {
@@ -126,7 +131,7 @@ namespace small {
 
                 // event is signaled but condition not met, just throttle
                 // and allow others to use the event
-                m_condition.notify_one();
+                m_lock.notify_one();
                 // release lock and just sleep for a bit
             }
         }
@@ -168,7 +173,7 @@ namespace small {
             std::unique_lock<std::recursive_mutex> mlock(m_lock);
 
             while (test_event_and_reset() == false) {
-                std::cv_status ret = m_condition.wait_until(mlock, __atime);
+                std::cv_status ret = m_lock.wait_until(mlock, __atime);
                 if (ret == std::cv_status::timeout) {
                     // one last check
                     return test_event_and_reset() == true ? std::cv_status::no_timeout : std::cv_status::timeout /*still timeout*/;
@@ -191,7 +196,7 @@ namespace small {
                 // wait for event first
                 // and dont consume the event if condition is not met
                 while (test_event() == false) {
-                    std::cv_status ret = m_condition.wait_until(mlock, __atime);
+                    std::cv_status ret = m_lock.wait_until(mlock, __atime);
                     if (ret == std::cv_status::timeout) {
                         // one last check
                         return __p() && test_event_and_reset() == true ? std::cv_status::no_timeout : std::cv_status::timeout /*still timeout*/;
@@ -206,7 +211,7 @@ namespace small {
 
                 // event is signaled but condition not met, just throttle
                 // and allow others to use the event
-                m_condition.notify_one();
+                m_lock.notify_one();
                 // release lock and just sleep for a bit
             }
 
@@ -241,8 +246,7 @@ namespace small {
         //
         // members
         //
-        std::recursive_mutex m_lock;                         // mutex locker
-        std::condition_variable_any m_condition;             // condition
+        small::base_lock m_lock;                             // locker
         EventType m_event_type{EventType::kEvent_Automatic}; // for manual event
         std::atomic_bool m_event_value{};                    // event state
     };
