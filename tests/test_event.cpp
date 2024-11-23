@@ -228,7 +228,7 @@ namespace {
         auto elapsed = small::timeDiffMs(timeStart);
 
         ASSERT_GE(elapsed, 300 - 1); // due conversion
-        ASSERT_EQ(ret, EnumLock::kTimeout);
+        ASSERT_EQ(ret, small::EnumLock::kTimeout);
     }
 
     TEST_F(EventTest, Wait_For_NoTimeout)
@@ -243,7 +243,7 @@ namespace {
         auto elapsed = small::timeDiffMs(timeStart);
 
         ASSERT_LE(elapsed, 100); // check some time even there is no delay
-        ASSERT_EQ(ret, EnumLock::kElement);
+        ASSERT_EQ(ret, small::EnumLock::kElement);
     }
 
     //
@@ -265,7 +265,7 @@ namespace {
 
         ASSERT_GE(elapsed, 300 - 1); // due conversion
         ASSERT_EQ(conditionEvaluatedInc, 0);
-        ASSERT_EQ(ret, EnumLock::kTimeout);
+        ASSERT_EQ(ret, small::EnumLock::kTimeout);
     }
 
     TEST_F(EventTest, Wait_For_Condition_NoTimeout)
@@ -286,7 +286,7 @@ namespace {
 
         ASSERT_LE(elapsed, 100); // check some time even there is no delay
         ASSERT_EQ(conditionEvaluatedInc, 1);
-        ASSERT_EQ(ret, EnumLock::kElement);
+        ASSERT_EQ(ret, small::EnumLock::kElement);
     }
 
     //
@@ -303,7 +303,7 @@ namespace {
         auto elapsed = small::timeDiffMs(timeStart);
 
         ASSERT_GE(elapsed, 300 - 1); // due conversion
-        ASSERT_EQ(ret, EnumLock::kTimeout);
+        ASSERT_EQ(ret, small::EnumLock::kTimeout);
     }
 
     TEST_F(EventTest, Wait_Until_NoTimeout)
@@ -318,7 +318,7 @@ namespace {
         auto elapsed = small::timeDiffMs(timeStart);
 
         ASSERT_LE(elapsed, 100); // check some time even there is no delay
-        ASSERT_EQ(ret, EnumLock::kElement);
+        ASSERT_EQ(ret, small::EnumLock::kElement);
     }
 
     //
@@ -340,7 +340,7 @@ namespace {
 
         ASSERT_GE(elapsed, 300 - 1); // due conversion
         ASSERT_EQ(conditionEvaluatedInc, 0);
-        ASSERT_EQ(ret, EnumLock::kTimeout);
+        ASSERT_EQ(ret, small::EnumLock::kTimeout);
     }
 
     TEST_F(EventTest, Wait_Until_Condition_NoTimeout)
@@ -361,7 +361,7 @@ namespace {
 
         ASSERT_LE(elapsed, 100); // check some time even there is no delay
         ASSERT_EQ(conditionEvaluatedInc, 1);
-        ASSERT_EQ(ret, EnumLock::kElement);
+        ASSERT_EQ(ret, small::EnumLock::kElement);
     }
 
 } // namespace

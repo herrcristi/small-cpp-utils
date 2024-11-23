@@ -20,11 +20,11 @@ namespace examples::event_queue {
         std::thread t([](small::event_queue<qc> &_q) {
             std::this_thread::sleep_for(std::chrono::milliseconds(300));
             std::cout << "push {1, \"A\"}" << std::endl;
-            _q.push_back({1, "B"});
+            _q.push_back({1, "A"});
 
             std::this_thread::sleep_for(std::chrono::milliseconds(300));
             std::cout << "push {2, \"b\"}" << std::endl;
-            _q.emplace_back(2, "a");
+            _q.emplace_back(2, "b");
 
             std::this_thread::sleep_for(std::chrono::milliseconds(300));
             std::cout << "signal exit force" << std::endl;

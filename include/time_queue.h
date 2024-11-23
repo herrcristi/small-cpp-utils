@@ -121,7 +121,7 @@ namespace small {
             }
 
             std::unique_lock mlock(m_event);
-            m_queue.push_back({__atime, std::move<T>(t)});
+            m_queue.push_back({__atime, std::forward<T>(t)});
             m_event.set_event();
         }
 

@@ -159,7 +159,7 @@ namespace small {
                     return EnumLock::kExit;
                 }
 
-                if (ret_w == cv_status::timeout) {
+                if (ret_w == std::cv_status::timeout) {
                     return EnumLock::kTimeout;
                 }
             }
