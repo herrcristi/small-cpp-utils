@@ -76,48 +76,48 @@ namespace small {
         }
 
         //
-        // wait requires lock ( std::unique_lock mlock( ... ); )
+        // wait
         //
-        inline EnumLock wait()
+        template <typename _Lock>
+        inline EnumLock wait(_Lock &__lock)
         {
             if (is_exit_force()) {
                 return EnumLock::kExit;
             }
 
-            m_condition.wait(m_lock);
+            m_condition.wait(__lock);
 
             return is_exit_force() ? EnumLock::kExit : EnumLock::kElement;
         }
 
-        //
-        // wait requires lock ( std::unique_lock mlock( ... ); )
-        //
-        template <typename _Predicate>
-        inline EnumLock wait(_Predicate __p)
+        template <typename _Lock, typename _Predicate>
+        inline EnumLock wait(_Lock &__lock, _Predicate __p)
         {
             if (is_exit_force()) {
                 return EnumLock::kExit;
             }
 
-            m_condition.wait(m_lock, __p);
+            m_condition.wait(__lock, __p);
 
             return is_exit_force() ? EnumLock::kExit : EnumLock::kElement;
         }
 
-        // wait for requires lock ( std::unique_lock mlock( ... ); )
-        template <typename _Rep, typename _Period>
-        inline EnumLock wait_for(const std::chrono::duration<_Rep, _Period> &__rtime)
+        //
+        // wait for
+        //
+        template <typename _Lock, typename _Rep, typename _Period>
+        inline EnumLock wait_for(_Lock &__lock, const std::chrono::duration<_Rep, _Period> &__rtime)
         {
             using __dur = typename std::chrono::system_clock::duration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
             if (__reltime < __rtime) {
                 ++__reltime;
             }
-            return wait_until(std::chrono::system_clock::now() + __reltime);
+            return wait_until(__lock, std::chrono::system_clock::now() + __reltime);
         }
 
-        template <typename _Rep, typename _Period, typename _Predicate>
-        inline EnumLock wait_for(const std::chrono::duration<_Rep, _Period> &__rtime, _Predicate __p)
+        template <typename _Lock, typename _Rep, typename _Period, typename _Predicate>
+        inline EnumLock wait_for(_Lock &__lock, const std::chrono::duration<_Rep, _Period> &__rtime, _Predicate __p)
         {
             using __dur = typename std::chrono::system_clock::duration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
@@ -125,18 +125,20 @@ namespace small {
                 ++__reltime;
             }
 
-            return wait_until(std::chrono::system_clock::now() + __reltime, std::move(__p));
+            return wait_until(__lock, std::chrono::system_clock::now() + __reltime, std::move(__p));
         }
 
-        // wait until requires lock ( std::unique_lock mlock( ... ); )
-        template <typename _Clock, typename _Duration>
-        inline EnumLock wait_until(const std::chrono::time_point<_Clock, _Duration> &__atime)
+        //
+        // wait until
+        //
+        template <typename _Lock, typename _Clock, typename _Duration>
+        inline EnumLock wait_until(_Lock &__lock, const std::chrono::time_point<_Clock, _Duration> &__atime)
         {
             if (is_exit_force()) {
                 return EnumLock::kExit;
             }
 
-            auto ret_w = m_condition.wait_until(m_lock, __atime);
+            auto ret_w = m_condition.wait_until(__lock, __atime);
 
             if (is_exit_force()) {
                 return EnumLock::kExit;
@@ -145,15 +147,15 @@ namespace small {
             return ret_w == std::cv_status::timeout ? EnumLock::kTimeout : EnumLock::kElement;
         }
 
-        template <typename _Clock, typename _Duration, typename _Predicate>
-        inline EnumLock wait_until(const std::chrono::time_point<_Clock, _Duration> &__atime, _Predicate __p)
+        template <typename _Lock, typename _Clock, typename _Duration, typename _Predicate>
+        inline EnumLock wait_until(_Lock &__lock, const std::chrono::time_point<_Clock, _Duration> &__atime, _Predicate __p)
         {
             if (is_exit_force()) {
                 return EnumLock::kExit;
             }
 
             while (!__p()) {
-                auto ret_w = m_condition.wait_until(m_lock, __atime);
+                auto ret_w = m_condition.wait_until(__lock, __atime);
 
                 if (is_exit_force()) {
                     return EnumLock::kExit;

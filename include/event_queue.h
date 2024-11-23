@@ -167,7 +167,7 @@ namespace small {
                 // continue to wait for event to be set
                 // multiple threads may wait and when element is pushed one/all are awaken
                 // but not all will have an element to process
-                auto ret_w = m_event.wait();
+                auto ret_w = m_event.wait_lock(l);
                 if (ret_w == EnumLock::kExit) {
                     return EnumLock::kExit;
                 }
@@ -215,7 +215,7 @@ namespace small {
                 // continue wait for event to be set
                 // multiple threads may wait and when element is pushed one/all are awaken
                 // but not all will have an element to process
-                auto ret_w = m_event.wait();
+                auto ret_w = m_event.wait_lock(l);
                 if (ret_w == EnumLock::kExit) {
                     return EnumLock::kExit;
                 }
@@ -224,7 +224,9 @@ namespace small {
             }
         }
 
+        //
         // wait pop_front_for and return that element
+        //
         template <typename _Rep, typename _Period>
         inline EnumLock wait_pop_front_for(const std::chrono::duration<_Rep, _Period> &__rtime, T *elem)
         {
@@ -247,7 +249,9 @@ namespace small {
             return wait_pop_front_until(std::chrono::system_clock::now() + __reltime, vec_elems, max_count);
         }
 
+        //
         // wait until
+        //
         template <typename _Clock, typename _Duration>
         inline EnumLock wait_pop_front_until(const std::chrono::time_point<_Clock, _Duration> &__atime, T *elem)
         {
@@ -272,12 +276,12 @@ namespace small {
                 // continue to wait for event to be set
                 // multiple threads may wait and when element is pushed one/all are awaken
                 // but not all will have an element to process
-                auto ret_w = m_event.wait_until(__atime);
-                if (ret_w == EnumLock::kTimeout) {
-                    return EnumLock::kTimeout;
-                }
+                auto ret_w = m_event.wait_until_lock(l, __atime);
                 if (ret_w == EnumLock::kExit) {
                     return EnumLock::kExit;
+                }
+                if (ret_w == EnumLock::kTimeout) {
+                    return EnumLock::kTimeout;
                 }
 
                 // continue to check if there is a new element
@@ -324,12 +328,12 @@ namespace small {
                 // wait for event to be set
                 // multiple threads may wait and when element is pushed all are awaken
                 // but not all will have an element to process
-                auto ret_w = m_event.wait_until(__atime);
-                if (ret_w == EnumLock::kTimeout) {
-                    return EnumLock::kTimeout;
-                }
+                auto ret_w = m_event.wait_until_lock(l, __atime);
                 if (ret_w == EnumLock::kExit) {
                     return EnumLock::kExit;
+                }
+                if (ret_w == EnumLock::kTimeout) {
+                    return EnumLock::kTimeout;
                 }
 
                 // continue to check if there is a new element
@@ -392,9 +396,7 @@ namespace small {
         //
         // members
         //
-        std::deque<T> m_queue;                        // queue
-        small::event m_event{EventType::kManual};     // event (base_lock can be used)
-        std::atomic<bool> m_is_exit_force{false};     // force exit
-        std::atomic<bool> m_is_exit_when_done{false}; // exit when queue is zero
+        std::deque<T> m_queue;                    // queue
+        small::event m_event{EventType::kManual}; // event (base_lock can be used)
     };
 } // namespace small
