@@ -95,6 +95,37 @@ namespace small {
         }
 
         //
+        // exit
+        //
+        inline void signal_exit_force()
+        {
+            std::unique_lock l(m_lock);
+            m_lock.signal_exit_force(); // and notify_all
+        }
+        inline void reset_exit_force()
+        {
+            m_lock.reset_exit_force();
+        }
+        inline bool is_exit_force()
+        {
+            return m_lock.is_exit_force();
+        }
+
+        inline void signal_exit_when_done()
+        {
+            std::unique_lock l(m_lock);
+            m_lock.signal_exit_when_done(); // and notify_all
+        }
+        inline void reset_exit_when_done()
+        {
+            m_lock.reset_exit_when_done();
+        }
+        inline bool is_exit_when_done()
+        {
+            return m_lock.is_exit_when_done();
+        }
+
+        //
         // wait for event to be set
         //
         inline EnumLock wait()

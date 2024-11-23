@@ -38,6 +38,10 @@ namespace small {
             m_is_exit_force.store(true);
             m_condition.notify_all();
         }
+        inline void reset_exit_force()
+        {
+            m_is_exit_force.store(false);
+        }
         inline bool is_exit_force()
         {
             return m_is_exit_force.load() == true;
@@ -48,6 +52,10 @@ namespace small {
             std::unique_lock mlock(m_lock);
             m_is_exit_when_done.store(true);
             m_condition.notify_all();
+        }
+        inline void reset_exit_when_done()
+        {
+            m_is_exit_when_done.store(false);
         }
         inline bool is_exit_when_done()
         {

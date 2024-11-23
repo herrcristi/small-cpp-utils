@@ -193,11 +193,11 @@ namespace small {
                 std::unique_lock mlock(m_event);
                 auto ret_flag = test_and_get_front(elem);
 
-                if (ret_flag == Flags::kFlags_Exit_Force || ret_flag == Flags::kFlags_Exit_When_Done) {
+                if (ret_flag == Flags::kExit_Force || ret_flag == Flags::kExit_When_Done) {
                     return EnumLock::kExit;
                 }
 
-                if (ret_flag == Flags::kFlags_Element) {
+                if (ret_flag == Flags::kElement) {
                     return EnumLock::kElement;
                 }
 
@@ -227,16 +227,16 @@ namespace small {
                 for (int i = 0; i < max_count; ++i) {
                     auto ret_flag = test_and_get_front(&elem);
 
-                    if (ret_flag == Flags::kFlags_Exit_Force) {
+                    if (ret_flag == Flags::kExit_Force) {
                         return EnumLock::kExit;
                     }
 
-                    if (ret_flag == Flags::kFlags_Exit_When_Done) {
+                    if (ret_flag == Flags::kExit_When_Done) {
                         // return what was collected until now
                         return vec_elems.size() ? EnumLock::kElement : EnumLock::kExit;
                     }
 
-                    if (ret_flag != Flags::kFlags_Element) {
+                    if (ret_flag != Flags::kElement) {
                         break;
                     }
 
@@ -296,11 +296,11 @@ namespace small {
 
                 auto ret_flag = test_and_get_front(elem);
 
-                if (ret_flag == Flags::kFlags_Exit_Force || ret_flag == Flags::kFlags_Exit_When_Done) {
+                if (ret_flag == Flags::kExit_Force || ret_flag == Flags::kExit_When_Done) {
                     return EnumLock::kExit;
                 }
 
-                if (ret_flag == Flags::kFlags_Element) {
+                if (ret_flag == Flags::kElement) {
                     return EnumLock::kElement;
                 }
 
@@ -333,16 +333,16 @@ namespace small {
                 for (int i = 0; i < max_count; ++i) {
                     auto ret_flag = test_and_get_front(&elem);
 
-                    if (ret_flag == Flags::kFlags_Exit_Force) {
+                    if (ret_flag == Flags::kExit_Force) {
                         return EnumLock::kExit;
                     }
 
-                    if (ret_flag == Flags::kFlags_Exit_When_Done) {
+                    if (ret_flag == Flags::kExit_When_Done) {
                         // return what was collected until now
                         return vec_elems.size() ? EnumLock::kElement : EnumLock::kExit;
                     }
 
-                    if (ret_flag != Flags::kFlags_Element) {
+                    if (ret_flag != Flags::kElement) {
                         break;
                     }
 
@@ -371,28 +371,28 @@ namespace small {
         //
         enum class Flags : unsigned int
         {
-            kFlags_None = 0,
-            kFlags_Exit_Force = 1,
-            kFlags_Exit_When_Done = 2,
-            kFlags_Element = 3,
+            kNone = 0,
+            kExit_Force = 1,
+            kExit_When_Done = 2,
+            kElement = 3,
         };
 
         inline Flags test_and_get_front(T *elem)
         {
             if (is_exit_force()) {
-                return Flags::kFlags_Exit_Force;
+                return Flags::kExit_Force;
             }
 
             // check queue size
             if (m_queue.empty()) {
                 if (is_exit_when_done()) {
                     // exit but dont reset event to allow other threads to exit
-                    return Flags::kFlags_Exit_When_Done;
+                    return Flags::kExit_When_Done;
                 }
 
                 // reset event
                 m_event.reset_event();
-                return Flags::kFlags_None;
+                return Flags::kNone;
             }
 
             // get elem
@@ -406,7 +406,7 @@ namespace small {
                 m_event.reset_event();
             }
 
-            return Flags::kFlags_Element;
+            return Flags::kElement;
         }
 
     private:

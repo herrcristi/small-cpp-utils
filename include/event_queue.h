@@ -41,7 +41,7 @@ namespace small {
         //
         inline size_t size()
         {
-            std::unique_lock mlock(m_event);
+            std::unique_lock l(m_event);
             return m_queue.size();
         }
 
@@ -52,17 +52,17 @@ namespace small {
         //
         inline void clear()
         {
-            std::unique_lock mlock(m_event);
+            std::unique_lock l(m_event);
             m_queue.clear();
         }
 
         // reset the event and clears all elements
         inline void reset()
         {
-            std::unique_lock mlock(m_event);
+            std::unique_lock l(m_event);
             clear();
-            m_is_exit_force = false;
-            m_is_exit_when_done = false;
+            m_event.reset_exit_force();
+            m_event.reset_exit_when_done();
             m_event.reset_event();
         }
 
@@ -76,26 +76,26 @@ namespace small {
         //
         // push_back
         //
-        inline void push_back(const T &t)
+        inline void push_back(const T &elem)
         {
             if (is_push_forbidden()) {
                 return;
             }
 
-            std::unique_lock mlock(m_event);
-            m_queue.push_back(t);
+            std::unique_lock l(m_event);
+            m_queue.push_back(elem);
             m_event.set_event();
         }
 
         // push_back move semantics
-        inline void push_back(T &&t)
+        inline void push_back(T &&elem)
         {
             if (is_push_forbidden()) {
                 return;
             }
 
-            std::unique_lock mlock(m_event);
-            m_queue.push_back(std::move<T>(t));
+            std::unique_lock l(m_event);
+            m_queue.push_back(std::move<T>(elem));
             m_event.set_event();
         }
 
@@ -107,7 +107,7 @@ namespace small {
                 return;
             }
 
-            std::unique_lock mlock(m_event);
+            std::unique_lock l(m_event);
             m_queue.emplace_back(std::forward<_Args>(__args)...);
             m_event.set_event();
         }
@@ -117,24 +117,28 @@ namespace small {
         //
         inline void signal_exit_force()
         {
-            std::unique_lock mlock(m_event);
-            m_is_exit_force.store(true);
-            m_event.set_event(); /*will notify_all() because is manual*/
+            std::unique_lock l(m_event);
+            m_event.signal_exit_force(); // will notify_all
+            m_event.set_event();
+        }
+        inline void reset_exit_force()
+        {
+            m_event.reset_exit_force();
         }
         inline bool is_exit_force()
         {
-            return m_is_exit_force.load() == true;
+            return m_event.is_exit_force();
         }
 
         inline void signal_exit_when_done()
         {
-            std::unique_lock mlock(m_event);
-            m_is_exit_when_done.store(true);
-            m_event.set_event(); /*will notify_all() because is manual*/
+            std::unique_lock l(m_event);
+            m_event.signal_exit_when_done(); // will notify_all
+            m_event.set_event();
         }
         inline bool is_exit_when_done()
         {
-            return m_is_exit_when_done.load() == true;
+            return m_event.is_exit_when_done();
         }
 
         //
@@ -142,64 +146,62 @@ namespace small {
         //
         inline EnumLock wait_pop_front(T *elem)
         {
-            if (is_exit_force()) {
-                return EnumLock::kExit;
-            }
-
             for (; true;) {
-                // wait for event to be set
-                // multiple threads may wait and when element is pushed all are awaken
-                // but not all will have an element to process
-                m_event.wait();
-
-                // check queue and element
-                std::unique_lock mlock(m_event);
-                auto ret_flag = test_and_get_front(elem);
-
-                if (ret_flag == Flags::kFlags_Exit_Force || ret_flag == Flags::kFlags_Exit_When_Done) {
+                if (is_exit_force()) {
                     return EnumLock::kExit;
                 }
 
-                if (ret_flag == Flags::kFlags_Element) {
+                std::unique_lock l(m_event);
+
+                // check queue and element
+                auto ret_flag = test_and_get_front(elem);
+
+                if (ret_flag == Flags::kExit_Force || ret_flag == Flags::kExit_When_Done) {
+                    return EnumLock::kExit;
+                }
+
+                if (ret_flag == Flags::kElement) {
                     return EnumLock::kElement;
                 }
 
-                // continue to wait
+                // continue to wait for event to be set
+                // multiple threads may wait and when element is pushed one/all are awaken
+                // but not all will have an element to process
+                auto ret_w = m_event.wait();
+                if (ret_w == EnumLock::kExit) {
+                    return EnumLock::kExit;
+                }
+
+                // continue to check if there is a new element
             }
         }
 
         inline EnumLock wait_pop_front(std::vector<T> &vec_elems, int max_count = 1)
         {
-            if (is_exit_force()) {
-                return EnumLock::kExit;
-            }
-
             vec_elems.clear();
             vec_elems.reserve(max_count);
             for (; true;) {
-                // wait for event to be set
-                // multiple threads may wait and when element is pushed all are awaken
-                // but not all will have an element to process
-                m_event.wait();
+                if (is_exit_force()) {
+                    return EnumLock::kExit;
+                }
 
                 // check queue and element
-
-                std::unique_lock mlock(m_event);
+                std::unique_lock l(m_event);
 
                 T elem{};
                 for (int i = 0; i < max_count; ++i) {
                     auto ret_flag = test_and_get_front(&elem);
 
-                    if (ret_flag == Flags::kFlags_Exit_Force) {
+                    if (ret_flag == Flags::kExit_Force) {
                         return EnumLock::kExit;
                     }
 
-                    if (ret_flag == Flags::kFlags_Exit_When_Done) {
+                    if (ret_flag == Flags::kExit_When_Done) {
                         // return what was collected until now
                         return vec_elems.size() ? EnumLock::kElement : EnumLock::kExit;
                     }
 
-                    if (ret_flag != Flags::kFlags_Element) {
+                    if (ret_flag != Flags::kElement) {
                         break;
                     }
 
@@ -210,7 +212,15 @@ namespace small {
                     return EnumLock::kElement;
                 }
 
-                // continue to wait
+                // continue wait for event to be set
+                // multiple threads may wait and when element is pushed one/all are awaken
+                // but not all will have an element to process
+                auto ret_w = m_event.wait();
+                if (ret_w == EnumLock::kExit) {
+                    return EnumLock::kExit;
+                }
+
+                // continue to check if there is a new element
             }
         }
 
@@ -241,71 +251,66 @@ namespace small {
         template <typename _Clock, typename _Duration>
         inline EnumLock wait_pop_front_until(const std::chrono::time_point<_Clock, _Duration> &__atime, T *elem)
         {
-            if (is_exit_force()) {
-                return EnumLock::kExit;
-            }
-
             for (; true;) {
-                // wait for event to be set
-                // multiple threads may wait and when element is pushed all are awaken
+                if (is_exit_force()) {
+                    return EnumLock::kExit;
+                }
+
+                // check queue and element
+                std::unique_lock l(m_event);
+
+                auto ret_flag = test_and_get_front(elem);
+
+                if (ret_flag == Flags::kExit_Force || ret_flag == Flags::kExit_When_Done) {
+                    return EnumLock::kExit;
+                }
+
+                if (ret_flag == Flags::kElement) {
+                    return EnumLock::kElement;
+                }
+
+                // continue to wait for event to be set
+                // multiple threads may wait and when element is pushed one/all are awaken
                 // but not all will have an element to process
                 auto ret_w = m_event.wait_until(__atime);
                 if (ret_w == EnumLock::kTimeout) {
                     return EnumLock::kTimeout;
                 }
-
-                // check queue and element
-                std::unique_lock mlock(m_event);
-
-                auto ret_flag = test_and_get_front(elem);
-
-                if (ret_flag == Flags::kFlags_Exit_Force || ret_flag == Flags::kFlags_Exit_When_Done) {
+                if (ret_w == EnumLock::kExit) {
                     return EnumLock::kExit;
                 }
 
-                if (ret_flag == Flags::kFlags_Element) {
-                    return EnumLock::kElement;
-                }
-
-                // continue to wait
+                // continue to check if there is a new element
             }
         }
 
         template <typename _Clock, typename _Duration>
         inline EnumLock wait_pop_front_until(const std::chrono::time_point<_Clock, _Duration> &__atime, std::vector<T> &vec_elems, int max_count = 1)
         {
-            if (is_exit_force()) {
-                return EnumLock::kExit;
-            }
-
             vec_elems.clear();
             vec_elems.reserve(max_count);
             for (; true;) {
-                // wait for event to be set
-                // multiple threads may wait and when element is pushed all are awaken
-                // but not all will have an element to process
-                auto ret_w = m_event.wait_until(__atime);
-                if (ret_w == EnumLock::kTimeout) {
-                    return EnumLock::kTimeout;
+                if (is_exit_force()) {
+                    return EnumLock::kExit;
                 }
 
                 // check queue and element
-                std::unique_lock mlock(m_event);
+                std::unique_lock l(m_event);
 
                 T elem{};
                 for (int i = 0; i < max_count; ++i) {
                     auto ret_flag = test_and_get_front(&elem);
 
-                    if (ret_flag == Flags::kFlags_Exit_Force) {
+                    if (ret_flag == Flags::kExit_Force) {
                         return EnumLock::kExit;
                     }
 
-                    if (ret_flag == Flags::kFlags_Exit_When_Done) {
+                    if (ret_flag == Flags::kExit_When_Done) {
                         // return what was collected until now
                         return vec_elems.size() ? EnumLock::kElement : EnumLock::kExit;
                     }
 
-                    if (ret_flag != Flags::kFlags_Element) {
+                    if (ret_flag != Flags::kElement) {
                         break;
                     }
 
@@ -316,7 +321,18 @@ namespace small {
                     return EnumLock::kElement;
                 }
 
-                // continue to wait
+                // wait for event to be set
+                // multiple threads may wait and when element is pushed all are awaken
+                // but not all will have an element to process
+                auto ret_w = m_event.wait_until(__atime);
+                if (ret_w == EnumLock::kTimeout) {
+                    return EnumLock::kTimeout;
+                }
+                if (ret_w == EnumLock::kExit) {
+                    return EnumLock::kExit;
+                }
+
+                // continue to check if there is a new element
             }
         }
 
@@ -334,28 +350,28 @@ namespace small {
         //
         enum class Flags : unsigned int
         {
-            kFlags_None = 0,
-            kFlags_Exit_Force = 1,
-            kFlags_Exit_When_Done = 2,
-            kFlags_Element = 3,
+            kNone = 0,
+            kExit_Force = 1,
+            kExit_When_Done = 2,
+            kElement = 3,
         };
 
         inline Flags test_and_get_front(T *elem)
         {
             if (is_exit_force()) {
-                return Flags::kFlags_Exit_Force;
+                return Flags::kExit_Force;
             }
 
             // check queue size
             if (m_queue.empty()) {
                 if (is_exit_when_done()) {
                     // exit but dont reset event to allow other threads to exit
-                    return Flags::kFlags_Exit_When_Done;
+                    return Flags::kExit_When_Done;
                 }
 
                 // reset event
                 m_event.reset_event();
-                return Flags::kFlags_None;
+                return Flags::kNone;
             }
 
             // get elem
@@ -369,7 +385,7 @@ namespace small {
                 m_event.reset_event();
             }
 
-            return Flags::kFlags_Element;
+            return Flags::kElement;
         }
 
     private:
@@ -377,7 +393,7 @@ namespace small {
         // members
         //
         std::deque<T> m_queue;                        // queue
-        small::event m_event{EventType::kManual};     // event
+        small::event m_event{EventType::kManual};     // event (base_lock can be used)
         std::atomic<bool> m_is_exit_force{false};     // force exit
         std::atomic<bool> m_is_exit_when_done{false}; // exit when queue is zero
     };
