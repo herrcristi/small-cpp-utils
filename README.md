@@ -5,8 +5,9 @@ Small project
 Contains useful everyday features that can be used in following ways:
 
 -   event (it combines mutex and condition variable to create an event which is either automatic or manual)
--   event_queue (it combines the event and queue for creating waiting queue mechanism)
--   worker_thread (creates workers on separate threads that do task when requested, based on event_queue)
+-   lock_queue (queue for creating waiting queue mechanism)
+-   time_queue (creates a queue for delay requests)
+-   worker_thread (creates workers on separate threads that do task when requested, based on lock_queue and time_queue)
 -   spinlock (or critical_section to do quick locks)
 
 #
@@ -71,7 +72,7 @@ e.wait( [&]() -> bool {
 or
 
 ```
-small::event e( small::EventType::kEvent_Manual );
+small::event e( small::EventType::kManual );
 ...
 ...
 e.set_event();
@@ -86,9 +87,9 @@ e.reset_event()
 
 #
 
-### event_queue
+### lock_queue
 
-A queue with events functions that wait for items until they are available
+A queue that wait for items until they are available
 
 The following functions are available
 
@@ -114,7 +115,7 @@ Signal exit when we no longer want to use the queue
 Use it like this
 
 ```
-small::event_queue<int> q;
+small::lock_queue<int> q;
 ...
 q.push_back( 1 );
 ...
@@ -124,10 +125,66 @@ int e = 0;
 auto ret = q.wait_pop_front( &e );
 //auto ret = q.wait_pop_front_for( std::chrono::minutes( 1 ), &e );
 
-// ret can be small::EnumEventQueue::kQueue_Exit,
-// small::EnumEventQueue::kQueue_Timeout or ret == small::EnumEventQueue::kQueue_Element
+// ret can be small::EnumLock::kExit,
+// small::EnumLock::kTimeout or ret == small::EnumLock::kElement
 
-if ( ret == small::EnumEventQueue::kQueue_Element )
+if ( ret == small::EnumLock::kElement )
+ {
+     // do something with e
+    ...
+}
+
+...
+// on main thread, no more processing
+q.signal_exit_force();
+
+```
+
+#
+
+### time_queue
+
+A queue with for delayed items
+
+The following functions are available
+
+For container
+
+`size, empty, clear, reset`
+
+`push_delay_for, emplace_delay_for`
+`push_delay_until, emplace_delay_until`
+
+For locking
+
+`lock, unlock, try_lock`
+
+Wait for items
+
+`wait_pop, wait_pop_for, wait_pop_until`
+
+Signal exit when we no longer want to use the queue
+
+`signal_exit_force, is_exit_force` // exit immediatly ignoring what is left in the queue
+`signal_exit_when_done, is_exit_when_done` // exit when queue is empty
+
+Use it like this
+
+```
+small::time_queue<int> q;
+...
+q.push_delay_for( std::chrono::seconds(1), 1 );
+...
+
+// on some thread
+int e = 0;
+auto ret = q.wait_pop( &e );
+//auto ret = q.wait_pop_for( std::chrono::minutes( 1 ), &e );
+
+// ret can be small::EnumLock::kExit,
+// small::EnumLock::kTimeout or ret == small::EnumLock::kElement
+
+if ( ret == small::EnumLock::kElement )
  {
      // do something with e
     ...

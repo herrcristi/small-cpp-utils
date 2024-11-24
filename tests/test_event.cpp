@@ -105,7 +105,7 @@ namespace {
     TEST_F(EventTest, Wait_Manual_Multiple_Threads)
     {
         // create manual event
-        small::event event(small::EventType::kEvent_Manual);
+        small::event event(small::EventType::kManual);
 
         // create listening threads
         auto thread0 = std::jthread([](small::event &e) {
@@ -192,7 +192,7 @@ namespace {
     TEST_F(EventTest, Wait_Condition_Evaluate_Manual_Event)
     {
         // create manual event
-        small::event event(small::EventType::kEvent_Manual);
+        small::event event(small::EventType::kManual);
         event.set_event();
 
         auto timeStart = small::timeNow();
@@ -228,7 +228,7 @@ namespace {
         auto elapsed = small::timeDiffMs(timeStart);
 
         ASSERT_GE(elapsed, 300 - 1); // due conversion
-        ASSERT_EQ(ret, std::cv_status::timeout);
+        ASSERT_EQ(ret, small::EnumLock::kTimeout);
     }
 
     TEST_F(EventTest, Wait_For_NoTimeout)
@@ -243,7 +243,7 @@ namespace {
         auto elapsed = small::timeDiffMs(timeStart);
 
         ASSERT_LE(elapsed, 100); // check some time even there is no delay
-        ASSERT_EQ(ret, std::cv_status::no_timeout);
+        ASSERT_EQ(ret, small::EnumLock::kElement);
     }
 
     //
@@ -252,7 +252,7 @@ namespace {
     TEST_F(EventTest, Wait_For_Condition_Timeout)
     {
         // create manual event
-        small::event event(small::EventType::kEvent_Manual);
+        small::event event(small::EventType::kManual);
 
         auto timeStart = small::timeNow();
         int conditionEvaluatedInc = 0;
@@ -265,7 +265,7 @@ namespace {
 
         ASSERT_GE(elapsed, 300 - 1); // due conversion
         ASSERT_EQ(conditionEvaluatedInc, 0);
-        ASSERT_EQ(ret, std::cv_status::timeout);
+        ASSERT_EQ(ret, small::EnumLock::kTimeout);
     }
 
     TEST_F(EventTest, Wait_For_Condition_NoTimeout)
@@ -286,7 +286,7 @@ namespace {
 
         ASSERT_LE(elapsed, 100); // check some time even there is no delay
         ASSERT_EQ(conditionEvaluatedInc, 1);
-        ASSERT_EQ(ret, std::cv_status::no_timeout);
+        ASSERT_EQ(ret, small::EnumLock::kElement);
     }
 
     //
@@ -303,7 +303,7 @@ namespace {
         auto elapsed = small::timeDiffMs(timeStart);
 
         ASSERT_GE(elapsed, 300 - 1); // due conversion
-        ASSERT_EQ(ret, std::cv_status::timeout);
+        ASSERT_EQ(ret, small::EnumLock::kTimeout);
     }
 
     TEST_F(EventTest, Wait_Until_NoTimeout)
@@ -318,7 +318,7 @@ namespace {
         auto elapsed = small::timeDiffMs(timeStart);
 
         ASSERT_LE(elapsed, 100); // check some time even there is no delay
-        ASSERT_EQ(ret, std::cv_status::no_timeout);
+        ASSERT_EQ(ret, small::EnumLock::kElement);
     }
 
     //
@@ -327,7 +327,7 @@ namespace {
     TEST_F(EventTest, Wait_Until_Condition_Timeout)
     {
         // create manual event
-        small::event event(small::EventType::kEvent_Manual);
+        small::event event(small::EventType::kManual);
 
         auto timeStart = small::timeNow();
         int conditionEvaluatedInc = 0;
@@ -340,7 +340,7 @@ namespace {
 
         ASSERT_GE(elapsed, 300 - 1); // due conversion
         ASSERT_EQ(conditionEvaluatedInc, 0);
-        ASSERT_EQ(ret, std::cv_status::timeout);
+        ASSERT_EQ(ret, small::EnumLock::kTimeout);
     }
 
     TEST_F(EventTest, Wait_Until_Condition_NoTimeout)
@@ -361,7 +361,7 @@ namespace {
 
         ASSERT_LE(elapsed, 100); // check some time even there is no delay
         ASSERT_EQ(conditionEvaluatedInc, 1);
-        ASSERT_EQ(ret, std::cv_status::no_timeout);
+        ASSERT_EQ(ret, small::EnumLock::kElement);
     }
 
 } // namespace

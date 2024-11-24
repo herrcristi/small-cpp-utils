@@ -4,27 +4,27 @@
 #include <thread>
 #include <unistd.h>
 
-#include "../include/event_queue.h"
+#include "../include/lock_queue.h"
 
-namespace examples::event_queue {
+namespace examples::lock_queue {
     //
     //  example 1
     //
     int Example1()
     {
-        std::cout << "EventQueue\n";
+        std::cout << "LockQueue\n";
 
         using qc = std::pair<int, std::string>;
-        small::event_queue<qc> q;
+        small::lock_queue<qc> q;
 
-        std::thread t([](small::event_queue<qc> &_q) {
+        std::thread t([](small::lock_queue<qc> &_q) {
             std::this_thread::sleep_for(std::chrono::milliseconds(300));
             std::cout << "push {1, \"A\"}" << std::endl;
-            _q.push_back({1, "B"});
+            _q.push_back({1, "A"});
 
             std::this_thread::sleep_for(std::chrono::milliseconds(300));
             std::cout << "push {2, \"b\"}" << std::endl;
-            _q.emplace_back(2, "a");
+            _q.emplace_back(2, "b");
 
             std::this_thread::sleep_for(std::chrono::milliseconds(300));
             std::cout << "signal exit force" << std::endl;
@@ -51,8 +51,8 @@ namespace examples::event_queue {
 
         t.join();
 
-        std::cout << "Event Queue finished\n\n";
+        std::cout << "LockQueue finished\n\n";
 
         return 0;
     }
-} // namespace examples::event_queue
+} // namespace examples::lock_queue
