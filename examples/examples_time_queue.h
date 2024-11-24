@@ -23,14 +23,17 @@ namespace examples::time_queue {
             std::cout << "push {1, \"A\"}" << std::endl;
             _q.push_delay_for(std::chrono::milliseconds(600), {1, "A"});
 
-            std::cout << "push {2, \"b\"}" << std::endl;
-            _q.emplace_delay_for(std::chrono::milliseconds(300), 2, "b");
-
             auto time_now = std::chrono::system_clock::now();
+
+            std::cout << "push {2, \"b\"}" << std::endl;
+            _q.emplace_delay_until(time_now + std::chrono::milliseconds(300), 2, "b");
+            std::cout << "push {3, \"c\"}" << std::endl;
+            _q.emplace_delay_until(time_now + std::chrono::milliseconds(300), 3, "c");
+
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-            std::cout << "push {3, \"c\"}" << std::endl;
-            _q.push_delay_until(time_now /*already expired*/, {3, "c"});
+            std::cout << "push {4, \"d\"}" << std::endl;
+            _q.push_delay_until(time_now /*already expired*/, {4, "d"});
 
             std::this_thread::sleep_for(std::chrono::milliseconds(900));
             std::cout << "signal exit force" << std::endl;
@@ -43,25 +46,23 @@ namespace examples::time_queue {
         auto ret = q.wait_pop_for(std::chrono::milliseconds(1), &e);
         std::cout << "ret=" << static_cast<int>(ret) << " as timeout\n";
 
-        ret = q.wait_pop(&e);
-        auto elapsed = small::timeDiffMs(timeStart);
-        std::cout << "ret=" << static_cast<int>(ret) << ", pop " << e.first << "," << e.second << ", elapsed " << elapsed << " ms\n";
+        for (; ret != small::EnumLock::kExit;) {
+            ret = q.wait_pop(&e);
+            auto elapsed = small::timeDiffMs(timeStart);
+            switch (ret) {
+            case small::EnumLock::kElement:
+                std::cout << "ret=" << static_cast<int>(ret) << ", pop " << e.first << "," << e.second << ", elapsed " << elapsed << " ms\n";
+                break;
 
-        e = {};
-        ret = q.wait_pop(&e);
-        elapsed = small::timeDiffMs(timeStart);
-        std::cout << "ret=" << static_cast<int>(ret) << ", pop " << e.first << "," << e.second << ", elapsed " << elapsed << " ms\n";
+            case small::EnumLock::kExit:
+                std::cout << "ret=" << static_cast<int>(ret) << " as signal exit" << ", elapsed " << elapsed << " ms\n";
+                break;
 
-        e = {};
-        ret = q.wait_pop(&e);
-        elapsed = small::timeDiffMs(timeStart);
-        std::cout << "ret=" << static_cast<int>(ret) << ", pop " << e.first << "," << e.second << ", elapsed " << elapsed << " ms\n";
-
-        // force exit signaled
-        e = {};
-        ret = q.wait_pop(&e);
-        elapsed = small::timeDiffMs(timeStart);
-        std::cout << "ret=" << static_cast<int>(ret) << " as signal exit" << ", elapsed " << elapsed << " ms\n";
+            case small::EnumLock::kTimeout:
+                std::cout << "ret=" << static_cast<int>(ret) << " as timeout" << ", elapsed " << elapsed << " ms\n";
+                break;
+            }
+        }
 
         t.join();
 
