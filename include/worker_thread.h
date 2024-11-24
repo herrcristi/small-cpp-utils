@@ -234,7 +234,7 @@ namespace small {
         {
             std::vector<T> vec_elems;
             const int bulk_count = std::max(m_config.bulk_count, 1);
-            while (1) {
+            while (true) {
                 // wait
                 small::EnumLock ret = m_queue_items.wait_pop_front(vec_elems, bulk_count);
 

@@ -32,7 +32,7 @@
 namespace small {
 
     //
-    // queue which is event controlled
+    // queue which have elements time controlled
     //
     template <typename T>
     class time_queue
@@ -43,7 +43,7 @@ namespace small {
         //
         inline size_t size()
         {
-            std::unique_lock mlock(m_event);
+            std::unique_lock l(m_lock);
             return m_queue.size();
         }
 
@@ -54,75 +54,75 @@ namespace small {
         //
         inline void clear()
         {
-            std::unique_lock mlock(m_event);
+            std::unique_lock l(m_lock);
             m_queue.clear();
         }
 
         // reset the event and clears all elements
         inline void reset()
         {
-            std::unique_lock mlock(m_event);
+            std::unique_lock l(m_lock);
             clear();
-            m_is_exit_force = false;
-            m_is_exit_when_done = false;
-            m_event.reset_event();
+            m_lock.reset_exit_force();
+            m_lock.reset_exit_when_done();
+            m_lock.reset_event();
         }
 
         // clang-format off
-        // use it as locker (std::unique_lock<small:m_eventqueue<T>> m...)
-        inline void lock        () { m_event.lock(); }
-        inline void unlock      () { m_event.unlock(); }
-        inline bool try_lock    () { return m_event.try_lock(); }
+        // use it as locker (std::unique_lock l...)
+        inline void lock        () { m_lock.lock(); }
+        inline void unlock      () { m_lock.unlock(); }
+        inline bool try_lock    () { return m_lock.try_lock(); }
         // clang-format on
 
         //
         // push_back with specific timeings
         //
         template <typename _Rep, typename _Period>
-        inline void push_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const T &t)
+        inline void push_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const T &elem)
         {
             using __dur = typename std::chrono::system_clock::duration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
             if (__reltime < __rtime) {
                 ++__reltime;
             }
-            push_back_delay_until(std::chrono::system_clock::now() + __reltime, t);
+            push_back_delay_until(std::chrono::system_clock::now() + __reltime, elem);
         }
 
         template <typename _Clock, typename _Duration>
-        inline void push_back_delay_until(const std::chrono::time_point<_Clock, _Duration> &__atime, T &t)
+        inline void push_back_delay_until(const std::chrono::time_point<_Clock, _Duration> &__atime, T &elem)
         {
             if (is_push_forbidden()) {
                 return;
             }
 
-            std::unique_lock mlock(m_event);
-            m_queue.push_back({__atime, t});
-            m_event.set_event();
+            std::unique_lock l(m_lock);
+            m_queue.push_back({__atime, elem});
+            m_lock.notify_all(); // notify all to recompute wait time
         }
 
         // push_back move semantics
         template <typename _Rep, typename _Period>
-        inline void push_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, T &&t)
+        inline void push_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, T &&elem)
         {
             using __dur = typename std::chrono::system_clock::duration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
             if (__reltime < __rtime) {
                 ++__reltime;
             }
-            push_back_delay_until(std::chrono::system_clock::now() + __reltime, std::move<T>(t));
+            push_back_delay_until(std::chrono::system_clock::now() + __reltime, std::forward<T>(elem));
         }
 
         template <typename _Clock, typename _Duration>
-        inline void push_back_delay_until(const std::chrono::time_point<_Clock, _Duration> &__atime, T &&t)
+        inline void push_back_delay_until(const std::chrono::time_point<_Clock, _Duration> &__atime, T &&elem)
         {
             if (is_push_forbidden()) {
                 return;
             }
 
-            std::unique_lock mlock(m_event);
-            m_queue.push_back({__atime, std::forward<T>(t)});
-            m_event.set_event();
+            std::unique_lock l(m_lock);
+            m_queue.push_back({__atime, std::forward<T>(elem)});
+            m_lock.notify_all(); // notify all to recompute wait time
         }
 
         // emplace_back
@@ -144,9 +144,10 @@ namespace small {
                 return;
             }
 
-            std::unique_lock mlock(m_event);
+            std::unique_lock l(m_lock);
             m_queue.emplace_back(__atime, T(std::forward<_Args>(__args)...));
-            m_event.set_event();
+            m_lock.notify_all(); // notify all to recompute wait time
+            // TODO instead of notify all check if before size was zero or newly insert replaces the top elem and only them trigger notify_all
         }
 
         //
@@ -154,24 +155,28 @@ namespace small {
         //
         inline void signal_exit_force()
         {
-            std::unique_lock mlock(m_event);
-            m_is_exit_force.store(true);
-            m_event.set_event(); /*will notify_all() because is manual*/
+            m_lock.signal_exit_force(); // will notify_all
+        }
+        inline void reset_exit_force()
+        {
+            m_lock.reset_exit_force();
         }
         inline bool is_exit_force()
         {
-            return m_is_exit_force.load() == true;
+            return m_lock.is_exit_force();
         }
 
         inline void signal_exit_when_done()
         {
-            std::unique_lock mlock(m_event);
-            m_is_exit_when_done.store(true);
-            m_event.set_event(); /*will notify_all() because is manual*/
+            m_lock.signal_exit_when_done(); // will notify all
+        }
+        inline void reset_exit_when_done()
+        {
+            m_lock.reset_exit_when_done();
         }
         inline bool is_exit_when_done()
         {
-            return m_is_exit_when_done.load() == true;
+            return m_lock.is_exit_when_done();
         }
 
         //
@@ -179,18 +184,13 @@ namespace small {
         //
         inline EnumLock wait_pop_front(T *elem)
         {
-            if (is_exit_force()) {
-                return EnumLock::kExit;
-            }
-
             for (; true;) {
-                // wait for event to be set
-                // multiple threads may wait and when element is pushed all are awaken
-                // but not all will have an element to process
-                m_event.wait();
+                if (is_exit_force()) {
+                    return EnumLock::kExit;
+                }
 
                 // check queue and element
-                std::unique_lock mlock(m_event);
+                std::unique_lock l(m_lock);
                 auto ret_flag = test_and_get_front(elem);
 
                 if (ret_flag == Flags::kExit_Force || ret_flag == Flags::kExit_When_Done) {
@@ -201,27 +201,30 @@ namespace small {
                     return EnumLock::kElement;
                 }
 
-                // continue to wait
+                // wait for notification
+                // multiple threads may wait and when element is pushed all are awaken
+                // but not all will have an element to process
+                // TODO with interval
+                auto ret_w = m_lock.wait(l);
+                if (ret_w == EnumLock::kExit) {
+                    return EnumLock::kExit;
+                }
+
+                // continue to check if there is a new element
             }
         }
 
         inline EnumLock wait_pop_front(std::vector<T> &vec_elems, int max_count = 1)
         {
-            if (is_exit_force()) {
-                return EnumLock::kExit;
-            }
-
             vec_elems.clear();
             vec_elems.reserve(max_count);
             for (; true;) {
-                // wait for event to be set
-                // multiple threads may wait and when element is pushed all are awaken
-                // but not all will have an element to process
-                m_event.wait();
+                if (is_exit_force()) {
+                    return EnumLock::kExit;
+                }
 
                 // check queue and element
-
-                std::unique_lock mlock(m_event);
+                std::unique_lock l(m_lock);
 
                 T elem{};
                 for (int i = 0; i < max_count; ++i) {
@@ -247,7 +250,16 @@ namespace small {
                     return EnumLock::kElement;
                 }
 
-                // continue to wait
+                // wait for notification
+                // multiple threads may wait and when element is pushed all are awaken
+                // but not all will have an element to process
+                // TODO with interval
+                auto ret_w = m_lock.wait(l);
+                if (ret_w == EnumLock::kExit) {
+                    return EnumLock::kExit;
+                }
+
+                // continue to check if there is a new element
             }
         }
 
@@ -278,21 +290,13 @@ namespace small {
         template <typename _Clock, typename _Duration>
         inline EnumLock wait_pop_front_until(const std::chrono::time_point<_Clock, _Duration> &__atime, T *elem)
         {
-            if (is_exit_force()) {
-                return EnumLock::kExit;
-            }
-
             for (; true;) {
-                // wait for event to be set
-                // multiple threads may wait and when element is pushed all are awaken
-                // but not all will have an element to process
-                auto ret_w = m_event.wait_until(__atime);
-                if (ret_w == EnumLock::kTimeout) {
-                    return EnumLock::kTimeout;
+                if (is_exit_force()) {
+                    return EnumLock::kExit;
                 }
 
                 // check queue and element
-                std::unique_lock mlock(m_event);
+                std::unique_lock l(m_lock);
 
                 auto ret_flag = test_and_get_front(elem);
 
@@ -304,30 +308,35 @@ namespace small {
                     return EnumLock::kElement;
                 }
 
-                // continue to wait
+                // wait for notification
+                // multiple threads may wait and when element is pushed all are awaken
+                // but not all will have an element to process
+                // TODO with interval
+                auto ret_w = m_lock.wait_until(__atime);
+                if (ret_w == EnumLock::kExit) {
+                    return EnumLock::kExit;
+                }
+                if (ret_w == EnumLock::kTimeout) {
+                    return EnumLock::kTimeout;
+                }
+
+                // continue to check if there is a new element
             }
         }
 
         template <typename _Clock, typename _Duration>
         inline EnumLock wait_pop_front_until(const std::chrono::time_point<_Clock, _Duration> &__atime, std::vector<T> &vec_elems, int max_count = 1)
         {
-            if (is_exit_force()) {
-                return EnumLock::kExit;
-            }
 
             vec_elems.clear();
             vec_elems.reserve(max_count);
             for (; true;) {
-                // wait for event to be set
-                // multiple threads may wait and when element is pushed all are awaken
-                // but not all will have an element to process
-                auto ret = m_event.wait_until(__atime);
-                if (ret == EnumLock::kTimeout) {
-                    return EnumLock::kTimeout;
+                if (is_exit_force()) {
+                    return EnumLock::kExit;
                 }
 
                 // check queue and element
-                std::unique_lock mlock(m_event);
+                std::unique_lock l(m_lock);
 
                 T elem{};
                 for (int i = 0; i < max_count; ++i) {
@@ -353,7 +362,19 @@ namespace small {
                     return EnumLock::kElement;
                 }
 
-                // continue to wait
+                // wait for event to be set
+                // multiple threads may wait and when element is pushed all are awaken
+                // but not all will have an element to process
+                // TODO with interval
+                auto ret = m_lock.wait_until(__atime);
+                if (ret_w == EnumLock::kExit) {
+                    return EnumLock::kExit;
+                }
+                if (ret == EnumLock::kTimeout) {
+                    return EnumLock::kTimeout;
+                }
+
+                // continue to check if there is a new element
             }
         }
 
@@ -391,7 +412,7 @@ namespace small {
                 }
 
                 // reset event
-                m_event.reset_event();
+                m_lock.reset_event();
                 return Flags::kNone;
             }
 
@@ -403,7 +424,7 @@ namespace small {
 
             // reset event if empty queue
             if (m_queue.empty() && !is_exit_when_done()) {
-                m_event.reset_event();
+                m_lock.reset_event();
             }
 
             return Flags::kElement;
@@ -413,10 +434,10 @@ namespace small {
         //
         // members
         //
+        small::base_lock m_lock; // locker
+
+        // TODO use std::greater only for first elem in pair
         using PriorityQueueElemT = std::pair<std::chrono::time_point, T>;
         std::priority_queue<PriorityQueueElemT, std::vector<PriorityQueueElemT>> m_queue; // priority queue
-        small::event m_event{EventType::kManual};                                         // event
-        std::atomic<bool> m_is_exit_force{false};                                         // force exit
-        std::atomic<bool> m_is_exit_when_done{false};                                     // exit when queue is zero
     };
 } // namespace small
