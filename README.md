@@ -161,7 +161,7 @@ For locking
 
 Wait for items
 
-`wait_pop_front, wait_pop_front_for, wait_pop_front_until`
+`wait_pop, wait_pop_for, wait_pop_until`
 
 Signal exit when we no longer want to use the queue
 
@@ -178,8 +178,8 @@ q.push_delay_for( std::chrono::seconds(1), 1 );
 
 // on some thread
 int e = 0;
-auto ret = q.wait_pop_front( &e );
-//auto ret = q.wait_pop_front_for( std::chrono::minutes( 1 ), &e );
+auto ret = q.wait_pop( &e );
+//auto ret = q.wait_pop_for( std::chrono::minutes( 1 ), &e );
 
 // ret can be small::EnumLock::kExit,
 // small::EnumLock::kTimeout or ret == small::EnumLock::kElement
