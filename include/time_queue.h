@@ -436,8 +436,12 @@ namespace small {
         //
         small::base_lock m_lock; // locker
 
-        // TODO use std::greater only for first elem in pair
         using PriorityQueueElemT = std::pair<std::chrono::time_point, T>;
-        std::priority_queue<PriorityQueueElemT, std::vector<PriorityQueueElemT>> m_queue; // priority queue
+        struct CompTime
+        {
+            bool operator()(const PriorityQueueElemT &l, const PriorityQueueElemT &r) const { return l.first > r.first; }
+        };
+
+        std::priority_queue<PriorityQueueElemT, std::vector<PriorityQueueElemT>, CompTime> m_queue; // priority queue
     };
 } // namespace small

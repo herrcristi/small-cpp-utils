@@ -287,11 +287,11 @@ namespace small {
                 // wait for event first
                 // and dont consume the event if condition is not met
                 while (test_event() == false) {
-                    auto ret = m_lock.wait_until(__lock, __atime);
+                    auto ret_w = m_lock.wait_until(__lock, __atime);
                     if (ret_w == EnumLock::kExit) {
                         return EnumLock::kExit;
                     }
-                    if (ret == EnumLock::kTimeout) {
+                    if (ret_w == EnumLock::kTimeout) {
                         // one last check
                         return __p() && test_event_and_reset() == true ? EnumLock::kElement : EnumLock::kTimeout /*still timeout*/;
                     }
