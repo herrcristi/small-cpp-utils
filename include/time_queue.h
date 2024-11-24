@@ -10,13 +10,13 @@
 //
 // small::time_queue<int> q;
 // ...
-// q.push_back_delay_for( std::chrono::seconds(1), 1 );
+// q.push_delay_for( std::chrono::seconds(1), 1 );
 // ...
 //
 // // on some thread
 // int e = 0;
-// auto ret = q.wait_pop_front( &e ); // ret can be small::EnumLock::kExit, small::EnumLock::kTimeout or ret == small::EnumLock::kElement
-// //auto ret = q.wait_pop_front_for( std::chrono::minutes( 1 ), &e );
+// auto ret = q.wait_pop( &e ); // ret can be small::EnumLock::kExit, small::EnumLock::kTimeout or ret == small::EnumLock::kElement
+// //auto ret = q.wait_pop_for( std::chrono::minutes( 1 ), &e );
 // if ( ret == small::EnumLock::kElement )
 // {
 //      // do something with e
@@ -77,18 +77,18 @@ namespace small {
         // push_back with specific timeings
         //
         template <typename _Rep, typename _Period>
-        inline void push_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const T &elem)
+        inline void push_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const T &elem)
         {
             using __dur = typename std::chrono::system_clock::duration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
             if (__reltime < __rtime) {
                 ++__reltime;
             }
-            push_back_delay_until(std::chrono::system_clock::now() + __reltime, elem);
+            push_delay_until(std::chrono::system_clock::now() + __reltime, elem);
         }
 
         template <typename _Clock, typename _Duration>
-        inline void push_back_delay_until(const std::chrono::time_point<_Clock, _Duration> &__atime, T &elem)
+        inline void push_delay_until(const std::chrono::time_point<_Clock, _Duration> &__atime, T &elem)
         {
             if (is_push_forbidden()) {
                 return;
@@ -101,18 +101,18 @@ namespace small {
 
         // push_back move semantics
         template <typename _Rep, typename _Period>
-        inline void push_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, T &&elem)
+        inline void push_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, T &&elem)
         {
             using __dur = typename std::chrono::system_clock::duration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
             if (__reltime < __rtime) {
                 ++__reltime;
             }
-            push_back_delay_until(std::chrono::system_clock::now() + __reltime, std::forward<T>(elem));
+            push_delay_until(std::chrono::system_clock::now() + __reltime, std::forward<T>(elem));
         }
 
         template <typename _Clock, typename _Duration>
-        inline void push_back_delay_until(const std::chrono::time_point<_Clock, _Duration> &__atime, T &&elem)
+        inline void push_delay_until(const std::chrono::time_point<_Clock, _Duration> &__atime, T &&elem)
         {
             if (is_push_forbidden()) {
                 return;
@@ -120,23 +120,23 @@ namespace small {
 
             std::unique_lock l(m_lock);
             auto_notification n(this);
-            m_queue.push_back({__atime, std::forward<T>(elem)});
+            m_queue.push({__atime, std::forward<T>(elem)});
         }
 
         // emplace_back
         template <typename _Rep, typename _Period, typename... _Args>
-        inline void emplace_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, _Args &&...__args)
+        inline void emplace_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, _Args &&...__args)
         {
             using __dur = typename std::chrono::system_clock::duration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
             if (__reltime < __rtime) {
                 ++__reltime;
             }
-            emplace_back_delay_until(std::chrono::system_clock::now() + __reltime, std::forward<_Args>(__args)...);
+            emplace_delay_until(std::chrono::system_clock::now() + __reltime, std::forward<_Args>(__args)...);
         }
 
-        template <typename _Clock, typename _Duration, _Args &&...__args>
-        inline void emplace_back_delay_until(const std::chrono::time_point<_Clock, _Duration> &__atime, _Args &&...__args)
+        template <typename _Clock, typename _Duration, typename... _Args>
+        inline void emplace_delay_until(const std::chrono::time_point<_Clock, _Duration> &__atime, _Args &&...__args)
         {
             if (is_push_forbidden()) {
                 return;
@@ -144,7 +144,7 @@ namespace small {
 
             std::unique_lock l(m_lock);
             auto_notification n(this);
-            m_queue.emplace_back(__atime, T(std::forward<_Args>(__args)...));
+            m_queue.emplace(__atime, T(std::forward<_Args>(__args)...));
         }
 
         //
@@ -177,15 +177,15 @@ namespace small {
         }
 
         //
-        // wait pop_front and return that element
+        // wait pop and return that element
         //
-        inline EnumLock wait_pop_front(T *elem)
+        inline EnumLock wait_pop(T *elem)
         {
             std::unique_lock l(m_lock);
 
             for (; true;) {
                 // check queue and element
-                auto ret_flag = test_and_get_front(elem);
+                auto ret_flag = test_and_get(elem);
 
                 if (ret_flag == Flags::kExit_Force || ret_flag == Flags::kExit_When_Done) {
                     return EnumLock::kExit;
@@ -203,7 +203,7 @@ namespace small {
             }
         }
 
-        inline EnumLock wait_pop_front(std::vector<T> &vec_elems, int max_count = 1)
+        inline EnumLock wait_pop(std::vector<T> &vec_elems, int max_count = 1)
         {
             vec_elems.clear();
             vec_elems.reserve(max_count);
@@ -214,7 +214,7 @@ namespace small {
             for (; true;) {
                 // check queue and element
                 for (int i = 0; i < max_count; ++i) {
-                    auto ret_flag = test_and_get_front(&elem);
+                    auto ret_flag = test_and_get(&elem);
 
                     if (ret_flag == Flags::kExit_Force) {
                         return EnumLock::kExit;
@@ -244,38 +244,38 @@ namespace small {
             }
         }
 
-        // wait pop_front_for and return that element
+        // wait pop_for and return that element
         template <typename _Rep, typename _Period>
-        inline EnumLock wait_pop_front_for(const std::chrono::duration<_Rep, _Period> &__rtime, T *elem)
+        inline EnumLock wait_pop_for(const std::chrono::duration<_Rep, _Period> &__rtime, T *elem)
         {
             using __dur = typename std::chrono::system_clock::duration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
             if (__reltime < __rtime) {
                 ++__reltime;
             }
-            return wait_pop_front_until(std::chrono::system_clock::now() + __reltime, elem);
+            return wait_pop_until(std::chrono::system_clock::now() + __reltime, elem);
         }
 
         template <typename _Rep, typename _Period>
-        inline EnumLock wait_pop_front_for(const std::chrono::duration<_Rep, _Period> &__rtime, std::vector<T> &vec_elems, int max_count = 1)
+        inline EnumLock wait_pop_for(const std::chrono::duration<_Rep, _Period> &__rtime, std::vector<T> &vec_elems, int max_count = 1)
         {
             using __dur = typename std::chrono::system_clock::duration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
             if (__reltime < __rtime) {
                 ++__reltime;
             }
-            return wait_pop_front_until(std::chrono::system_clock::now() + __reltime, vec_elems, max_count);
+            return wait_pop_until(std::chrono::system_clock::now() + __reltime, vec_elems, max_count);
         }
 
         // wait until
         template <typename _Clock, typename _Duration>
-        inline EnumLock wait_pop_front_until(const std::chrono::time_point<_Clock, _Duration> &__atime, T *elem)
+        inline EnumLock wait_pop_until(const std::chrono::time_point<_Clock, _Duration> &__atime, T *elem)
         {
             std::unique_lock l(m_lock);
 
             for (; true;) {
                 // check queue and element
-                auto ret_flag = test_and_get_front(elem);
+                auto ret_flag = test_and_get(elem);
 
                 if (ret_flag == Flags::kExit_Force || ret_flag == Flags::kExit_When_Done) {
                     return EnumLock::kExit;
@@ -287,7 +287,7 @@ namespace small {
 
                 // wait for notification
                 // TODO with interval
-                auto ret_w = m_lock.wait_until(__atime);
+                auto ret_w = m_lock.wait_until(l, __atime);
                 if (ret_w == EnumLock::kExit) {
                     return EnumLock::kExit;
                 }
@@ -300,7 +300,7 @@ namespace small {
         }
 
         template <typename _Clock, typename _Duration>
-        inline EnumLock wait_pop_front_until(const std::chrono::time_point<_Clock, _Duration> &__atime, std::vector<T> &vec_elems, int max_count = 1)
+        inline EnumLock wait_pop_until(const std::chrono::time_point<_Clock, _Duration> &__atime, std::vector<T> &vec_elems, int max_count = 1)
         {
             vec_elems.clear();
             vec_elems.reserve(max_count);
@@ -311,7 +311,7 @@ namespace small {
             for (; true;) {
                 // check queue and element
                 for (int i = 0; i < max_count; ++i) {
-                    auto ret_flag = test_and_get_front(&elem);
+                    auto ret_flag = test_and_get(&elem);
 
                     if (ret_flag == Flags::kExit_Force) {
                         return EnumLock::kExit;
@@ -335,11 +335,11 @@ namespace small {
 
                 // wait for notification
                 // TODO with interval
-                auto ret = m_lock.wait_until(__atime);
+                auto ret_w = m_lock.wait_until(l, __atime);
                 if (ret_w == EnumLock::kExit) {
                     return EnumLock::kExit;
                 }
-                if (ret == EnumLock::kTimeout) {
+                if (ret_w == EnumLock::kTimeout) {
                     return EnumLock::kTimeout;
                 }
 
@@ -372,7 +372,7 @@ namespace small {
         }
         struct auto_notification
         {
-            auto_notification(small::time_queue &tq) : m_time_queue(tq)
+            auto_notification(small::time_queue<T> *tq) : m_time_queue(*tq)
             {
                 m_old_wait_time = m_time_queue.get_wait_time();
             }
@@ -384,13 +384,13 @@ namespace small {
                 }
             }
 
-            small::time_queue &m_time_queue;
+            small::time_queue<T> &m_time_queue;
             WaitTime m_old_wait_time; // time to wait until the top element (or default if queue is empty)
         };
         friend auto_notification;
 
         //
-        // check for front element
+        // check for element
         //
         enum class Flags : unsigned int
         {
@@ -402,7 +402,7 @@ namespace small {
         };
 
         // TODO return also the wait time
-        inline Flags test_and_get_front(T *elem)
+        inline Flags test_and_get(T *elem)
         {
             if (is_exit_force()) {
                 return Flags::kExit_Force;
@@ -424,9 +424,9 @@ namespace small {
 
             // get elem
             if (elem) {
-                *elem = std::move(m_queue.front());
+                *elem = std::move(m_queue.top().second);
             }
-            m_queue.pop_front();
+            m_queue.pop();
 
             return Flags::kElement;
         }
@@ -437,7 +437,7 @@ namespace small {
         //
         small::base_lock m_lock; // locker
 
-        using PriorityQueueElemT = std::pair<std::chrono::time_point, T>;
+        using PriorityQueueElemT = std::pair<std::chrono::time_point<std::chrono::system_clock>, T>;
         struct CompPriorityQueueElemT
         {
             bool operator()(const PriorityQueueElemT &l, const PriorityQueueElemT &r) const

@@ -11,6 +11,7 @@
 #include "examples/examples_hash.h"
 #include "examples/examples_lock_queue.h"
 #include "examples/examples_spinlock.h"
+#include "examples/examples_time_queue.h"
 #include "examples/examples_util.h"
 #include "examples/examples_worker_threads.h"
 
@@ -25,6 +26,7 @@ int main()
     examples::buffer::Example1();
     examples::event::Example1();
     examples::lock_queue::Example1();
+    examples::time_queue::Example1();
 
     examples::worker_thread::Example1();
     examples::worker_thread::Example2();

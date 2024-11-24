@@ -152,8 +152,8 @@ For container
 
 `size, empty, clear, reset`
 
-`push_back_delay_for, emplace_back_delay_for`
-`push_back_delay_until, emplace_back_delay_until`
+`push_delay_for, emplace_delay_for`
+`push_delay_until, emplace_delay_until`
 
 For locking
 
@@ -173,7 +173,7 @@ Use it like this
 ```
 small::time_queue<int> q;
 ...
-q.push_back_delay_for( std::chrono::seconds(1), 1 );
+q.push_delay_for( std::chrono::seconds(1), 1 );
 ...
 
 // on some thread
