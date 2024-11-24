@@ -25,13 +25,13 @@ namespace {
     //
     TEST_F(WorkerThreadTest, Lock)
     {
-        small::event_queue<int> q;
+        small::lock_queue<int> q;
 
         std::latch sync_thread{1};
         std::latch sync_main{1};
 
         // create thread
-        auto thread = std::jthread([](small::event_queue<int> &_q, std::latch &sync_thread, std::latch &sync_main) {
+        auto thread = std::jthread([](small::lock_queue<int> &_q, std::latch &sync_thread, std::latch &sync_main) {
             std::unique_lock lock(_q);
             sync_thread.count_down(); // signal that thread is started (and also locked is acquired)
             sync_main.wait();         // wait that the main finished executing test to proceed further

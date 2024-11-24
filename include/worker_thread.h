@@ -5,7 +5,7 @@
 #include <thread>
 #include <vector>
 
-#include "event_queue.h"
+#include "lock_queue.h"
 
 // using qc = std::pair<int, std::string>;
 // ...
@@ -258,7 +258,7 @@ namespace small {
         config_worker_thread m_config;                                       // config
         std::vector<std::future<void>> m_threads_futures;                    // threads futures (needed to wait for)
         std::atomic<bool> m_threads_flag_created{};                          // threads flag
-        small::event_queue<T> m_queue_items;                                 // queue of items
+        small::lock_queue<T> m_queue_items;                                  // queue of items
         std::function<void(const std::vector<T> &)> m_processing_function{}; // processing Function
     };
 } // namespace small

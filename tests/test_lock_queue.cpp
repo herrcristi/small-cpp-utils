@@ -2,14 +2,14 @@
 
 #include <latch>
 
-#include "../include/event_queue.h"
+#include "../include/lock_queue.h"
 #include "../include/util.h"
 
 namespace {
-    class EventQueueTest : public testing::Test
+    class LockQueueTest : public testing::Test
     {
     protected:
-        EventQueueTest() = default;
+        LockQueueTest() = default;
 
         void SetUp() override
         {
@@ -23,15 +23,15 @@ namespace {
     //
     // lock
     //
-    TEST_F(EventQueueTest, Lock)
+    TEST_F(LockQueueTest, Lock)
     {
-        small::event_queue<int> q;
+        small::lock_queue<int> q;
 
         std::latch sync_thread{1};
         std::latch sync_main{1};
 
         // create thread
-        auto thread = std::jthread([](small::event_queue<int> &_q, std::latch &sync_thread, std::latch &sync_main) {
+        auto thread = std::jthread([](small::lock_queue<int> &_q, std::latch &sync_thread, std::latch &sync_main) {
             std::unique_lock lock(_q);
             sync_thread.count_down(); // signal that thread is started (and also locked is acquired)
             sync_main.wait();         // wait that the main finished executing test to proceed further
@@ -69,9 +69,9 @@ namespace {
     //
     // queue
     //
-    TEST_F(EventQueueTest, Queue_Operations)
+    TEST_F(LockQueueTest, Queue_Operations)
     {
-        small::event_queue<int> q;
+        small::lock_queue<int> q;
         ASSERT_EQ(q.size(), 0);
 
         // push
@@ -88,9 +88,9 @@ namespace {
         ASSERT_EQ(q.size(), 0);
     }
 
-    TEST_F(EventQueueTest, Queue_Operations_Vec)
+    TEST_F(LockQueueTest, Queue_Operations_Vec)
     {
-        small::event_queue<int> q;
+        small::lock_queue<int> q;
         ASSERT_EQ(q.size(), 0);
 
         // push
@@ -108,9 +108,9 @@ namespace {
         ASSERT_EQ(q.size(), 0);
     }
 
-    TEST_F(EventQueueTest, Queue_Operations_Timeout)
+    TEST_F(LockQueueTest, Queue_Operations_Timeout)
     {
-        small::event_queue<int> q;
+        small::lock_queue<int> q;
         ASSERT_EQ(q.size(), 0);
 
         // wait with timeout (since no elements)
@@ -144,9 +144,9 @@ namespace {
         ASSERT_EQ(ret, small::EnumLock::kTimeout);
     }
 
-    TEST_F(EventQueueTest, Queue_Operations_Timeout_Vec)
+    TEST_F(LockQueueTest, Queue_Operations_Timeout_Vec)
     {
-        small::event_queue<int> q;
+        small::lock_queue<int> q;
         ASSERT_EQ(q.size(), 0);
 
         // wait with timeout (since no elements)
@@ -181,14 +181,14 @@ namespace {
         ASSERT_EQ(ret, small::EnumLock::kTimeout);
     }
 
-    TEST_F(EventQueueTest, Queue_Operations_Thread)
+    TEST_F(LockQueueTest, Queue_Operations_Thread)
     {
-        small::event_queue<int> q;
+        small::lock_queue<int> q;
         ASSERT_EQ(q.size(), 0);
 
         // push inside thread
         auto timeStart = small::timeNow();
-        auto thread = std::jthread([](small::event_queue<int> &_q) {
+        auto thread = std::jthread([](small::lock_queue<int> &_q) {
             small::sleep(300);
 
             int value{5};
@@ -208,9 +208,9 @@ namespace {
         ASSERT_GE(elapsed, 300 - 1); // due conversion
     }
 
-    TEST_F(EventQueueTest, Queue_Operations_Signal_Exit_Force)
+    TEST_F(LockQueueTest, Queue_Operations_Signal_Exit_Force)
     {
-        small::event_queue<int> q;
+        small::lock_queue<int> q;
         ASSERT_EQ(q.size(), 0);
 
         // push
@@ -226,7 +226,7 @@ namespace {
 
         // create thread
         auto timeStart = small::timeNow();
-        auto thread = std::jthread([](small::event_queue<int> &_q) {
+        auto thread = std::jthread([](small::lock_queue<int> &_q) {
             // signal after some time
             small::sleep(300);
             _q.signal_exit_force();
@@ -246,9 +246,9 @@ namespace {
         ASSERT_EQ(q.size(), 0);
     }
 
-    TEST_F(EventQueueTest, Queue_Operations_Signal_Exit_When_Done)
+    TEST_F(LockQueueTest, Queue_Operations_Signal_Exit_When_Done)
     {
-        small::event_queue<int> q;
+        small::lock_queue<int> q;
         ASSERT_EQ(q.size(), 0);
 
         // push
@@ -264,7 +264,7 @@ namespace {
 
         // create thread
         auto timeStart = small::timeNow();
-        auto thread = std::jthread([](small::event_queue<int> &_q) {
+        auto thread = std::jthread([](small::lock_queue<int> &_q) {
             // signal after some time
             small::sleep(300);
             _q.signal_exit_when_done();

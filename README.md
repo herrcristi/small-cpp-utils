@@ -5,9 +5,9 @@ Small project
 Contains useful everyday features that can be used in following ways:
 
 -   event (it combines mutex and condition variable to create an event which is either automatic or manual)
--   event_queue (it combines the event and queue for creating waiting queue mechanism)
+-   lock_queue (queue for creating waiting queue mechanism)
 -   time_queue (creates a queue for delay requests)
--   worker_thread (creates workers on separate threads that do task when requested, based on event_queue and time_queue)
+-   worker_thread (creates workers on separate threads that do task when requested, based on lock_queue and time_queue)
 -   spinlock (or critical_section to do quick locks)
 
 #
@@ -87,9 +87,9 @@ e.reset_event()
 
 #
 
-### event_queue
+### lock_queue
 
-A queue with events functions that wait for items until they are available
+A queue that wait for items until they are available
 
 The following functions are available
 
@@ -115,7 +115,7 @@ Signal exit when we no longer want to use the queue
 Use it like this
 
 ```
-small::event_queue<int> q;
+small::lock_queue<int> q;
 ...
 q.push_back( 1 );
 ...

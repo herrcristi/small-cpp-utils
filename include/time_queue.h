@@ -437,11 +437,14 @@ namespace small {
         small::base_lock m_lock; // locker
 
         using PriorityQueueElemT = std::pair<std::chrono::time_point, T>;
-        struct CompTime
+        struct CompPriorityQueueElemT
         {
-            bool operator()(const PriorityQueueElemT &l, const PriorityQueueElemT &r) const { return l.first > r.first; }
+            bool operator()(const PriorityQueueElemT &l, const PriorityQueueElemT &r) const
+            {
+                return l.first > r.first;
+            }
         };
 
-        std::priority_queue<PriorityQueueElemT, std::vector<PriorityQueueElemT>, CompTime> m_queue; // priority queue
+        std::priority_queue<PriorityQueueElemT, std::vector<PriorityQueueElemT>, CompPriorityQueueElemT> m_queue; // priority queue
     };
 } // namespace small

@@ -22,7 +22,7 @@
 // e.wait();
 // // or
 // e.wait( [&]() -> bool {
-//     return /*some conditions*/ ? true : false; // see event_queue how it uses this
+//     return /*some conditions*/ ? true : false;
 // } );
 // ...
 // ...
