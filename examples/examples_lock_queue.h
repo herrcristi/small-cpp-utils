@@ -51,7 +51,7 @@ namespace examples::lock_queue {
 
         t.join();
 
-        std::cout << "Event Queue finished\n\n";
+        std::cout << "LockQueue finished\n\n";
 
         return 0;
     }
