@@ -5,7 +5,6 @@
 #include <queue>
 
 #include "base_lock.h"
-#include "event.h"
 
 // a queue with time events so we can wait for items to be available at specific time moments
 //
@@ -50,7 +49,7 @@ namespace small {
         inline bool empty() { return size() == 0; }
 
         //
-        // clear only removes elements from queue but does not reset the event
+        // clear only removes elements from queue
         //
         inline void clear()
         {
@@ -58,14 +57,13 @@ namespace small {
             m_queue.clear();
         }
 
-        // reset the event and clears all elements
+        // clear only removes elements from queue and all flags
         inline void reset()
         {
             std::unique_lock l(m_lock);
             clear();
             m_lock.reset_exit_force();
             m_lock.reset_exit_when_done();
-            m_lock.reset_event();
         }
 
         // clang-format off
@@ -97,8 +95,8 @@ namespace small {
             }
 
             std::unique_lock l(m_lock);
-            m_queue.push_back({__atime, elem});
-            m_lock.notify_all(); // notify all to recompute wait time
+            auto_notification n(this);
+            m_queue.push({__atime, elem});
         }
 
         // push_back move semantics
@@ -121,8 +119,8 @@ namespace small {
             }
 
             std::unique_lock l(m_lock);
+            auto_notification n(this);
             m_queue.push_back({__atime, std::forward<T>(elem)});
-            m_lock.notify_all(); // notify all to recompute wait time
         }
 
         // emplace_back
@@ -145,9 +143,8 @@ namespace small {
             }
 
             std::unique_lock l(m_lock);
+            auto_notification n(this);
             m_queue.emplace_back(__atime, T(std::forward<_Args>(__args)...));
-            m_lock.notify_all(); // notify all to recompute wait time
-            // TODO instead of notify all check if before size was zero or newly insert replaces the top elem and only them trigger notify_all
         }
 
         //
@@ -184,13 +181,10 @@ namespace small {
         //
         inline EnumLock wait_pop_front(T *elem)
         {
-            for (; true;) {
-                if (is_exit_force()) {
-                    return EnumLock::kExit;
-                }
+            std::unique_lock l(m_lock);
 
+            for (; true;) {
                 // check queue and element
-                std::unique_lock l(m_lock);
                 auto ret_flag = test_and_get_front(elem);
 
                 if (ret_flag == Flags::kExit_Force || ret_flag == Flags::kExit_When_Done) {
@@ -202,15 +196,10 @@ namespace small {
                 }
 
                 // wait for notification
-                // multiple threads may wait and when element is pushed all are awaken
-                // but not all will have an element to process
                 // TODO with interval
                 auto ret_w = m_lock.wait(l);
-                if (ret_w == EnumLock::kExit) {
-                    return EnumLock::kExit;
-                }
 
-                // continue to check if there is a new element
+                // check if there is a new element
             }
         }
 
@@ -218,15 +207,12 @@ namespace small {
         {
             vec_elems.clear();
             vec_elems.reserve(max_count);
+
+            std::unique_lock l(m_lock);
+
+            T elem{};
             for (; true;) {
-                if (is_exit_force()) {
-                    return EnumLock::kExit;
-                }
-
                 // check queue and element
-                std::unique_lock l(m_lock);
-
-                T elem{};
                 for (int i = 0; i < max_count; ++i) {
                     auto ret_flag = test_and_get_front(&elem);
 
@@ -251,15 +237,10 @@ namespace small {
                 }
 
                 // wait for notification
-                // multiple threads may wait and when element is pushed all are awaken
-                // but not all will have an element to process
                 // TODO with interval
                 auto ret_w = m_lock.wait(l);
-                if (ret_w == EnumLock::kExit) {
-                    return EnumLock::kExit;
-                }
 
-                // continue to check if there is a new element
+                // check if there is a new element
             }
         }
 
@@ -290,14 +271,10 @@ namespace small {
         template <typename _Clock, typename _Duration>
         inline EnumLock wait_pop_front_until(const std::chrono::time_point<_Clock, _Duration> &__atime, T *elem)
         {
+            std::unique_lock l(m_lock);
+
             for (; true;) {
-                if (is_exit_force()) {
-                    return EnumLock::kExit;
-                }
-
                 // check queue and element
-                std::unique_lock l(m_lock);
-
                 auto ret_flag = test_and_get_front(elem);
 
                 if (ret_flag == Flags::kExit_Force || ret_flag == Flags::kExit_When_Done) {
@@ -309,8 +286,6 @@ namespace small {
                 }
 
                 // wait for notification
-                // multiple threads may wait and when element is pushed all are awaken
-                // but not all will have an element to process
                 // TODO with interval
                 auto ret_w = m_lock.wait_until(__atime);
                 if (ret_w == EnumLock::kExit) {
@@ -320,25 +295,21 @@ namespace small {
                     return EnumLock::kTimeout;
                 }
 
-                // continue to check if there is a new element
+                // check if there is a new element
             }
         }
 
         template <typename _Clock, typename _Duration>
         inline EnumLock wait_pop_front_until(const std::chrono::time_point<_Clock, _Duration> &__atime, std::vector<T> &vec_elems, int max_count = 1)
         {
-
             vec_elems.clear();
             vec_elems.reserve(max_count);
+
+            std::unique_lock l(m_lock);
+
+            T elem{};
             for (; true;) {
-                if (is_exit_force()) {
-                    return EnumLock::kExit;
-                }
-
                 // check queue and element
-                std::unique_lock l(m_lock);
-
-                T elem{};
                 for (int i = 0; i < max_count; ++i) {
                     auto ret_flag = test_and_get_front(&elem);
 
@@ -362,9 +333,7 @@ namespace small {
                     return EnumLock::kElement;
                 }
 
-                // wait for event to be set
-                // multiple threads may wait and when element is pushed all are awaken
-                // but not all will have an element to process
+                // wait for notification
                 // TODO with interval
                 auto ret = m_lock.wait_until(__atime);
                 if (ret_w == EnumLock::kExit) {
@@ -374,11 +343,11 @@ namespace small {
                     return EnumLock::kTimeout;
                 }
 
-                // continue to check if there is a new element
+                // check if there is a new element
             }
         }
 
-    private:
+    protected:
         //
         // check if push is allowed/forbidden
         //
@@ -386,6 +355,39 @@ namespace small {
         {
             return is_exit_force() || is_exit_when_done();
         }
+
+        //
+        // compute if notification is needed
+        //
+        using WaitTime = unsigned long long;
+        WaitTime get_wait_time()
+        {
+            // time to wait until the top element (or default if queue is empty)
+            return 0;
+        }
+
+        void notify_all()
+        {
+            m_lock.notify_all();
+        }
+        struct auto_notification
+        {
+            auto_notification(small::time_queue &tq) : m_time_queue(tq)
+            {
+                m_old_wait_time = m_time_queue.get_wait_time();
+            }
+            ~auto_notification()
+            {
+                auto new_wait_time = m_time_queue.get_wait_time();
+                if (m_old_wait_time != new_wait_time) {
+                    m_time_queue.notify_all();
+                }
+            }
+
+            small::time_queue &m_time_queue;
+            WaitTime m_old_wait_time; // time to wait until the top element (or default if queue is empty)
+        };
+        friend auto_notification;
 
         //
         // check for front element
@@ -396,8 +398,10 @@ namespace small {
             kExit_Force = 1,
             kExit_When_Done = 2,
             kElement = 3,
+            kWait = 4,
         };
 
+        // TODO return also the wait time
         inline Flags test_and_get_front(T *elem)
         {
             if (is_exit_force()) {
@@ -411,21 +415,18 @@ namespace small {
                     return Flags::kExit_When_Done;
                 }
 
-                // reset event
-                m_lock.reset_event();
-                return Flags::kNone;
+                // TODO default wait time
+                get_wait_time();
+                return Flags::kWait;
             }
+
+            // TODO check current elem time
 
             // get elem
             if (elem) {
                 *elem = std::move(m_queue.front());
             }
             m_queue.pop_front();
-
-            // reset event if empty queue
-            if (m_queue.empty() && !is_exit_when_done()) {
-                m_lock.reset_event();
-            }
 
             return Flags::kElement;
         }
