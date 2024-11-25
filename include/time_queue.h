@@ -92,7 +92,7 @@ namespace small {
         }
 
         // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
-        inline void push_delay_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, T &elem)
+        inline void push_delay_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, const T &elem)
         {
             if (is_push_forbidden()) {
                 return;
