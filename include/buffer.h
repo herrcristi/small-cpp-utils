@@ -57,7 +57,7 @@ namespace small {
     {
     public:
         // buffer (allocates in chunks)
-        explicit buffer(const config_buffer config = {}) : m_config(config)
+        buffer(const config_buffer config = {}) : m_config(config)
         {
             init();
         }
@@ -84,12 +84,12 @@ namespace small {
         buffer(const std::vector<char> &v) noexcept             : buffer() { base_buffer::operator=(v); }
 
         // from char*
-        buffer(std::size_t chunk_size, const char c) noexcept                          : buffer(chunk_size) { base_buffer::operator=(c); }
-        buffer(std::size_t chunk_size, const char *s) noexcept                         : buffer(chunk_size) { base_buffer::operator=(s); }
-        buffer(std::size_t chunk_size, const char *s, std::size_t s_length) noexcept   : buffer(chunk_size) { set(0 /*from*/, s, s_length); }
-        buffer(std::size_t chunk_size, const std::string &s) noexcept                  : buffer(chunk_size) { base_buffer::operator=(s); }
-        buffer(std::size_t chunk_size, const std::string_view s) noexcept              : buffer(chunk_size) { base_buffer::operator=(s); }
-        buffer(std::size_t chunk_size, const std::vector<char> &v) noexcept            : buffer(chunk_size) { base_buffer::operator=(v); }
+        buffer(const config_buffer config, const char c) noexcept                          : buffer(config) { base_buffer::operator=(c); }
+        buffer(const config_buffer config, const char *s) noexcept                         : buffer(config) { base_buffer::operator=(s); }
+        buffer(const config_buffer config, const char *s, std::size_t s_length) noexcept   : buffer(config) { set(0 /*from*/, s, s_length); }
+        buffer(const config_buffer config, const std::string &s) noexcept                  : buffer(config) { base_buffer::operator=(s); }
+        buffer(const config_buffer config, const std::string_view s) noexcept              : buffer(config) { base_buffer::operator=(s); }
+        buffer(const config_buffer config, const std::vector<char> &v) noexcept            : buffer(config) { base_buffer::operator=(v); }
         // clang-format on
 
         // destructor

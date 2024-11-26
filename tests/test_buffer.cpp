@@ -42,7 +42,7 @@ namespace {
         small::buffer b4{sv};
         ASSERT_EQ(b4, "abc");
 
-        small::buffer b5{0 /*alloc size*/, sv};
+        small::buffer b5{{.chunk_size = 0} /*alloc size*/, sv};
         ASSERT_EQ(b5, "abc");
         ASSERT_EQ(b5.get_chunk_size(), 1);
     }
@@ -176,7 +176,7 @@ namespace {
 
     TEST_F(BufferTest, buffer_resize)
     {
-        small::buffer b(1UL, m_test);
+        small::buffer b({.chunk_size = 1UL} /*alloc size*/, m_test);
         ASSERT_EQ(b, m_test);
         ASSERT_EQ(b.get_chunk_size(), 1);
 
