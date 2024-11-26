@@ -109,16 +109,21 @@ namespace {
     {
         auto timeStart = small::timeNow();
 
-        // create workers
-        small::worker_thread<int> workers({/*default 1 thread*/}, [](auto &w /*this*/, auto &item, auto b /*extra param b*/) {
-            small::sleep(300);
-            if (w.is_exit()) {
-                return;
+        struct WorkerThreadFunction
+        {
+            void operator()(small::worker_thread<int> &w /*worker_thread*/, [[maybe_unused]] const std::vector<int> &items, [[maybe_unused]] int b /*extra param*/)
+            {
+                small::sleep(300);
+                if (w.is_exit()) {
+                    return;
+                }
+                small::sleep(300);
+                // process item using the workers lock (not recommended)
             }
-            small::sleep(300);
-            // process item using the workers lock (not recommended)
-        },
-                                          5 /*param b*/);
+        };
+
+        // create workers
+        small::worker_thread<int> workers({/*default 1 thread*/}, WorkerThreadFunction(), 5 /*param b*/);
 
         // push
         workers.push_back(5);

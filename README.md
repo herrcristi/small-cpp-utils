@@ -5,7 +5,7 @@ Small project
 Contains useful everyday features that can be used in following ways:
 
 -   event (it combines mutex and condition variable to create an event which is either automatic or manual)
--   lock_queue (queue for creating waiting queue mechanism)
+-   lock_queue (queue with waiting mechanism to use in concurrent environment)
 -   time_queue (creates a queue for delay requests)
 -   worker_thread (creates workers on separate threads that do task when requested, based on lock_queue and time_queue)
 -   spinlock (or critical_section to do quick locks)
@@ -110,6 +110,7 @@ Wait for items
 Signal exit when we no longer want to use the queue
 
 `signal_exit_force, is_exit_force` // exit immediatly ignoring what is left in the queue
+
 `signal_exit_when_done, is_exit_when_done` // exit when queue is empty
 
 Use it like this
@@ -126,25 +127,26 @@ auto ret = q.wait_pop_front( &e );
 //auto ret = q.wait_pop_front_for( std::chrono::minutes( 1 ), &e );
 
 // ret can be small::EnumLock::kExit,
-// small::EnumLock::kTimeout or ret == small::EnumLock::kElement
+// small::EnumLock::kTimeout or small::EnumLock::kElement
 
 if ( ret == small::EnumLock::kElement )
- {
+{
      // do something with e
     ...
 }
 
 ...
 // on main thread, no more processing
-q.signal_exit_force();
-
+q.signal_exit_force(); // q.signal_exit_when_done();
+...
+// make sure that all calls to wait_* are finished before calling destructor (like in worker_thread)
 ```
 
 #
 
 ### time_queue
 
-A queue with for delayed items
+A queue for delayed items
 
 The following functions are available
 
@@ -153,6 +155,7 @@ For container
 `size, empty, clear, reset`
 
 `push_delay_for, emplace_delay_for`
+
 `push_delay_until, emplace_delay_until`
 
 For locking
@@ -166,6 +169,7 @@ Wait for items
 Signal exit when we no longer want to use the queue
 
 `signal_exit_force, is_exit_force` // exit immediatly ignoring what is left in the queue
+
 `signal_exit_when_done, is_exit_when_done` // exit when queue is empty
 
 Use it like this
@@ -182,18 +186,19 @@ auto ret = q.wait_pop( &e );
 //auto ret = q.wait_pop_for( std::chrono::minutes( 1 ), &e );
 
 // ret can be small::EnumLock::kExit,
-// small::EnumLock::kTimeout or ret == small::EnumLock::kElement
+// small::EnumLock::kTimeout or small::EnumLock::kElement
 
 if ( ret == small::EnumLock::kElement )
- {
+{
      // do something with e
     ...
 }
 
 ...
 // on main thread, no more processing
-q.signal_exit_force();
-
+q.signal_exit_force(); // q.signal_exit_when_done();
+...
+// make sure that all calls to wait_* are finished before calling destructor (like in worker_thread)
 ```
 
 #
@@ -217,6 +222,7 @@ To use it as a locker
 Signal exit when we no longer want to use worker threads,
 
 `signal_exit_force, is_exit`
+
 `signal_exit_when_done`
 
 Use it like this
@@ -241,30 +247,32 @@ workers.wait(); // manually wait at this point otherwise wait is done in the des
 ...
 ...
 ...
-// or like this
-small::worker_thread<qc> workers2( {/*default 1 thread*/}, WorkerThreadFunction() );
+using qc = std::pair<int, std::string>;
 ...
-// where WorkerThreadFunction can be
+// WorkerThreadFunction can be
 struct WorkerThreadFunction
 {
-    using qc = std::pair<int, std::string>;
     void operator()( small::worker_thread<qc>& w/*worker_thread*/, const std::vector<qc>& items )
     {
         ...
         // add extra in queue
         // w.push_back(...)
 
-        std::this_thread::sleep_for( std::chrono::milliseconds( 3000 ) );
+        small::sleep(300);
     }
 };
-..
+...
+...
+// or like this
+small::worker_thread<qc> workers2( {/*default 1 thread*/}, WorkerThreadFunction() );
+...
 ...
 workers.push_back( { 1, "a" } );
 workers.push_back( std::make_pair( 2, "b" ) );
 workers.emplace_back( 3, "e" );
 ...
 // when finishing after signal_exit_force the work is aborted
-workers.signal_exit_force();
+workers.signal_exit_force(); // workers.signal_exit_when_done();
 //
 
 ```
@@ -276,6 +284,7 @@ workers.signal_exit_force();
 Spinlock is just like a mutex but it uses atomic lockless to do locking (based on std::atomic_flag).
 
 The following functions are available
+
 `lock, unlock, try_lock`
 
 Use it like this
@@ -300,6 +309,7 @@ small::spinlock lock; // small::critical_section lock;
 Buffer class for manipulating buffers (not strings)
 
 The following functions are available
+
 `set, append, ...`
 
 and can be used like this
@@ -308,11 +318,11 @@ and can be used like this
 small::buffer b;
 b.clear();
 
-b.assign( "anc", 3 );
-b.set( 2/*start from*/, "b", 1/*length*/ );
+b.assign( "anc", 3 );                       // "anc"
+b.set( 2/*start from*/, "b", 1/*length*/ ); // "anb"
 
-char* e = b.extract(); // extract "anb"
-small::buffer::free( e );
+char* e = b.extract();                      // extract "anb"
+small::buffer::free( e );                   // free buffer in the class context
 
 small::buffer b1 = { 8192/*chunksize*/, "buffer", 6/*specified length*/ };
 small::buffer b2 = { 8192/*chunksize*/, "buffer" };
@@ -344,6 +354,7 @@ b = small::frombase64<small::buffer>( s64 );
 Functions to encode or decode base64
 
 The following functions are available
+
 `tobase64, frombase64`
 
 Use it like this
@@ -352,7 +363,7 @@ Use it like this
 constexpr std::stringview text{ "hello world" }
 std::string b64 = small::tobase64( text );
 std::vector<char> vb64 = small::tobase64<std::vector<char>>( text );
-
+...
 std::string decoded = small::frombase64( b64 );
 std::vector<char> vd64 = small::frombase64<std::vector<char>>( b64 );
 ```
@@ -364,6 +375,7 @@ std::vector<char> vd64 = small::frombase64<std::vector<char>>( b64 );
 When you want to do a simple hash
 
 The following function is available
+
 `qhash`
 
 Use it like this
@@ -432,13 +444,13 @@ Use it like this
 ```
 auto [r1,r2] = small::uuidp(); // returns a pair of uint64 numbers
 ...
-// returns a uuid as a string 78f202f1bf7a12d46498c9f0e78dd8a3
+// returns a uuid as a string "78f202f1bf7a12d46498c9f0e78dd8a3"
 auto u = small::uuid();
 ...
-// {78f202f1-bf7a-12d4-6498-c9f0e78dd8a3}
+// "{78f202f1-bf7a-12d4-6498-c9f0e78dd8a3}"
 auto u1 = small::uuid({.add_hyphen = true, .add_braces = true});
 ...
-// 78F202F1BF7A12D46498C9F0E78DD8A3
-auto uc = small::uuidc();
+// "78F202F1BF7A12D46498C9F0E78DD8A3"
+auto uc = small::uuidc(); // return a uuid with capital letters
 ...
 ```
