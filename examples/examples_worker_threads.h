@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <chrono>
 #include <condition_variable>
 #include <cstdio>
 #include <iostream>
@@ -41,7 +42,7 @@ namespace examples::worker_thread {
         workers.emplace_back(5, "g");
 
         auto ret = workers.wait_for(std::chrono::milliseconds(0)); // wait to finished
-        std::cout << "wait for with timeout, ret = " << static_cast<int>(ret) << "\n";
+        std::cout << "wait for with timeout, ret = " << static_cast<int>(ret) << " as timeout\n";
         workers.wait(); // wait here for workers to finish due to exit flag
 
         std::cout << "Worker Thread example 1 finish\n\n";
@@ -67,9 +68,23 @@ namespace examples::worker_thread {
                 {
                     std::unique_lock mlock(w);
 
+                    auto now = std::chrono::system_clock::now();
+                    auto time = std::chrono::system_clock::to_time_t(now);
+                    std::tm *now_tm = std::gmtime(&time);
+                    long long timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+
+                    std::stringstream ss;
+                    ss
+                        << std::setfill('0') << std::put_time(now_tm, "%FT%H:%M:")
+                        << std::setw(2) << (timestamp / 1000) % 60 << '.'
+                        << std::setw(3) << timestamp % 1000
+                        << std::put_time(now_tm, "%z");
+
                     for (auto &[i, s] : items) {
                         std::cout << "thread " << std::this_thread::get_id()
-                                  << " processing {" << i << ", \"" << s << "\"}\n";
+                                  << " processing {" << i << ", \"" << s << "\"}";
+
+                        std::cout << " time " << ss.str() << "\n";
                     }
                 }
                 small::sleep(100);
@@ -78,10 +93,12 @@ namespace examples::worker_thread {
 
         small::worker_thread<qc> workers({.threads_count = 2}, WorkerThreadFunction());
         workers.push_back({4, "d"});
-        small::sleep(300);
+        workers.push_back_delay_for(std::chrono::milliseconds(300), {5, "e"});
+        // will wait for the delayed items to be consumed and then the active ones
+        workers.wait();
 
         workers.signal_exit_force(); // after signal exit no push will be accepted
-        workers.push_back({5, "e"});
+        workers.push_back({6, "f"});
 
         std::cout << "Finished Worker Thread example 2\n\n";
         // workers will be joined on destructor

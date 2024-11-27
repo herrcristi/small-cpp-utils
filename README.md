@@ -215,6 +215,8 @@ For data
 
 `push_back, emplace_back`
 
+`push_back_delay_for`, `push_back_delay_until`, `emplace_back_delay_for`, `emplace_back_delay_until`
+
 To use it as a locker
 
 `lock, unlock, try_lock`
@@ -270,6 +272,7 @@ small::worker_thread<qc> workers2( {/*default 1 thread*/}, WorkerThreadFunction(
 workers.push_back( { 1, "a" } );
 workers.push_back( std::make_pair( 2, "b" ) );
 workers.emplace_back( 3, "e" );
+workers.push_back_delay_for( std::chrono::milliseconds(300), { 4, "f" } );
 ...
 // when finishing after signal_exit_force the work is aborted
 workers.signal_exit_force(); // workers.signal_exit_when_done();
