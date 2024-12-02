@@ -68,23 +68,11 @@ namespace examples::worker_thread {
                 {
                     std::unique_lock mlock(w);
 
-                    auto now = std::chrono::system_clock::now();
-                    auto time = std::chrono::system_clock::to_time_t(now);
-                    std::tm *now_tm = std::gmtime(&time);
-                    long long timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
-
-                    std::stringstream ss;
-                    ss
-                        << std::setfill('0') << std::put_time(now_tm, "%FT%H:%M:")
-                        << std::setw(2) << (timestamp / 1000) % 60 << '.'
-                        << std::setw(3) << timestamp % 1000
-                        << std::put_time(now_tm, "%z");
-
                     for (auto &[i, s] : items) {
                         std::cout << "thread " << std::this_thread::get_id()
                                   << " processing {" << i << ", \"" << s << "\"}";
 
-                        std::cout << " time " << ss.str() << "\n";
+                        std::cout << " time " << small::toISOString(small::timeNow()) << "\n";
                     }
                 }
                 small::sleep(100);
