@@ -105,6 +105,37 @@ namespace {
         ASSERT_EQ(workers.size(), 0);
     }
 
+    TEST_F(WorkerThreadTest, Worker_Operations_Delayed)
+    {
+        auto timeStart = small::timeNow();
+
+        int processing_count = 0;
+
+        // create workers
+        small::worker_thread<int> workers({.threads_count = 0 /*no threads*/, .bulk_count = 2}, [&processing_count](auto &w /*this*/, const auto &items) {
+            processing_count++;
+        });
+
+        // push
+        workers.push_back(4);
+        workers.push_back_delay_for(std::chrono::milliseconds(300), 5);
+        ASSERT_GE(workers.size(), 0);
+        ASSERT_GE(workers.size_delayed(), 1);
+
+        workers.start_threads(1); // start thread
+
+        // wait to finish
+        auto ret = workers.wait();
+        ASSERT_EQ(ret, small::EnumLock::kExit);
+
+        // check size
+        ASSERT_EQ(workers.size(), 0);
+        ASSERT_EQ(processing_count, 2);
+
+        auto elapsed = small::timeDiffMs(timeStart);
+        ASSERT_GE(elapsed, 300 - 1); // due conversion
+    }
+
     TEST_F(WorkerThreadTest, Worker_Operations_Force_Exit)
     {
         auto timeStart = small::timeNow();
