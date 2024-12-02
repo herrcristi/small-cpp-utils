@@ -197,6 +197,36 @@ namespace {
         ASSERT_EQ(small::toUnixTimestamp(from), 1733172168000ULL);
     }
 
+    TEST_F(UtilTest, high_time)
+    {
+        auto timeStart = small::htimeNow();
+
+        small::sleep(100 /*ms*/);
+
+        auto timeElapsedMs = small::htimeDiffMs(timeStart);
+        auto timeElapsedMicro = small::htimeDiffMicro(timeStart);
+        auto timeElapsedNano = small::htimeDiffNano(timeStart);
+
+        ASSERT_GE(timeElapsedMs, 100 - 1);             // due conversion
+        ASSERT_GE(timeElapsedMicro, (100 - 1) * 1000); // due conversion
+        ASSERT_GE(timeElapsedNano, (100 - 1) * 1000 * 1000);
+    }
+
+    TEST_F(UtilTest, high_time_micro)
+    {
+        auto timeStart = small::htimeNow();
+
+        small::sleepMicro(100 /*ms*/ * 1000);
+
+        auto timeElapsedMs = small::htimeDiffMs(timeStart);
+        auto timeElapsedMicro = small::htimeDiffMicro(timeStart);
+        auto timeElapsedNano = small::htimeDiffNano(timeStart);
+
+        ASSERT_GE(timeElapsedMs, 100 - 1);             // due conversion
+        ASSERT_GE(timeElapsedMicro, (100 - 1) * 1000); // due conversion
+        ASSERT_GE(timeElapsedNano, (100 - 1) * 1000 * 1000);
+    }
+
     //
     // rand
     //
