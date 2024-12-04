@@ -402,12 +402,18 @@ The following functions are available
 
 `stricmp, struct icasecmp`
 
+`toLowerCase`, `toUpperCase`, `toCapitalizeCase`, `toHex`, `toHexF`
+
 Use it like this
 
 ```
 int r = small::stricmp( "a", "C" );
 ...
 std::map<std::string, int, small::icasecmp> m;
+...
+std::string s = "Some text";
+small::toLowerCase(s);
+
 ```
 
 `sleep`
@@ -422,6 +428,8 @@ small::sleep(100/*ms*/);
 
 `timeNow, timeDiffMs, timeDiffMicro, timeDiffNano`
 
+`toUnixTimestamp`, `toISOString`
+
 Use it like this
 
 ```
@@ -429,6 +437,8 @@ auto timeStart = small::timeNow();
 ...
 auto elapsed = small::timeDiffMs(timeStart);
 ...
+auto timestamp = small::toUnixTimestamp(timeStart);
+auto time_str = small::toISOString(timeStart);
 ```
 
 `rand8, rand16, rand32, rand64`
