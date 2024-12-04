@@ -67,7 +67,7 @@ namespace small {
         int bulk_count{1};    // how many objects are processed at once
     };
 
-    template <class T>
+    template <typename T>
     class worker_thread
     {
     public:

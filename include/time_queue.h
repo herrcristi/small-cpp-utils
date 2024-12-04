@@ -37,9 +37,11 @@ namespace small {
     class time_queue
     {
     public:
-        using TimeClock = std::chrono::system_clock;
+        using TimeClock    = std::chrono::system_clock;
         using TimeDuration = TimeClock::duration;
-        using TimePoint = std::chrono::time_point<TimeClock>;
+        using TimePoint    = std::chrono::time_point<TimeClock>;
+
+        time_queue() = default;
 
         //
         // size
@@ -83,7 +85,7 @@ namespace small {
         template <typename _Rep, typename _Period>
         inline void push_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const T &elem)
         {
-            using __dur = TimeDuration;
+            using __dur    = TimeDuration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
             if (__reltime < __rtime) {
                 ++__reltime;
@@ -98,7 +100,7 @@ namespace small {
                 return;
             }
 
-            std::unique_lock l(m_lock);
+            std::unique_lock  l(m_lock);
             auto_notification n(this);
             m_queue.push({__atime, elem});
         }
@@ -107,7 +109,7 @@ namespace small {
         template <typename _Rep, typename _Period>
         inline void push_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, T &&elem)
         {
-            using __dur = TimeDuration;
+            using __dur    = TimeDuration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
             if (__reltime < __rtime) {
                 ++__reltime;
@@ -122,7 +124,7 @@ namespace small {
                 return;
             }
 
-            std::unique_lock l(m_lock);
+            std::unique_lock  l(m_lock);
             auto_notification n(this);
             m_queue.push({__atime, std::forward<T>(elem)});
         }
@@ -131,7 +133,7 @@ namespace small {
         template <typename _Rep, typename _Period, typename... _Args>
         inline void emplace_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, _Args &&...__args)
         {
-            using __dur = TimeDuration;
+            using __dur    = TimeDuration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
             if (__reltime < __rtime) {
                 ++__reltime;
@@ -146,7 +148,7 @@ namespace small {
                 return;
             }
 
-            std::unique_lock l(m_lock);
+            std::unique_lock  l(m_lock);
             auto_notification n(this);
             m_queue.emplace(__atime, T(std::forward<_Args>(__args)...));
         }
@@ -214,7 +216,7 @@ namespace small {
 
             std::unique_lock l(m_lock);
 
-            T elem{};
+            T         elem{};
             TimePoint time_wait_until{};
             for (; true;) {
                 // check queue and element
@@ -252,7 +254,7 @@ namespace small {
         template <typename _Rep, typename _Period>
         inline EnumLock wait_pop_for(const std::chrono::duration<_Rep, _Period> &__rtime, T *elem)
         {
-            using __dur = TimeDuration;
+            using __dur    = TimeDuration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
             if (__reltime < __rtime) {
                 ++__reltime;
@@ -263,7 +265,7 @@ namespace small {
         template <typename _Rep, typename _Period>
         inline EnumLock wait_pop_for(const std::chrono::duration<_Rep, _Period> &__rtime, std::vector<T> &vec_elems, int max_count = 1)
         {
-            using __dur = TimeDuration;
+            using __dur    = TimeDuration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
             if (__reltime < __rtime) {
                 ++__reltime;
@@ -313,7 +315,7 @@ namespace small {
 
             std::unique_lock l(m_lock);
 
-            T elem{};
+            T         elem{};
             TimePoint time_wait_until{};
             for (; true;) {
                 // check queue and element
@@ -393,7 +395,7 @@ namespace small {
             }
 
             small::time_queue<T> &m_time_queue;
-            TimePoint m_old_time; // time of the first elem (if exists) or some default
+            TimePoint             m_old_time; // time of the first elem (if exists) or some default
         };
 
         //
@@ -401,10 +403,10 @@ namespace small {
         //
         enum class Flags : unsigned int
         {
-            kWait = 0,
-            kExit_Force = 1,
+            kWait           = 0,
+            kExit_Force     = 1,
             kExit_When_Done = 2,
-            kElement = 3,
+            kElement        = 3,
         };
 
         // test and get
@@ -440,6 +442,14 @@ namespace small {
 
             return Flags::kElement;
         }
+
+    private:
+        // some prevention
+        time_queue(const time_queue &) = delete;
+        time_queue(time_queue &&)      = delete;
+
+        time_queue &operator=(const time_queue &) = delete;
+        time_queue &operator=(time_queue &&__t)   = delete;
 
     private:
         //

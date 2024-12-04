@@ -36,6 +36,8 @@ namespace small {
     class lock_queue
     {
     public:
+        lock_queue() = default;
+
         //
         // size
         //
@@ -209,7 +211,7 @@ namespace small {
         template <typename _Rep, typename _Period>
         inline EnumLock wait_pop_front_for(const std::chrono::duration<_Rep, _Period> &__rtime, T *elem)
         {
-            using __dur = typename std::chrono::system_clock::duration;
+            using __dur    = typename std::chrono::system_clock::duration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
             if (__reltime < __rtime) {
                 ++__reltime;
@@ -220,7 +222,7 @@ namespace small {
         template <typename _Rep, typename _Period>
         inline EnumLock wait_pop_front_for(const std::chrono::duration<_Rep, _Period> &__rtime, std::vector<T> &vec_elems, int max_count = 1)
         {
-            using __dur = typename std::chrono::system_clock::duration;
+            using __dur    = typename std::chrono::system_clock::duration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
             if (__reltime < __rtime) {
                 ++__reltime;
@@ -322,10 +324,10 @@ namespace small {
         //
         enum class Flags : unsigned int
         {
-            kNone = 0,
-            kExit_Force = 1,
+            kNone           = 0,
+            kExit_Force     = 1,
             kExit_When_Done = 2,
-            kElement = 3,
+            kElement        = 3,
         };
 
         inline Flags test_and_get_front(T *elem)
@@ -354,10 +356,18 @@ namespace small {
         }
 
     private:
+        // some prevention
+        lock_queue(const lock_queue &) = delete;
+        lock_queue(lock_queue &&)      = delete;
+
+        lock_queue &operator=(const lock_queue &) = delete;
+        lock_queue &operator=(lock_queue &&__t)   = delete;
+
+    private:
         //
         // members
         //
-        small::base_lock m_lock; // locker
-        std::deque<T> m_queue;   // queue
+        small::base_lock m_lock;  // locker
+        std::deque<T>    m_queue; // queue
     };
 } // namespace small

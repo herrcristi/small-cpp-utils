@@ -8,6 +8,7 @@ Contains useful everyday features that can be used in following ways:
 -   lock_queue (queue with waiting mechanism to use in concurrent environment)
 -   time_queue (creates a queue for delay requests)
 -   worker_thread (creates workers on separate threads that do task when requested, based on lock_queue and time_queue)
+-   jobs_engine (using a thread pool based on worker_thread process different jobs with config execution pattern)
 -   spinlock (or critical_section to do quick locks)
 
 #
@@ -278,6 +279,40 @@ workers.push_back_delay_for( std::chrono::milliseconds(300), { 4, "f" } );
 workers.signal_exit_force(); // workers.signal_exit_when_done();
 //
 
+```
+
+#
+
+### jobs_engine
+
+A class that process different jobs type using the same thread pool
+
+The following functions are available
+
+For data
+
+`size, empty, clear`
+
+`push_back, emplace_back`
+
+`push_back_delay_for`, `push_back_delay_until`, `emplace_back_delay_for`, `emplace_back_delay_until`
+
+To use it as a locker
+
+`lock, unlock, try_lock`
+
+Signal exit when we no longer want to use it,
+
+`signal_exit_force, is_exit`
+
+`signal_exit_when_done`
+
+Use it like this
+
+```
+using qc = std::pair<int, std::string>;
+...
+...
 ```
 
 #
