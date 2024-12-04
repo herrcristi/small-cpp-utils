@@ -22,6 +22,26 @@ namespace small {
     class base_lock
     {
     public:
+        //
+        // base_lock
+        //
+        base_lock() = default;
+        base_lock(const base_lock &o) : base_lock() { operator=(o); };
+        base_lock(base_lock &&o) noexcept : base_lock() { operator=(std::move(o)); };
+
+        base_lock &operator=(const base_lock &o)
+        {
+            m_is_exit_force.store(o.m_is_exit_force);
+            m_is_exit_when_done.store(o.m_is_exit_when_done);
+            return *this;
+        }
+        base_lock &operator=(base_lock &&o) noexcept
+        {
+            m_is_exit_force.store(o.m_is_exit_force);
+            m_is_exit_when_done.store(o.m_is_exit_when_done);
+            return *this;
+        }
+
         // clang-format off
         // use it as locker (std::unique_lock m...)
         inline void lock        () { m_lock.lock(); }
@@ -108,7 +128,7 @@ namespace small {
         template <typename _Lock, typename _Rep, typename _Period>
         inline EnumLock wait_for(_Lock &__lock, const std::chrono::duration<_Rep, _Period> &__rtime)
         {
-            using __dur = typename std::chrono::system_clock::duration;
+            using __dur    = typename std::chrono::system_clock::duration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
             if (__reltime < __rtime) {
                 ++__reltime;
@@ -119,7 +139,7 @@ namespace small {
         template <typename _Lock, typename _Rep, typename _Period, typename _Predicate>
         inline EnumLock wait_for(_Lock &__lock, const std::chrono::duration<_Rep, _Period> &__rtime, _Predicate __p)
         {
-            using __dur = typename std::chrono::system_clock::duration;
+            using __dur    = typename std::chrono::system_clock::duration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
             if (__reltime < __rtime) {
                 ++__reltime;
@@ -173,7 +193,7 @@ namespace small {
         //
         // members
         //
-        std::recursive_mutex m_lock;             // mutex locker
+        std::recursive_mutex        m_lock;      // mutex locker
         std::condition_variable_any m_condition; // condition
 
         std::atomic<bool> m_is_exit_force{false};     // force exit

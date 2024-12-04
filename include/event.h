@@ -53,6 +53,24 @@ namespace small {
         {
         }
 
+        event(const event &o) : event() { operator=(o); };
+        event(event &&o) noexcept : event() { operator=(std::move(o)); };
+
+        event &operator=(const event &o)
+        {
+            std::scoped_lock l(m_lock, o.m_lock);
+            m_event_type = o.m_event_type;
+            m_event_value.store(o.m_event_value);
+            return *this;
+        }
+        event &operator=(event &&o) noexcept
+        {
+            std::scoped_lock l(m_lock, o.m_lock);
+            m_event_type = o.m_event_type;
+            m_event_value.store(o.m_event_value);
+            return *this;
+        }
+
         // clang-format off
         // use it as locker (std::unique_lock<small:event> m...)
         inline void     lock            () { m_lock.lock();   }
@@ -197,7 +215,7 @@ namespace small {
         template <typename _Rep, typename _Period>
         inline EnumLock wait_for(const std::chrono::duration<_Rep, _Period> &__rtime)
         {
-            using __dur = typename std::chrono::system_clock::duration;
+            using __dur    = typename std::chrono::system_clock::duration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
             if (__reltime < __rtime) {
                 ++__reltime;
@@ -208,7 +226,7 @@ namespace small {
         template <typename _Lock, typename _Rep, typename _Period>
         inline EnumLock wait_for_lock(_Lock &__lock, const std::chrono::duration<_Rep, _Period> &__rtime)
         {
-            using __dur = typename std::chrono::system_clock::duration;
+            using __dur    = typename std::chrono::system_clock::duration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
             if (__reltime < __rtime) {
                 ++__reltime;
@@ -222,7 +240,7 @@ namespace small {
         template <typename _Rep, typename _Period, typename _Predicate>
         inline EnumLock wait_for(const std::chrono::duration<_Rep, _Period> &__rtime, _Predicate __p)
         {
-            using __dur = typename std::chrono::system_clock::duration;
+            using __dur    = typename std::chrono::system_clock::duration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
             if (__reltime < __rtime) {
                 ++__reltime;
@@ -233,7 +251,7 @@ namespace small {
         template <typename _Lock, typename _Rep, typename _Period, typename _Predicate>
         inline EnumLock wait_for_lock(_Lock &__lock, const std::chrono::duration<_Rep, _Period> &__rtime, _Predicate __p)
         {
-            using __dur = typename std::chrono::system_clock::duration;
+            using __dur    = typename std::chrono::system_clock::duration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
             if (__reltime < __rtime) {
                 ++__reltime;
@@ -344,8 +362,8 @@ namespace small {
         //
         // members
         //
-        small::base_lock m_lock;                       // locker
-        EventType m_event_type{EventType::kAutomatic}; // for manual event
-        std::atomic_bool m_event_value{};              // event state
+        mutable small::base_lock m_lock;                              // locker
+        EventType                m_event_type{EventType::kAutomatic}; // for manual event
+        std::atomic_bool         m_event_value{};                     // event state
     };
 } // namespace small

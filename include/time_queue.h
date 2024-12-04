@@ -41,7 +41,25 @@ namespace small {
         using TimeDuration = TimeClock::duration;
         using TimePoint    = std::chrono::time_point<TimeClock>;
 
+        //
+        // time_queue
+        //
         time_queue() = default;
+        time_queue(const time_queue &o) : time_queue() { operator=(o); };
+        time_queue(time_queue &&o) noexcept : time_queue() { operator=(std::move(o)); };
+
+        time_queue &operator=(const time_queue &o)
+        {
+            std::scoped_lock l(m_lock, o.m_lock);
+            m_queue = o.m_queue;
+            return *this;
+        }
+        time_queue &operator=(time_queue &&o) noexcept
+        {
+            std::scoped_lock l(m_lock, o.m_lock);
+            m_queue = std::move(o.m_queue);
+            return *this;
+        }
 
         //
         // size
@@ -442,14 +460,6 @@ namespace small {
 
             return Flags::kElement;
         }
-
-    private:
-        // some prevention
-        time_queue(const time_queue &) = delete;
-        time_queue(time_queue &&)      = delete;
-
-        time_queue &operator=(const time_queue &) = delete;
-        time_queue &operator=(time_queue &&__t)   = delete;
 
     private:
         //

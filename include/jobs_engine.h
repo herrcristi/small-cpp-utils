@@ -400,8 +400,8 @@ namespace small {
             JobType              m_job_type{};            // job type
             config_job_type      m_config{};              // config for this job type
             ProcessingFunction   m_processing_function{}; // processing Function
-            small::lock_queue<T> m_queue_items;           // queue of items
-            small::time_queue<T> m_delayed_items;         // queue of delayed items
+            small::lock_queue<T> m_queue_items{};         // queue of items
+            small::time_queue<T> m_delayed_items{};       // queue of delayed items
         };
 
         struct JobWorkerThreadFunction

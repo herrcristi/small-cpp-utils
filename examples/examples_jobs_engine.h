@@ -66,7 +66,7 @@ namespace examples::jobs_engine {
         // std::cout << "wait for with timeout, ret = " << static_cast<int>(ret) << " as timeout\n";
         // jobs.wait(); // wait here for jobs to finish due to exit flag
 
-        std::cout << "Jobs example 1 finish\n\n";
+        std::cout << "Jobs Engine example 1 finish\n\n";
 
         return 0;
     }

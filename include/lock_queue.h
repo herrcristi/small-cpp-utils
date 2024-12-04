@@ -36,7 +36,25 @@ namespace small {
     class lock_queue
     {
     public:
+        //
+        // lock_queue
+        //
         lock_queue() = default;
+        lock_queue(const lock_queue &o) : lock_queue() { operator=(o); };
+        lock_queue(lock_queue &&o) noexcept : lock_queue() { operator=(std::move(o)); };
+
+        lock_queue &operator=(const lock_queue &o)
+        {
+            std::scoped_lock l(m_lock, o.m_lock);
+            m_queue = o.m_queue;
+            return *this;
+        }
+        lock_queue &operator=(lock_queue &&o) noexcept
+        {
+            std::scoped_lock l(m_lock, o.m_lock);
+            m_queue = std::move(o.m_queue);
+            return *this;
+        }
 
         //
         // size
@@ -354,14 +372,6 @@ namespace small {
 
             return Flags::kElement;
         }
-
-    private:
-        // some prevention
-        lock_queue(const lock_queue &) = delete;
-        lock_queue(lock_queue &&)      = delete;
-
-        lock_queue &operator=(const lock_queue &) = delete;
-        lock_queue &operator=(lock_queue &&__t)   = delete;
 
     private:
         //
