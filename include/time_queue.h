@@ -465,7 +465,7 @@ namespace small {
         //
         // members
         //
-        small::base_lock m_lock; // locker
+        mutable small::base_lock m_lock; // locker
 
         using PriorityQueueElemT = std::pair<TimePoint, T>;
         struct CompPriorityQueueElemT

@@ -377,7 +377,7 @@ namespace small {
         //
         // members
         //
-        small::base_lock m_lock;  // locker
-        std::deque<T>    m_queue; // queue
+        mutable small::base_lock m_lock;  // locker
+        std::deque<T>            m_queue; // queue
     };
 } // namespace small
