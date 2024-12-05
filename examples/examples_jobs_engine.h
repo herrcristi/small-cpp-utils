@@ -28,22 +28,22 @@ namespace examples::jobs_engine {
         small::jobs_engine<JobType, qc> jobs(
             {.threads_count = 0 /*dont start any thread yet*/},
             {.threads_count = 1, .bulk_count = 1},
-            [](auto &j /*this*/, const auto &items) {
+            [](auto &j /*this*/, const auto job_type, const auto &items) {
                 for (auto &[i, s] : items) {
                     std::cout << "thread " << std::this_thread::get_id()
-                              << " default processing {" << i << ", \"" << s << "\"}\n";
+                              << " default processing type " << job_type << " {" << i << ", \"" << s << "\"}\n";
                 }
                 small::sleep(300);
             });
 
         // add specific function for job1
-        jobs.add_job_type(JobType::job1, {.threads_count = 2}, [](auto &j /*this*/, const auto &items, auto b /*extra param b*/) {
+        jobs.add_job_type(JobType::job1, {.threads_count = 2}, [](auto &j /*this*/, const auto job_type, const auto &items, auto b /*extra param b*/) {
             // process item using the jobs lock (not recommended)
             {
                 std::unique_lock mlock( j );
                 for(auto &[i, s]:items){
                     std::cout << "thread " << std::this_thread::get_id()  
-                              << " specific processing {" << i << ", \"" << s << "\"} and b=" << b << "\n";
+                              << " specific processing type " << job_type << " {" << i << ", \"" << s << "\"} and b=" << b << "\n";
                 }
             } 
             small::sleep(300); }, 5 /*param b*/);

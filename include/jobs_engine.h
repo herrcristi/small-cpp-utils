@@ -47,7 +47,7 @@ namespace small {
             : m_config(config_engine),
               m_default{
                   .m_config{config_default_job},
-                  .m_processing_function{std::bind(std::forward<_Callable>(function), std::ref(*this), std::placeholders::_1 /*item*/, std::forward<Args>(extra_parameters)...)}}
+                  .m_processing_function{std::bind(std::forward<_Callable>(function), std::ref(*this), std::placeholders::_1 /*job_type*/, std::placeholders::_2 /*items*/, std::forward<Args>(extra_parameters)...)}}
 
         {
             if (m_config.threads_count) {
@@ -114,12 +114,21 @@ namespace small {
         template <typename _Callable, typename... Args>
         void add_default_job_type(const config_job_type config_default_job, _Callable function, Args... extra_parameters)
         {
+            // avoid config if engine has started to take items
+            if (m_jobs.m_started) {
+                return;
+            }
             m_default.m_config              = config_default_job;
-            m_default.m_processing_function = std::bind(std::forward<_Callable>(function), std::ref(*this), std::placeholders::_1 /*item*/, std::forward<Args>(extra_parameters)...);
+            m_default.m_processing_function = std::bind(std::forward<_Callable>(function), std::ref(*this), std::placeholders::_1 /*job_type*/, std::placeholders::_2 /*items*/, std::forward<Args>(extra_parameters)...);
         }
 
         void add_job_type(const JobType job_type)
         {
+            // avoid config if engine has started to take items
+            if (m_jobs.m_started) {
+                return;
+            }
+
             // m_job_queues will be initialized in the initial setup phase and will be accessed without locking afterwards
             m_jobs.m_queues[job_type] = {
                 .m_config              = m_default.m_config,
@@ -128,6 +137,11 @@ namespace small {
 
         void add_job_type(const JobType job_type, const config_job_type config)
         {
+            // avoid config if engine has started to take items
+            if (m_jobs.m_started) {
+                return;
+            }
+
             // m_job_queues will be initialized in the initial setup phase and will be accessed without locking afterwards
             m_jobs.m_queues[job_type] = {
                 .m_config              = config,
@@ -137,10 +151,15 @@ namespace small {
         template <typename _Callable, typename... Args>
         void add_job_type(const JobType job_type, const config_job_type config, _Callable function, Args... extra_parameters)
         {
+            // avoid config if engine has started to take items
+            if (m_jobs.m_started) {
+                return;
+            }
+
             // m_job_queues will be initialized in the initial setup phase and will be accessed without locking afterwards
             m_jobs.m_queues[job_type] = {
                 .m_config              = config,
-                .m_processing_function = std::bind(std::forward<_Callable>(function), std::ref(*this), std::placeholders::_1 /*item*/, std::forward<Args>(extra_parameters)...)};
+                .m_processing_function = std::bind(std::forward<_Callable>(function), std::ref(*this), std::placeholders::_1 /*job_type*/, std::placeholders::_2 /*items*/, std::forward<Args>(extra_parameters)...)};
         }
 
         //
@@ -159,7 +178,8 @@ namespace small {
                 return;
             }
 
-            ++m_jobs.m_total_count; // inc before adding
+            m_jobs.m_started = true; // mark as started to avoid config later
+            ++m_jobs.m_total_count;  // inc before adding
             it->second.m_queue_items.push_back(t);
         }
 
@@ -176,7 +196,8 @@ namespace small {
                 return;
             }
 
-            ++m_jobs.m_total_count; // inc before adding
+            m_jobs.m_started = true; // mark as started to avoid config later
+            ++m_jobs.m_total_count;  // inc before adding
             it->second.m_queue_items.push_back(std::forward<T>(t));
         }
 
@@ -238,7 +259,8 @@ namespace small {
                 return;
             }
 
-            ++m_jobs.m_total_count; // inc before adding
+            m_jobs.m_started = true; // mark as started to avoid config later
+            ++m_jobs.m_total_count;  // inc before adding
             it->second.m_queue_items.emplace_back(std::forward<_Args>(__args)...);
         }
 
@@ -330,7 +352,7 @@ namespace small {
             //         // nothing to do
             //     } else if (ret == small::EnumLock::kElement) {
             //         // process
-            //         m_processing_function(vec_elems); // bind the std::placeholders::_1
+            //         m_processing_function(job_type, vec_elems); // bind the std::placeholders::_1 and _2
             //     }
             //     small::sleepMicro(1);
             // }
@@ -369,7 +391,7 @@ namespace small {
         //
         // members
         //
-        using ProcessingFunction = std::function<void(const std::vector<T> &)>;
+        using ProcessingFunction = std::function<void(const JobType job_type, const std::vector<T> &)>;
 
         struct JobTypeDefault
         {
@@ -379,7 +401,6 @@ namespace small {
 
         struct JobTypeQueueItem
         {
-            JobType              m_job_type{};            // job type
             config_job_type      m_config{};              // config for this job type
             ProcessingFunction   m_processing_function{}; // processing Function
             small::lock_queue<T> m_queue_items{};         // queue of items
