@@ -30,6 +30,22 @@ namespace small {
         {
         }
 
+        spinlock(const spinlock &o) : spinlock() { operator=(o); };
+        spinlock(spinlock &&o) noexcept : spinlock() { operator=(std::move(o)); };
+
+        spinlock &operator=(const spinlock &o)
+        {
+            m_spin_count           = o.m_spin_count;
+            m_wait_in_microseconds = o.m_wait_in_microseconds;
+            return *this;
+        }
+        spinlock &operator=(spinlock &&o) noexcept
+        {
+            m_spin_count           = o.m_spin_count;
+            m_wait_in_microseconds = o.m_wait_in_microseconds;
+            return *this;
+        }
+
         //
         // lock functions
         //
@@ -63,8 +79,8 @@ namespace small {
 
     private:
         // members
-        std::atomic_flag m_lock{};
-        int m_spin_count{};
-        int m_wait_in_microseconds{};
+        mutable std::atomic_flag m_lock{};
+        int                      m_spin_count{};
+        int                      m_wait_in_microseconds{};
     };
 } // namespace small

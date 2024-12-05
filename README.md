@@ -8,6 +8,7 @@ Contains useful everyday features that can be used in following ways:
 -   lock_queue (queue with waiting mechanism to use in concurrent environment)
 -   time_queue (creates a queue for delay requests)
 -   worker_thread (creates workers on separate threads that do task when requested, based on lock_queue and time_queue)
+-   jobs_engine (using a thread pool based on worker_thread process different jobs with config execution pattern)
 -   spinlock (or critical_section to do quick locks)
 
 #
@@ -282,6 +283,79 @@ workers.signal_exit_force(); // workers.signal_exit_when_done();
 
 #
 
+### jobs_engine
+
+A class that process different jobs type using the same thread pool
+
+The following functions are available
+
+For data
+
+`size, empty, clear`
+
+`push_back, emplace_back`
+
+`push_back_delay_for`, `push_back_delay_until`, `emplace_back_delay_for`, `emplace_back_delay_until`
+
+To use it as a locker
+
+`lock, unlock, try_lock`
+
+Signal exit when we no longer want to use it,
+
+`signal_exit_force, is_exit`
+
+`signal_exit_when_done`
+
+Use it like this
+
+```
+using qc = std::pair<int, std::string>;
+...
+enum JobType
+{
+    job1,
+    job2
+};
+...
+small::jobs_engine<JobType, qc> jobs(
+    {.threads_count = 0 /*dont start any thread yet*/},
+    {.threads_count = 1, .bulk_count = 1},
+    [](auto &j /*this*/, const auto job_type, const auto &items) {
+        ...
+        for (auto &[i, s] : items) {
+          ...
+        }
+        ...
+    });
+...
+// add specific function for job1
+jobs.add_job_type(JobType::job1, {.threads_count = 2}, [](auto &j /*this*/, const auto job_type, const auto &items, auto b /*extra param b*/) {
+    ...
+    for(auto &[i, s]:items){
+      ...
+    }
+    ...
+}, 5 /*param b*/);
+...
+// use default config and default function for job2
+jobs.add_job_type(JobType::job2);
+...
+// manual start threads
+jobs.start_threads(3);
+...
+// push
+jobs.push_back(JobType::job1, {1, "a"});
+jobs.push_back(JobType::job2, {2, "b"});
+...
+auto ret = jobs.wait_for(std::chrono::milliseconds(0)); // wait to finished
+...
+jobs.wait(); // wait here for jobs to finish due to exit flag
+...
+```
+
+#
+
 ### spinlock (like critical_section)
 
 Spinlock is just like a mutex but it uses atomic lockless to do locking (based on std::atomic_flag).
@@ -402,12 +476,18 @@ The following functions are available
 
 `stricmp, struct icasecmp`
 
+`toLowerCase`, `toUpperCase`, `toCapitalizeCase`, `toHex`, `toHexF`
+
 Use it like this
 
 ```
 int r = small::stricmp( "a", "C" );
 ...
 std::map<std::string, int, small::icasecmp> m;
+...
+std::string s = "Some text";
+small::toLowerCase(s);
+
 ```
 
 `sleep`
@@ -422,6 +502,8 @@ small::sleep(100/*ms*/);
 
 `timeNow, timeDiffMs, timeDiffMicro, timeDiffNano`
 
+`toUnixTimestamp`, `toISOString`
+
 Use it like this
 
 ```
@@ -429,6 +511,8 @@ auto timeStart = small::timeNow();
 ...
 auto elapsed = small::timeDiffMs(timeStart);
 ...
+auto timestamp = small::toUnixTimestamp(timeStart);
+auto time_str = small::toISOString(timeStart);
 ```
 
 `rand8, rand16, rand32, rand64`
