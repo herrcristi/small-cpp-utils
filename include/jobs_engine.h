@@ -181,6 +181,7 @@ namespace small {
             m_jobs.m_started = true; // mark as started to avoid config later
             ++m_jobs.m_total_count;  // inc before adding
             it->second.m_queue_items.push_back(t);
+            on_new_item_added(job_type, it->second);
         }
 
         // push back with move semantics
@@ -199,6 +200,26 @@ namespace small {
             m_jobs.m_started = true; // mark as started to avoid config later
             ++m_jobs.m_total_count;  // inc before adding
             it->second.m_queue_items.push_back(std::forward<T>(t));
+            on_new_item_added(job_type, it->second);
+        }
+        // emplace_back
+        template <typename... _Args>
+        inline void emplace_back(const JobType job_type, _Args &&...__args)
+        {
+            if (is_exit()) {
+                return;
+            }
+
+            // m_job_queues can accessed without locking afterwards because it will not be modified
+            auto it = m_jobs.m_queues.find(job_type);
+            if (it == m_jobs.m_queues.end()) {
+                return;
+            }
+
+            m_jobs.m_started = true; // mark as started to avoid config later
+            ++m_jobs.m_total_count;  // inc before adding
+            it->second.m_queue_items.emplace_back(std::forward<_Args>(__args)...);
+            on_new_item_added(job_type, it->second);
         }
 
         //
@@ -246,25 +267,6 @@ namespace small {
         }
 
         // emplace_back
-        template <typename... _Args>
-        inline void emplace_back(const JobType job_type, _Args &&...__args)
-        {
-            if (is_exit()) {
-                return;
-            }
-
-            // m_job_queues can accessed without locking afterwards because it will not be modified
-            auto it = m_jobs.m_queues.find(job_type);
-            if (it == m_jobs.m_queues.end()) {
-                return;
-            }
-
-            m_jobs.m_started = true; // mark as started to avoid config later
-            ++m_jobs.m_total_count;  // inc before adding
-            it->second.m_queue_items.emplace_back(std::forward<_Args>(__args)...);
-        }
-
-        // emplace_back
         template <typename _Rep, typename _Period, typename... _Args>
         inline void emplace_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const JobType job_type, _Args &&...__args)
         {
@@ -293,7 +295,7 @@ namespace small {
         inline void signal_exit_when_done   ()  { m_delayed_items.signal_exit_when_done(); /*when the delayed will be finished will signal the queue items to exit when done*/ }
         
         // to be used in processing function
-        inline bool is_exit                 ()  { return m_workers.is_exit_force() || m_delayed_items.is_exit_force(); }
+        inline bool is_exit                 ()  { return m_workers.is_exit() || m_delayed_items.is_exit_force(); }
         // clang-format on
 
         //
@@ -335,27 +337,51 @@ namespace small {
 
     private:
         //
+        // trigger action (if needed for the new job type)
+        //
+        struct JobTypeQueueItem;
+        inline void on_new_item_added(const JobType job_type, JobTypeQueueItem &job_item)
+        {
+            bool enqueue_action = job_item.m_queue_items.size() > 0;
+            // move from queue to action
+            if (enqueue_action) {
+                m_workers.push_back(job_type);
+            }
+        }
+
+        //
         // inner thread function for active items
         //
         inline void thread_function(const std::vector<JobType> &items)
         {
-            // std::vector<T> vec_elems;
-            // const int      bulk_count = std::max(m_config.bulk_count, 1);
-            // while (true) {
-            //     // wait
-            //     small::EnumLock ret = m_queue_items.wait_pop_front(vec_elems, bulk_count);
+            std::vector<T> vec_elems;
+            T              elem{};
 
-            //     if (ret == small::EnumLock::kExit) {
-            //         // force stop
-            //         break;
-            //     } else if (ret == small::EnumLock::kTimeout) {
-            //         // nothing to do
-            //     } else if (ret == small::EnumLock::kElement) {
-            //         // process
-            //         m_processing_function(job_type, vec_elems); // bind the std::placeholders::_1 and _2
-            //     }
-            //     small::sleepMicro(1);
-            // }
+            for (auto job_type : items) {
+                // m_job_queues can accessed without locking afterwards because it will not be modified
+                auto it = m_jobs.m_queues.find(job_type);
+                if (it == m_jobs.m_queues.end()) {
+                    continue;
+                }
+
+                JobTypeQueueItem &job_item = it->second;
+
+                int  max_count = std::max(job_item.m_config.bulk_count, 1);
+                auto ret       = job_item.m_queue_items.wait_pop_front(vec_elems, max_count);
+                if (ret == small::EnumLock::kExit) {
+                    return;
+                }
+                // update global counter
+                for (std::size_t i = 0; i < vec_elems.size(); ++i) {
+                    --m_jobs.m_total_count; // dec
+                }
+
+                // process specific job by type
+                job_item.m_processing_function(job_type, vec_elems);
+
+                // start another action
+                on_new_item_added(job_type, job_item);
+            }
         }
 
         //
