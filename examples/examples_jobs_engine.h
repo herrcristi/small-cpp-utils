@@ -52,7 +52,7 @@ namespace examples::jobs_engine {
             } 
             small::sleep(300); }, 5 /*param b*/);
 
-        // use default config and deafult function for job2
+        // use default config and default function for job2
         jobs.add_job_type(JobType::job2);
 
         jobs.start_threads(3); // manual start threads

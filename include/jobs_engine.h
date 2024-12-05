@@ -29,7 +29,7 @@
 //     }
 // }, 5 /*param b*/);
 //
-// // use default config and deafult function for job2
+// // use default config and default function for job2
 // jobs.add_job_type(JobType::job2);
 // // manual start threads
 // jobs.start_threads(3);
