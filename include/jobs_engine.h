@@ -59,7 +59,8 @@ namespace small {
             wait();
         }
 
-        // // clang-format off
+        // clang-format off
+        // TODO
         // // size of active items
         // inline size_t   size        () { return m_queue_items.size();  }
         // // empty
@@ -67,13 +68,13 @@ namespace small {
         // // clear
         // inline void     clear       () { m_queue_items.clear(); }
 
-        // // size of delayed items
-        // inline size_t   size_delayed() { return m_delayed_items.size();  }
-        // // empty
-        // inline bool     empty_delayed() { return size_delayed() == 0; }
-        // // clear
-        // inline void     clear_delayed() { m_delayed_items.clear(); }
-        // // clang-format on
+        // size of delayed items
+        inline size_t   size_delayed() { return m_delayed_items.size();  }
+        // empty
+        inline bool     empty_delayed() { return size_delayed() == 0; }
+        // clear
+        inline void     clear_delayed() { m_delayed_items.clear(); }
+        // clang-format on
 
         // clang-format off
         // use it as locker (std::unique_lock<small:jobs_engine<T>> m...)
@@ -170,68 +171,44 @@ namespace small {
         // push_back with specific timeings
         //
         template <typename _Rep, typename _Period>
-        inline void push_back_delay_for(const JobType job_type, const std::chrono::duration<_Rep, _Period> &__rtime, const T &elem)
+        inline void push_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const JobType job_type, const T &elem)
         {
             if (is_exit()) {
                 return;
             }
 
-            // m_job_queues can accessed without locking afterwards because it will not be modified
-            auto it = m_job_queues.find(job_type);
-            if (it == m_job_queues.end()) {
-                return;
-            }
-
-            it->second.m_delayed_items.push_delay_for(__rtime, elem);
+            m_delayed_items.push_delay_for(__rtime, {job_type, elem});
         }
 
         // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
-        inline void push_back_delay_until(const JobType job_type, const std::chrono::time_point<typename small::time_queue<T>::TimeClock, typename small::time_queue<T>::TimeDuration> &__atime, const T &elem)
+        inline void push_back_delay_until(const std::chrono::time_point<typename small::time_queue<T>::TimeClock, typename small::time_queue<T>::TimeDuration> &__atime, const JobType job_type, const T &elem)
         {
             if (is_exit()) {
                 return;
             }
 
-            // m_job_queues can accessed without locking afterwards because it will not be modified
-            auto it = m_job_queues.find(job_type);
-            if (it == m_job_queues.end()) {
-                return;
-            }
-
-            it->second.m_delayed_items.push_delay_until(__atime, elem);
+            m_delayed_items.push_delay_until(__atime, {job_type, elem});
         }
 
         // push_back move semantics
         template <typename _Rep, typename _Period>
-        inline void push_back_delay_for(const JobType job_type, const std::chrono::duration<_Rep, _Period> &__rtime, T &&elem)
+        inline void push_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const JobType job_type, T &&elem)
         {
             if (is_exit()) {
                 return;
             }
 
-            // m_job_queues can accessed without locking afterwards because it will not be modified
-            auto it = m_job_queues.find(job_type);
-            if (it == m_job_queues.end()) {
-                return;
-            }
-
-            it->second.m_delayed_items.push_delay_for(__rtime, std::forward<T>(elem));
+            m_delayed_items.push_delay_for(__rtime, {job_type, std::forward<T>(elem)});
         }
 
         // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
-        inline void push_back_delay_until(const JobType job_type, const std::chrono::time_point<typename small::time_queue<T>::TimeClock, typename small::time_queue<T>::TimeDuration> &__atime, T &&elem)
+        inline void push_back_delay_until(const std::chrono::time_point<typename small::time_queue<T>::TimeClock, typename small::time_queue<T>::TimeDuration> &__atime, const JobType job_type, T &&elem)
         {
             if (is_exit()) {
                 return;
             }
 
-            // m_job_queues can accessed without locking afterwards because it will not be modified
-            auto it = m_job_queues.find(job_type);
-            if (it == m_job_queues.end()) {
-                return;
-            }
-
-            it->second.m_delayed_items.push_delay_until(__atime, std::forward<T>(elem));
+            m_delayed_items.push_delay_until(__atime, {job_type, std::forward<T>(elem)});
         }
 
         // emplace_back
@@ -253,35 +230,23 @@ namespace small {
 
         // emplace_back
         template <typename _Rep, typename _Period, typename... _Args>
-        inline void emplace_back_delay_for(const JobType job_type, const std::chrono::duration<_Rep, _Period> &__rtime, _Args &&...__args)
+        inline void emplace_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const JobType job_type, _Args &&...__args)
         {
             if (is_exit()) {
                 return;
             }
 
-            // m_job_queues can accessed without locking afterwards because it will not be modified
-            auto it = m_job_queues.find(job_type);
-            if (it == m_job_queues.end()) {
-                return;
-            }
-
-            it->second.m_delayed_items.emplace_delay_for(__rtime, std::forward<T>(__args)...);
+            m_delayed_items.emplace_delay_for(__rtime, {job_type, std::forward<T>(__args)...});
         }
 
         template </* typename _Clock, typename _Duration, */ typename... _Args> // avoid time_casting from one clock to another
-        inline void emplace_back_delay_until(const JobType job_type, const std::chrono::time_point<typename small::time_queue<T>::TimeClock, typename small::time_queue<T>::TimeDuration> &__atime, _Args &&...__args)
+        inline void emplace_back_delay_until(const std::chrono::time_point<typename small::time_queue<T>::TimeClock, typename small::time_queue<T>::TimeDuration> &__atime, const JobType job_type, _Args &&...__args)
         {
             if (is_exit()) {
                 return;
             }
 
-            // m_job_queues can accessed without locking afterwards because it will not be modified
-            auto it = m_job_queues.find(job_type);
-            if (it == m_job_queues.end()) {
-                return;
-            }
-
-            it->second.m_delayed_items.emplace_delay_until(__atime, std::forward<T>(__args)...);
+            m_delayed_items.emplace_delay_until(__atime, {job_type, std::forward<T>(__args)...});
         }
 
         // clang-format off
@@ -336,7 +301,7 @@ namespace small {
         //
         // inner thread function for active items
         //
-        inline void thread_function()
+        inline void thread_function(const std::vector<JobType> &items)
         {
             // std::vector<T> vec_elems;
             // const int      bulk_count = std::max(m_config.bulk_count, 1);
@@ -390,32 +355,27 @@ namespace small {
         //
         using ProcessingFunction = std::function<void(const std::vector<T> &)>;
 
-        struct JobRequest
-        {
-            T m_elem{};
-        };
-
         struct JobTypeQueueItem
         {
             JobType              m_job_type{};            // job type
             config_job_type      m_config{};              // config for this job type
             ProcessingFunction   m_processing_function{}; // processing Function
             small::lock_queue<T> m_queue_items{};         // queue of items
-            small::time_queue<T> m_delayed_items{};       // queue of delayed items
         };
 
         struct JobWorkerThreadFunction
         {
-            void operator()(small::worker_thread<JobRequest> &w, const std::vector<JobRequest> &items, small::jobs_engine<JobType, T> *pThis) const
+            void operator()(small::worker_thread<JobType> &, const std::vector<JobType> &items, small::jobs_engine<JobType, T> *pThis) const
             {
-                // pThis->...
+                pThis->thread_function(items);
             }
         };
 
         config_jobs_engine                            m_config;                                                         // config
-        small::worker_thread<JobRequest>              m_workers{{.threads_count = 0}, JobWorkerThreadFunction(), this}; // pool of thread workers
+        small::worker_thread<JobType>                 m_workers{{.threads_count = 0}, JobWorkerThreadFunction(), this}; // pool of thread workers
         std::unordered_map<JobType, JobTypeQueueItem> m_job_queues;                                                     // queue of items by type
         config_job_type                               m_default_job_type_config;                                        // default config for a job type
         ProcessingFunction                            m_default_processing_function{};                                  // default processing function
+        small::time_queue<std::pair<JobType, T>>      m_delayed_items{};                                                // queue of delayed items
     }; // namespace small
 } // namespace small
