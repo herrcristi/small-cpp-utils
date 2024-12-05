@@ -4,9 +4,45 @@
 
 #include "worker_thread.h"
 
+// // example
 // using qc = std::pair<int, std::string>;
-// ...
-// //
+//
+// enum JobType
+// {
+//     job1,
+//     job2
+// };
+//
+// small::jobs_engine<JobType, qc> jobs(
+//     {.threads_count = 0 /*dont start any thread yet*/},
+//     {.threads_count = 1, .bulk_count = 1},
+//     [](auto &j /*this*/, const auto job_type, const auto &items) {
+//         for (auto &[i, s] : items) {
+//             ...
+//         }
+//     });
+//
+// // add specific function for job1
+// jobs.add_job_type(JobType::job1, {.threads_count = 2}, [](auto &j /*this*/, const auto job_type, const auto &items, auto b /*extra param b*/) {
+//     for(auto &[i, s]:items){
+//         ...
+//     }
+// }, 5 /*param b*/);
+//
+// // use default config and deafult function for job2
+// jobs.add_job_type(JobType::job2);
+// // manual start threads
+// jobs.start_threads(3);
+//
+// // push
+// jobs.push_back(JobType::job1, {1, "a"});
+// jobs.push_back(JobType::job2, {2, "b"});
+//
+//
+// auto ret = jobs.wait_for(std::chrono::milliseconds(0)); // wait to finished
+// ... check ret
+// jobs.wait(); // wait here for jobs to finish due to exit flag
+//
 
 namespace small {
     //
