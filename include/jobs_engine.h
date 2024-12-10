@@ -311,7 +311,7 @@ namespace small {
                 return;
             }
 
-            m_delayed_items.emplace_delay_for(__rtime, {job_type, std::forward<T>(__args)...});
+            m_delayed_items.push_delay_for(__rtime, {job_type, T{std::forward<_Args>(__args)...}});
         }
 
         template </* typename _Clock, typename _Duration, */ typename... _Args> // avoid time_casting from one clock to another
@@ -321,7 +321,7 @@ namespace small {
                 return;
             }
 
-            m_delayed_items.emplace_delay_until(__atime, {job_type, std::forward<T>(__args)...});
+            m_delayed_items.push_delay_until(__atime, {job_type, T{std::forward<_Args>(__args)...}});
         }
 
         // clang-format off
