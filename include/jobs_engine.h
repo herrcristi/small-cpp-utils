@@ -139,6 +139,7 @@ namespace small {
         inline void start_threads(const int threads_count /* = 1 */)
         {
             m_config.threads_count = threads_count;
+            m_delayed_items_future = std::async(std::launch::async, &jobs_engine::thread_function_delayed, this);
             m_workers.start_threads(threads_count);
         }
 
@@ -327,8 +328,15 @@ namespace small {
         //
         // signal exit
         //
-        inline void signal_exit_force       ()  { m_workers.signal_exit_force(); m_delayed_items.signal_exit_force(); }
-        inline void signal_exit_when_done   ()  { m_delayed_items.signal_exit_when_done(); /*when the delayed will be finished will signal the queue items to exit when done*/ }
+        inline void signal_exit_force       ()  { 
+            m_workers.signal_exit_force(); 
+            m_delayed_items.signal_exit_force(); 
+            for(auto &[job_type, job_items]: m_jobs.m_queues) {
+                job_items.m_queue_items.signal_exit_force();
+            }
+        }
+        inline void signal_exit_when_done   ()  { 
+            m_delayed_items.signal_exit_when_done(); /*when the delayed will be finished will signal the queue items to exit when done*/ }
         
         // to be used in processing function
         inline bool is_exit                 ()  { return m_workers.is_exit() || m_delayed_items.is_exit_force(); }
@@ -340,6 +348,7 @@ namespace small {
         inline EnumLock wait()
         {
             signal_exit_when_done();
+            m_delayed_items_future.wait();
             return m_workers.wait();
         }
 
@@ -360,6 +369,10 @@ namespace small {
         inline EnumLock wait_until(const std::chrono::time_point<_Clock, _Duration> &__atime)
         {
             signal_exit_when_done();
+            auto fstatus = m_delayed_items_future.wait_until(__atime);
+            if (fstatus == std::future_status::timeout) {
+                return small::EnumLock::kTimeout;
+            }
             return m_workers.wait_until(__atime);
         }
 
@@ -435,6 +448,9 @@ namespace small {
 
                 if (ret == small::EnumLock::kExit) {
                     m_workers.signal_exit_when_done();
+                    for (auto &[job_type, job_items] : m_jobs.m_queues) {
+                        job_items.m_queue_items.signal_exit_when_done();
+                    }
                     // force stop
                     break;
                 } else if (ret == small::EnumLock::kTimeout) {
@@ -475,10 +491,11 @@ namespace small {
             std::atomic<long long>                        m_total_count; // count of all jobs types
         };
 
-        config_jobs_engine                 m_config;          // config
-        JobTypeDefault                     m_default;         // default config and default processing function
-        JobQueues                          m_jobs;            // curent queues by type
-        small::time_queue<JobDelayedItems> m_delayed_items{}; // queue of delayed items
+        config_jobs_engine                 m_config;               // config
+        JobTypeDefault                     m_default;              // default config and default processing function
+        JobQueues                          m_jobs;                 // curent queues by type
+        small::time_queue<JobDelayedItems> m_delayed_items{};      // queue of delayed items
+        std::future<void>                  m_delayed_items_future; // delayed threads future (needed to wait for)
 
         //
         // pool of thread workers

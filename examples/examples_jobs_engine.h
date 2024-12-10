@@ -65,7 +65,7 @@ namespace examples::jobs_engine {
         jobs.emplace_back(JobType::job1, 4, "d");
         jobs.emplace_back(JobType::job1, 5, "e");
         jobs.emplace_back(JobType::job1, 6, "f");
-        jobs.emplace_back(JobType::job1, 7, "g");
+        jobs.push_back_delay_for(std::chrono::milliseconds(300), JobType::job1, {7, "g"});
 
         small::sleep(100);
         auto ret = jobs.wait_for(std::chrono::milliseconds(0)); // wait to finished
