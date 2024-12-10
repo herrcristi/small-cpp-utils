@@ -5,6 +5,10 @@ ColumnLimit: 0
 AccessModifierOffset: -4
 NamespaceIndentation: All
 BreakBeforeBraces: Custom
+AlignConsecutiveDeclarations: true
+AlignConsecutiveAssignments:
+    Enabled: true
+    AlignCompound: true
 BraceWrapping:
     AfterEnum: true
     AfterStruct: true
