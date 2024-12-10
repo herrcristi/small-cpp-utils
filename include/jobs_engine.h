@@ -218,7 +218,7 @@ namespace small {
             m_jobs.m_started = true; // mark as started to avoid config later
             ++m_jobs.m_total_count;  // inc before adding
             it->second.m_queue_items.push_back(t);
-            on_new_item_added(job_type, it->second);
+            start_job_action(job_type, it->second);
         }
 
         // push back with move semantics
@@ -237,7 +237,7 @@ namespace small {
             m_jobs.m_started = true; // mark as started to avoid config later
             ++m_jobs.m_total_count;  // inc before adding
             it->second.m_queue_items.push_back(std::forward<T>(t));
-            on_new_item_added(job_type, it->second);
+            start_job_action(job_type, it->second);
         }
         // emplace_back
         template <typename... _Args>
@@ -256,7 +256,7 @@ namespace small {
             m_jobs.m_started = true; // mark as started to avoid config later
             ++m_jobs.m_total_count;  // inc before adding
             it->second.m_queue_items.emplace_back(std::forward<_Args>(__args)...);
-            on_new_item_added(job_type, it->second);
+            start_job_action(job_type, it->second);
         }
 
         //
@@ -388,7 +388,7 @@ namespace small {
         // trigger action (if needed for the new job type)
         //
         struct JobTypeQueueItem;
-        inline void on_new_item_added(const JobType job_type, JobTypeQueueItem &job_item)
+        inline void start_job_action(const JobType job_type, JobTypeQueueItem &job_item)
         {
             bool enqueue_action = job_item.m_queue_items.size() > 0;
             // move from queue to action
@@ -428,7 +428,7 @@ namespace small {
                 job_item.m_processing_function(job_type, vec_elems);
 
                 // start another action
-                on_new_item_added(job_type, job_item);
+                start_job_action(job_type, job_item);
             }
         }
 
