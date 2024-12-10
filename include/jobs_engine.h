@@ -335,8 +335,7 @@ namespace small {
                 job_items.m_queue_items.signal_exit_force();
             }
         }
-        inline void signal_exit_when_done   ()  { 
-            m_delayed_items.signal_exit_when_done(); /*when the delayed will be finished will signal the queue items to exit when done*/ }
+        inline void signal_exit_when_done   ()  { m_delayed_items.signal_exit_when_done(); /*when the delayed will be finished will signal the queue items to exit when done*/ }
         
         // to be used in processing function
         inline bool is_exit                 ()  { return m_workers.is_exit() || m_delayed_items.is_exit_force(); }
