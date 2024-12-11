@@ -216,9 +216,12 @@ namespace small {
             }
 
             m_jobs.m_started = true; // mark as started to avoid config later
-            ++m_jobs.m_total_count;  // inc before adding
-            it->second.m_queue_items.push_back(t);
-            start_job_action(job_type, it->second);
+            auto &job_item   = it->second;
+
+            std::lock_guard l(job_item.m_queue_items);
+            ++m_jobs.m_total_count; // inc before adding
+            job_item.m_queue_items.push_back(t);
+            job_action_start(job_type, job_item);
         }
 
         // push back with move semantics
@@ -235,9 +238,12 @@ namespace small {
             }
 
             m_jobs.m_started = true; // mark as started to avoid config later
-            ++m_jobs.m_total_count;  // inc before adding
-            it->second.m_queue_items.push_back(std::forward<T>(t));
-            start_job_action(job_type, it->second);
+            auto &job_item   = it->second;
+
+            std::lock_guard l(job_item.m_queue_items);
+            ++m_jobs.m_total_count; // inc before adding
+            job_item.m_queue_items.push_back(std::forward<T>(t));
+            job_action_start(job_type, job_item);
         }
         // emplace_back
         template <typename... _Args>
@@ -254,9 +260,12 @@ namespace small {
             }
 
             m_jobs.m_started = true; // mark as started to avoid config later
-            ++m_jobs.m_total_count;  // inc before adding
-            it->second.m_queue_items.emplace_back(std::forward<_Args>(__args)...);
-            start_job_action(job_type, it->second);
+            auto &job_item   = it->second;
+
+            std::lock_guard l(job_item.m_queue_items);
+            ++m_jobs.m_total_count; // inc before adding
+            job_item.m_queue_items.emplace_back(std::forward<_Args>(__args)...);
+            job_action_start(job_type, job_item);
         }
 
         //
@@ -388,13 +397,26 @@ namespace small {
         // trigger action (if needed for the new job type)
         //
         struct JobTypeQueueItem;
-        inline void start_job_action(const JobType job_type, JobTypeQueueItem &job_item)
+        inline void job_action_start(const JobType job_type, JobTypeQueueItem &job_item)
         {
-            bool enqueue_action = job_item.m_queue_items.size() > 0;
+            std::lock_guard l(job_item.m_queue_items);
+
+            bool has_items     = job_item.m_queue_items.size() > 0;
+            bool needs_runners = job_item.m_processing_stats.m_running < job_item.m_config.threads_count;
+
             // move from queue to action
-            if (enqueue_action) {
+            if (has_items && needs_runners) {
+                ++job_item.m_processing_stats.m_running;
                 m_workers.push_back(job_type);
             }
+        }
+
+        inline void job_action_end(const JobType job_type, JobTypeQueueItem &job_item)
+        {
+            std::lock_guard l(job_item.m_queue_items);
+
+            --job_item.m_processing_stats.m_running;
+            job_action_start(job_type, job_item);
         }
 
         //
@@ -428,7 +450,7 @@ namespace small {
                 job_item.m_processing_function(job_type, vec_elems);
 
                 // start another action
-                start_job_action(job_type, job_item);
+                job_action_end(job_type, job_item);
             }
         }
 
@@ -446,7 +468,7 @@ namespace small {
                 small::EnumLock ret = m_delayed_items.wait_pop(vec_elems, bulk_count);
 
                 if (ret == small::EnumLock::kExit) {
-                    m_workers.signal_exit_when_done();
+                    // signal next queues to exit when done (and that will signal workers in the end)
                     for (auto &[job_type, job_items] : m_jobs.m_queues) {
                         job_items.m_queue_items.signal_exit_when_done();
                     }
@@ -476,9 +498,15 @@ namespace small {
             ProcessingFunction m_processing_function{}; // default processing Function
         };
 
+        struct JobTypeStats
+        {
+            int m_running{}; // how many requests are currently running
+        };
+
         struct JobTypeQueueItem
         {
             config_job_type      m_config{};              // config for this job type
+            JobTypeStats         m_processing_stats;      // keep track of execution stats to help schedule
             ProcessingFunction   m_processing_function{}; // processing Function
             small::lock_queue<T> m_queue_items{};         // queue of items
         };

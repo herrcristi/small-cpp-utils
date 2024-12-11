@@ -50,7 +50,7 @@ namespace examples::jobs_engine {
                               << "\n";
                 }
             } 
-            small::sleep(300); }, 5 /*param b*/);
+            /* small::sleep(300); */ }, 5 /*param b*/);
 
         // use default config and default function for job2
         jobs.add_job_type(JobType::job2);
