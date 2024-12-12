@@ -105,8 +105,8 @@ namespace small {
         inline void     clear       () 
         { 
             // m_job_queues will be initialized in the initial setup phase and will be accessed without locking afterwards
-            for(auto &[job_type, job_items]: m_jobs.m_queues) {
-                job_items.m_queue_items.clear(); // has its own mutex
+            for(auto &[job_type, job_item]: m_jobs.m_queues) {
+                job_item.m_queue_items.clear(); // has its own mutex
             }
         }
         
@@ -342,8 +342,8 @@ namespace small {
         inline void signal_exit_force       ()  { 
             m_workers.signal_exit_force(); 
             m_delayed_items.signal_exit_force(); 
-            for(auto &[job_type, job_items]: m_jobs.m_queues) {
-                job_items.m_queue_items.signal_exit_force();
+            for(auto &[job_type, job_item]: m_jobs.m_queues) {
+                job_item.m_queue_items.signal_exit_force();
             }
         }
         inline void signal_exit_when_done   ()  { m_delayed_items.signal_exit_when_done(); /*when the delayed will be finished will signal the queue items to exit when done*/ }
@@ -361,14 +361,14 @@ namespace small {
             m_delayed_items_thread_future.wait();
 
             // only now can signal exit when done for queue items (when no more delayed items can be pushed)
-            for (auto &[job_type, job_items] : m_jobs.m_queues) {
-                job_items.m_queue_items.signal_exit_when_done();
+            for (auto &[job_type, job_item] : m_jobs.m_queues) {
+                job_item.m_queue_items.signal_exit_when_done();
             }
 
-            for (auto &[job_type, job_items] : m_jobs.m_queues) {
-                std::unique_lock l(job_items.m_queue_items);
-                m_jobs.m_queues_exit_condition.wait(l, [q = &job_items.m_queue_items]() -> bool {
-                    return q->empty();
+            for (auto &[job_type, job_item] : m_jobs.m_queues) {
+                std::unique_lock l(job_item.m_queue_items);
+                m_jobs.m_queues_exit_condition.wait(l, [q = &job_item.m_queue_items]() -> bool {
+                    return q->empty() || q->is_exit_force();
                 });
             }
 
@@ -399,15 +399,15 @@ namespace small {
             }
 
             // only now can signal exit when done for queue items (when no more delayed items can be pushed)
-            for (auto &[job_type, job_items] : m_jobs.m_queues) {
-                job_items.m_queue_items.signal_exit_when_done();
+            for (auto &[job_type, job_item] : m_jobs.m_queues) {
+                job_item.m_queue_items.signal_exit_when_done();
             }
 
-            for (auto &[job_type, job_items] : m_jobs.m_queues) {
-                std::unique_lock l(job_items.m_queue_items);
+            for (auto &[job_type, job_item] : m_jobs.m_queues) {
+                std::unique_lock l(job_item.m_queue_items);
 
-                auto status = m_jobs.m_queues_exit_condition.wait_until(l, __atime, [q = &job_items.m_queue_items]() -> bool {
-                    return q->empty();
+                auto status = m_jobs.m_queues_exit_condition.wait_until(l, __atime, [t = job_type, q = &job_item.m_queue_items]() -> bool {
+                    return q->empty() || q->is_exit_force();
                 });
                 if (!status) {
                     return small::EnumLock::kTimeout;

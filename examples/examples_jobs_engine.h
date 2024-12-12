@@ -35,7 +35,7 @@ namespace examples::jobs_engine {
                               << " time " << small::toISOString(small::timeNow())
                               << "\n";
                 }
-                small::sleep(300);
+                small::sleep(30);
             });
 
         // add specific function for job1
@@ -50,7 +50,7 @@ namespace examples::jobs_engine {
                               << "\n";
                 }
             } 
-            /* small::sleep(300); */ }, 5 /*param b*/);
+            small::sleep(30); }, 5 /*param b*/);
 
         // use default config and default function for job2
         jobs.add_job_type(JobType::job2);
@@ -69,8 +69,9 @@ namespace examples::jobs_engine {
         jobs.emplace_back_delay_until(small::timeNow() + std::chrono::milliseconds(350), JobType::job1, 8, "h");
         jobs.push_back_delay_for(std::chrono::milliseconds(400), JobType::job1, {9, "i"});
 
-        small::sleep(100);
-        auto ret = jobs.wait_for(std::chrono::milliseconds(0)); // wait to finished
+        small::sleep(50);
+        // jobs.signal_exit_force();
+        auto ret = jobs.wait_for(std::chrono::milliseconds(100)); // wait to finished
         std::cout << "wait for with timeout, ret = " << static_cast<int>(ret) << " as timeout\n";
         jobs.wait(); // wait here for jobs to finish due to exit flag
 
