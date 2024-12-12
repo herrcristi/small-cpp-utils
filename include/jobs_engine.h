@@ -139,7 +139,9 @@ namespace small {
         inline void start_threads(const int threads_count /* = 1 */)
         {
             m_config.threads_count = threads_count;
-            m_delayed_items_future = std::async(std::launch::async, &jobs_engine::thread_function_delayed, this);
+            if (!m_delayed_items_thread_future.valid()) {
+                m_delayed_items_thread_future = std::async(std::launch::async, &jobs_engine::thread_function_delayed, this);
+            }
             m_workers.start_threads(threads_count);
         }
 
@@ -218,7 +220,7 @@ namespace small {
             m_jobs.m_started = true; // mark as started to avoid config later
             auto &job_item   = it->second;
 
-            std::lock_guard l(job_item.m_queue_items);
+            std::unique_lock l(job_item.m_queue_items);
             ++m_jobs.m_total_count; // inc before adding
             job_item.m_queue_items.push_back(t);
             job_action_start(job_type, job_item);
@@ -240,7 +242,7 @@ namespace small {
             m_jobs.m_started = true; // mark as started to avoid config later
             auto &job_item   = it->second;
 
-            std::lock_guard l(job_item.m_queue_items);
+            std::unique_lock l(job_item.m_queue_items);
             ++m_jobs.m_total_count; // inc before adding
             job_item.m_queue_items.push_back(std::forward<T>(t));
             job_action_start(job_type, job_item);
@@ -262,7 +264,7 @@ namespace small {
             m_jobs.m_started = true; // mark as started to avoid config later
             auto &job_item   = it->second;
 
-            std::lock_guard l(job_item.m_queue_items);
+            std::unique_lock l(job_item.m_queue_items);
             ++m_jobs.m_total_count; // inc before adding
             job_item.m_queue_items.emplace_back(std::forward<_Args>(__args)...);
             job_action_start(job_type, job_item);
@@ -356,7 +358,21 @@ namespace small {
         inline EnumLock wait()
         {
             signal_exit_when_done();
-            m_delayed_items_future.wait();
+            m_delayed_items_thread_future.wait();
+
+            // only now can signal exit when done for queue items (when no more delayed items can be pushed)
+            for (auto &[job_type, job_items] : m_jobs.m_queues) {
+                job_items.m_queue_items.signal_exit_when_done();
+            }
+
+            for (auto &[job_type, job_items] : m_jobs.m_queues) {
+                std::unique_lock l(job_items.m_queue_items);
+                m_jobs.m_queues_exit_condition.wait(l, [q = &job_items.m_queue_items]() -> bool {
+                    return q->empty();
+                });
+            }
+
+            // only now can signal exit when done for workers  (when no more items exists)
             return m_workers.wait();
         }
 
@@ -377,10 +393,28 @@ namespace small {
         inline EnumLock wait_until(const std::chrono::time_point<_Clock, _Duration> &__atime)
         {
             signal_exit_when_done();
-            auto fstatus = m_delayed_items_future.wait_until(__atime);
+            auto fstatus = m_delayed_items_thread_future.wait_until(__atime);
             if (fstatus == std::future_status::timeout) {
                 return small::EnumLock::kTimeout;
             }
+
+            // only now can signal exit when done for queue items (when no more delayed items can be pushed)
+            for (auto &[job_type, job_items] : m_jobs.m_queues) {
+                job_items.m_queue_items.signal_exit_when_done();
+            }
+
+            for (auto &[job_type, job_items] : m_jobs.m_queues) {
+                std::unique_lock l(job_items.m_queue_items);
+
+                auto status = m_jobs.m_queues_exit_condition.wait_until(l, __atime, [q = &job_items.m_queue_items]() -> bool {
+                    return q->empty();
+                });
+                if (!status) {
+                    return small::EnumLock::kTimeout;
+                }
+            }
+
+            // only now can signal exit when done for workers  (when no more items exists)
             return m_workers.wait_until(__atime);
         }
 
@@ -399,7 +433,7 @@ namespace small {
         struct JobTypeQueueItem;
         inline void job_action_start(const JobType job_type, JobTypeQueueItem &job_item)
         {
-            std::lock_guard l(job_item.m_queue_items);
+            std::unique_lock l(job_item.m_queue_items);
 
             bool has_items     = job_item.m_queue_items.size() > 0;
             bool needs_runners = job_item.m_processing_stats.m_running < job_item.m_config.threads_count;
@@ -409,11 +443,15 @@ namespace small {
                 ++job_item.m_processing_stats.m_running;
                 m_workers.push_back(job_type);
             }
+
+            if (!has_items) {
+                m_jobs.m_queues_exit_condition.notify_all();
+            }
         }
 
         inline void job_action_end(const JobType job_type, JobTypeQueueItem &job_item)
         {
-            std::lock_guard l(job_item.m_queue_items);
+            std::unique_lock l(job_item.m_queue_items);
 
             --job_item.m_processing_stats.m_running;
             job_action_start(job_type, job_item);
@@ -439,6 +477,7 @@ namespace small {
                 int  max_count = std::max(job_item.m_config.bulk_count, 1);
                 auto ret       = job_item.m_queue_items.wait_pop_front(vec_elems, max_count);
                 if (ret == small::EnumLock::kExit) {
+                    m_jobs.m_queues_exit_condition.notify_all();
                     return;
                 }
                 // update global counter
@@ -468,10 +507,6 @@ namespace small {
                 small::EnumLock ret = m_delayed_items.wait_pop(vec_elems, bulk_count);
 
                 if (ret == small::EnumLock::kExit) {
-                    // signal next queues to exit when done (and that will signal workers in the end)
-                    for (auto &[job_type, job_items] : m_jobs.m_queues) {
-                        job_items.m_queue_items.signal_exit_when_done();
-                    }
                     // force stop
                     break;
                 } else if (ret == small::EnumLock::kTimeout) {
@@ -513,16 +548,17 @@ namespace small {
 
         struct JobQueues
         {
-            std::unordered_map<JobType, JobTypeQueueItem> m_queues;      // queue of items by type
-            std::atomic<bool>                             m_started{};   // when this flag is set no more config is possible
-            std::atomic<long long>                        m_total_count; // count of all jobs types
+            std::unordered_map<JobType, JobTypeQueueItem> m_queues;                // queue of items by type
+            std::condition_variable_any                   m_queues_exit_condition; // condition to wait for when signal exit when done for queue items
+            std::atomic<bool>                             m_started{};             // when this flag is set no more config is possible
+            std::atomic<long long>                        m_total_count;           // count of all jobs types
         };
 
-        config_jobs_engine                 m_config;               // config
-        JobTypeDefault                     m_default;              // default config and default processing function
-        JobQueues                          m_jobs;                 // curent queues by type
-        small::time_queue<JobDelayedItems> m_delayed_items{};      // queue of delayed items
-        std::future<void>                  m_delayed_items_future; // delayed threads future (needed to wait for)
+        config_jobs_engine                 m_config;                      // config
+        JobTypeDefault                     m_default;                     // default config and default processing function
+        JobQueues                          m_jobs;                        // curent queues by type
+        small::time_queue<JobDelayedItems> m_delayed_items{};             // queue of delayed items
+        std::future<void>                  m_delayed_items_thread_future; // delayed threads future (needed to wait for)
 
         //
         // pool of thread workers

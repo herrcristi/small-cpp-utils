@@ -135,12 +135,12 @@ namespace small {
             }
 
             // create threads and save their future results
-            m_threads_futures.reserve(threads_count + 1);
             m_threads_futures.resize(threads_count);
             for (auto &tf : m_threads_futures) {
                 tf = std::async(std::launch::async, &worker_thread::thread_function, this);
             }
-            m_threads_futures.push_back(std::async(std::launch::async, &worker_thread::thread_function_delayed, this));
+            m_threads_delayed_futures.resize(1);
+            m_threads_delayed_futures[0] = std::async(std::launch::async, &worker_thread::thread_function_delayed, this);
 
             // mark threads were created
             m_threads_flag_created.store(true);
@@ -262,6 +262,12 @@ namespace small {
         inline EnumLock wait()
         {
             signal_exit_when_done();
+            for (auto &th : m_threads_delayed_futures) {
+                th.wait();
+            }
+
+            // only now can signal exit when done for queue items (when no more delayed items can be pushed)
+            m_queue_items.signal_exit_when_done();
             for (auto &th : m_threads_futures) {
                 th.wait();
             }
@@ -272,7 +278,7 @@ namespace small {
         template <typename _Rep, typename _Period>
         inline EnumLock wait_for(const std::chrono::duration<_Rep, _Period> &__rtime)
         {
-            using __dur = typename std::chrono::system_clock::duration;
+            using __dur    = typename std::chrono::system_clock::duration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
             if (__reltime < __rtime) {
                 ++__reltime;
@@ -285,6 +291,15 @@ namespace small {
         inline EnumLock wait_until(const std::chrono::time_point<_Clock, _Duration> &__atime)
         {
             signal_exit_when_done();
+            for (auto &th : m_threads_delayed_futures) {
+                auto ret = th.wait_until(__atime);
+                if (ret == std::future_status::timeout) {
+                    return EnumLock::kTimeout;
+                }
+            }
+
+            // only now can signal exit when done for queue items (when no more delayed items can be pushed)
+            m_queue_items.signal_exit_when_done();
             for (auto &th : m_threads_futures) {
                 auto ret = th.wait_until(__atime);
                 if (ret == std::future_status::timeout) {
@@ -297,10 +312,10 @@ namespace small {
     private:
         // some prevention
         worker_thread(const worker_thread &) = delete;
-        worker_thread(worker_thread &&) = delete;
+        worker_thread(worker_thread &&)      = delete;
 
         worker_thread &operator=(const worker_thread &) = delete;
-        worker_thread &operator=(worker_thread &&__t) = delete;
+        worker_thread &operator=(worker_thread &&__t)   = delete;
 
     private:
         //
@@ -309,7 +324,7 @@ namespace small {
         inline void thread_function()
         {
             std::vector<T> vec_elems;
-            const int bulk_count = std::max(m_config.bulk_count, 1);
+            const int      bulk_count = std::max(m_config.bulk_count, 1);
             while (true) {
                 // wait
                 small::EnumLock ret = m_queue_items.wait_pop_front(vec_elems, bulk_count);
@@ -333,13 +348,12 @@ namespace small {
         inline void thread_function_delayed()
         {
             std::vector<T> vec_elems;
-            const int bulk_count = std::max(m_config.bulk_count, 1);
+            const int      bulk_count = std::max(m_config.bulk_count, 1);
             while (true) {
                 // wait
                 small::EnumLock ret = m_delayed_items.wait_pop(vec_elems, bulk_count);
 
                 if (ret == small::EnumLock::kExit) {
-                    m_queue_items.signal_exit_when_done();
                     // force stop
                     break;
                 } else if (ret == small::EnumLock::kTimeout) {
@@ -358,11 +372,12 @@ namespace small {
         //
         // members
         //
-        config_worker_thread m_config;                                       // config
-        std::vector<std::future<void>> m_threads_futures;                    // threads futures (needed to wait for)
-        std::atomic<bool> m_threads_flag_created{};                          // threads flag
-        small::lock_queue<T> m_queue_items;                                  // queue of items
-        small::time_queue<T> m_delayed_items;                                // queue of delayed items
-        std::function<void(const std::vector<T> &)> m_processing_function{}; // processing Function
+        config_worker_thread                        m_config;                  // config
+        small::lock_queue<T>                        m_queue_items;             // queue of items
+        small::time_queue<T>                        m_delayed_items;           // queue of delayed items
+        std::atomic<bool>                           m_threads_flag_created{};  // threads flag
+        std::vector<std::future<void>>              m_threads_futures;         // threads futures (needed to wait for)
+        std::vector<std::future<void>>              m_threads_delayed_futures; // threads delayed futures (needed to wait for)
+        std::function<void(const std::vector<T> &)> m_processing_function{};   // processing Function
     };
 } // namespace small

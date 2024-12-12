@@ -85,7 +85,6 @@ namespace examples::worker_thread {
         // will wait for the delayed items to be consumed and then the active ones
         workers.wait();
 
-        workers.signal_exit_force(); // after signal exit no push will be accepted
         workers.push_back({6, "f"});
 
         std::cout << "Finished Worker Thread example 2\n\n";
