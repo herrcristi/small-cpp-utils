@@ -157,10 +157,20 @@ namespace small {
             m_queue_items.push_back(t);
         }
 
+        inline void push_back(const std::vector<T> &items)
+        {
+            m_queue_items.push_back(items);
+        }
+
         // push back with move semantics
         inline void push_back(T &&t)
         {
             m_queue_items.push_back(std::forward<T>(t));
+        }
+
+        inline void push_back(std::vector<T> &&items)
+        {
+            m_queue_items.push_back(std::forward<std::vector<T>>(items));
         }
 
         //
@@ -178,6 +188,18 @@ namespace small {
             m_delayed_items.queue().push_delay_until(__atime, elem);
         }
 
+        template <typename _Rep, typename _Period>
+        inline void push_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const std::vector<T> &elems)
+        {
+            m_delayed_items.queue().push_delay_for(__rtime, elems);
+        }
+
+        // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
+        inline void push_back_delay_until(const std::chrono::time_point<typename small::time_queue<T>::TimeClock, typename small::time_queue<T>::TimeDuration> &__atime, const std::vector<T> &elems)
+        {
+            m_delayed_items.queue().push_delay_until(__atime, elems);
+        }
+
         // push_back move semantics
         template <typename _Rep, typename _Period>
         inline void push_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, T &&elem)
@@ -189,6 +211,18 @@ namespace small {
         inline void push_back_delay_until(const std::chrono::time_point<typename small::time_queue<T>::TimeClock, typename small::time_queue<T>::TimeDuration> &__atime, T &&elem)
         {
             m_delayed_items.queue().push_delay_until(__atime, std::forward<T>(elem));
+        }
+
+        template <typename _Rep, typename _Period>
+        inline void push_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, std::vector<T> &&elems)
+        {
+            m_delayed_items.queue().push_delay_for(__rtime, std::forward<std::vector<T>>(elems));
+        }
+
+        // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
+        inline void push_back_delay_until(const std::chrono::time_point<typename small::time_queue<T>::TimeClock, typename small::time_queue<T>::TimeDuration> &__atime, std::vector<T> &&elems)
+        {
+            m_delayed_items.queue().push_delay_until(__atime, std::forward<std::vector<T>>(elems));
         }
 
         // emplace_back
@@ -288,7 +322,7 @@ namespace small {
         {
             std::vector<T> vec_elems;
             const int      bulk_count = std::max(m_config.bulk_count, 1);
-            while (true) {
+            for (; true; small::sleepMicro(1)) {
                 // wait
                 small::EnumLock ret = m_queue_items.wait_pop_front(vec_elems, bulk_count);
 
@@ -301,7 +335,6 @@ namespace small {
                     // process
                     m_processing_function(vec_elems); // bind the std::placeholders::_1
                 }
-                small::sleepMicro(1);
             }
         }
 
@@ -309,11 +342,11 @@ namespace small {
         //
         // members
         //
-        config_worker_thread                              m_config;                       // config
-        small::lock_queue<T>                              m_queue_items;                  // queue of items
-        small::time_queue_thread<T, small::lock_queue<T>> m_delayed_items{m_queue_items}; // queue of delayed items
-        std::atomic<bool>                                 m_threads_flag_created{};       // threads flag
-        std::vector<std::future<void>>                    m_threads_futures;              // threads futures (needed to wait for)
-        std::function<void(const std::vector<T> &)>       m_processing_function{};        // processing Function
+        config_worker_thread                                 m_config;                 // config
+        small::lock_queue<T>                                 m_queue_items;            // queue of items
+        small::time_queue_thread<T, small::worker_thread<T>> m_delayed_items{*this};   // queue of delayed items
+        std::atomic<bool>                                    m_threads_flag_created{}; // threads flag
+        std::vector<std::future<void>>                       m_threads_futures;        // threads futures (needed to wait for)
+        std::function<void(const std::vector<T> &)>          m_processing_function{};  // processing Function
     };
 } // namespace small

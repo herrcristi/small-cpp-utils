@@ -123,6 +123,31 @@ namespace small {
             m_queue.push({__atime, elem});
         }
 
+        template <typename _Rep, typename _Period>
+        inline void push_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const std::vector<T> &elems)
+        {
+            using __dur    = TimeDuration;
+            auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
+            if (__reltime < __rtime) {
+                ++__reltime;
+            }
+            push_delay_until(TimeClock::now() + __reltime, elems);
+        }
+
+        // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
+        inline void push_delay_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, const std::vector<T> &elems)
+        {
+            if (is_exit()) {
+                return;
+            }
+
+            std::unique_lock  l(m_lock);
+            auto_notification n(this);
+            for (auto &elem : elems) {
+                m_queue.push({__atime, elem});
+            }
+        }
+
         // push_back move semantics
         template <typename _Rep, typename _Period>
         inline void push_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, T &&elem)
@@ -145,6 +170,31 @@ namespace small {
             std::unique_lock  l(m_lock);
             auto_notification n(this);
             m_queue.push({__atime, std::forward<T>(elem)});
+        }
+
+        template <typename _Rep, typename _Period>
+        inline void push_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, std::vector<T> &&elems)
+        {
+            using __dur    = TimeDuration;
+            auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
+            if (__reltime < __rtime) {
+                ++__reltime;
+            }
+            push_delay_until(TimeClock::now() + __reltime, std::forward<T>(elems));
+        }
+
+        // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
+        inline void push_delay_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, std::vector<T> &&elems)
+        {
+            if (is_exit()) {
+                return;
+            }
+
+            std::unique_lock  l(m_lock);
+            auto_notification n(this);
+            for (auto &elem : elems) {
+                m_queue.push({__atime, std::forward<T>(elem)});
+            }
         }
 
         // emplace_back

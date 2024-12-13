@@ -202,7 +202,8 @@ namespace small {
         //
         // add items to be processed
         // push_back
-        //
+        // TODO add std::pair<T>
+        // TODO add std::vector<T>, etc
         inline void push_back(const JobType job_type, const T &t)
         {
             // m_job_queues can accessed without locking afterwards because it will not be modified
@@ -475,9 +476,11 @@ namespace small {
         using JobDelayedT     = small::time_queue_thread<JobDelayedItems, small::jobs_engine<JobType, T>>;
         friend JobDelayedT;
 
-        inline void push_back(JobDelayedItems &&item)
+        inline void push_back(std::vector<JobDelayedItems> &&items)
         {
-            push_back(item.first, std::move(item.second));
+            for (auto &item : items) {
+                push_back(item.first, std::move(item.second));
+            }
         }
 
     private:

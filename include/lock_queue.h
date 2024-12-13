@@ -106,6 +106,19 @@ namespace small {
             m_lock.notify_one();
         }
 
+        inline void push_back(const std::vector<T> &elems)
+        {
+            if (is_exit()) {
+                return;
+            }
+
+            std::unique_lock l(m_lock);
+            for (auto &elem : elems) {
+                m_queue.push_back(elem);
+            }
+            m_lock.notify_all();
+        }
+
         // push_back move semantics
         inline void push_back(T &&elem)
         {
@@ -116,6 +129,19 @@ namespace small {
             std::unique_lock l(m_lock);
             m_queue.push_back(std::forward<T>(elem));
             m_lock.notify_one();
+        }
+
+        inline void push_back(std::vector<T> &&elems)
+        {
+            if (is_exit()) {
+                return;
+            }
+
+            std::unique_lock l(m_lock);
+            for (auto &elem : elems) {
+                m_queue.push_back(std::forward<T>(elem));
+            }
+            m_lock.notify_all();
         }
 
         // emplace_back

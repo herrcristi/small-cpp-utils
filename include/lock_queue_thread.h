@@ -5,22 +5,21 @@
 #include <future>
 #include <queue>
 
-#include "time_queue.h"
+#include "lock_queue.h"
 
 namespace small {
 
     //
-    // on separate thread when items from time queue become accessible
-    // they are pushed to active queue
+    // add threads to process items from queue
     //
-    template <typename T, typename ActiveQueueT>
-    class time_queue_thread
+    template <typename T>
+    class lock_queue_thread
     {
     public:
         //
-        // time_queue_thread
+        // lock_queue_thread
         //
-        explicit time_queue_thread(ActiveQueueT &active_queue)
+        explicit lock_queue_thread(ActiveQueueT &active_queue)
             : m_active_queue(active_queue)
         {
             // threads must be manually started
@@ -29,23 +28,22 @@ namespace small {
         //
         // queue
         //
-        inline small::time_queue<T> &queue()
+        inline small::lock_queue<T> &queue()
         {
-            return m_time_queue;
+            return m_lock_queue;
         }
 
         //
         // start threads
         //
-        inline void start_threads()
+        inline void start_threads(const int threads_count /* = 1 */)
         {
-            std::unique_lock l(m_time_queue);
+            std::unique_lock l(m_lock_queue);
 
-            const int threads_count = 1;
             m_threads_futures.resize(threads_count);
             for (auto &tf : m_threads_futures) {
                 if (!tf.valid()) {
-                    tf = std::async(std::launch::async, &time_queue_thread::thread_function, this);
+                    tf = std::async(std::launch::async, &lock_queue_thread::thread_function, this);
                 }
             }
         }
@@ -55,7 +53,7 @@ namespace small {
         //
         inline EnumLock wait()
         {
-            m_time_queue.signal_exit_when_done();
+            m_lock_queue.signal_exit_when_done();
             for (auto &th : m_threads_futures) {
                 th.wait();
             }
@@ -76,7 +74,7 @@ namespace small {
         template <typename _Clock, typename _Duration>
         inline EnumLock wait_until(const std::chrono::time_point<_Clock, _Duration> &__atime)
         {
-            m_time_queue.signal_exit_when_done();
+            m_lock_queue.signal_exit_when_done();
 
             for (auto &th : m_threads_futures) {
                 auto ret = th.wait_until(__atime);
@@ -90,15 +88,15 @@ namespace small {
 
     private:
         //
-        // inner thread function for delayed items
+        // inner thread function
         //
         inline void thread_function()
         {
             std::vector<T> vec_elems;
-            const int      bulk_count = 1;
+            const int      bulk_count = std::max(m_bulk_count, 1);
             for (; true; small::sleepMicro(1)) {
                 // wait
-                small::EnumLock ret = m_time_queue.wait_pop(vec_elems, bulk_count);
+                small::EnumLock ret = m_lock_queue.wait_pop_front(vec_elems, bulk_count);
 
                 if (ret == small::EnumLock::kExit) {
                     // force stop
@@ -106,25 +104,28 @@ namespace small {
                 } else if (ret == small::EnumLock::kTimeout) {
                     // nothing to do
                 } else if (ret == small::EnumLock::kElement) {
-                    // put them to active items queue
-                    m_active_queue.push_back(std::move(vec_elems));
+                    // put them to active items queue // TODO add support for push vec
+                    for (auto &elem : vec_elems) {
+                        m_active_queue.push_back(std::move(elem));
+                    }
                 }
             }
         }
 
     private:
         // some prevention
-        time_queue_thread(const time_queue_thread &)            = delete;
-        time_queue_thread(time_queue_thread &&)                 = delete;
-        time_queue_thread &operator=(const time_queue_thread &) = delete;
-        time_queue_thread &operator=(time_queue_thread &&__t)   = delete;
+        lock_queue_thread(const lock_queue_thread &)            = delete;
+        lock_queue_thread(lock_queue_thread &&)                 = delete;
+        lock_queue_thread &operator=(const lock_queue_thread &) = delete;
+        lock_queue_thread &operator=(lock_queue_thread &&__t)   = delete;
 
     private:
         //
         // members
         //
-        small::time_queue<T>           m_time_queue;      // a time priority queue for delayed items
-        std::vector<std::future<void>> m_threads_futures; // threads futures (needed to wait for)
+        small::lock_queue<T>           m_lock_queue;      // a time priority queue for delayed items
         ActiveQueueT                  &m_active_queue;    // active queue where to push
+        int                            m_bulk_count{1};   // bulk count for processing
+        std::vector<std::future<void>> m_threads_futures; // threads futures (needed to wait for)
     };
 } // namespace small
