@@ -158,6 +158,11 @@ namespace small {
             return m_lock.is_exit_when_done();
         }
 
+        inline bool is_exit()
+        {
+            return is_exit_force() || is_exit_when_done();
+        }
+
         //
         // wait pop_front and return that element
         //
@@ -329,14 +334,6 @@ namespace small {
         }
 
     private:
-        //
-        // check if push is allowed/forbidden
-        //
-        inline bool is_exit()
-        {
-            return is_exit_force() || is_exit_when_done();
-        }
-
         //
         // check for front element
         //

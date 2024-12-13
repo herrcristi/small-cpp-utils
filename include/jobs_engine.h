@@ -119,11 +119,11 @@ namespace small {
         inline void     clear_processing() { m_workers.clear(); }
 
         // size of delayed items
-        inline size_t   size_delayed() { return m_delayed_items.size();  }
+        inline size_t   size_delayed() { return m_delayed_items.queue().size();  }
         // empty
         inline bool     empty_delayed() { return size_delayed() == 0; }
         // clear
-        inline void     clear_delayed() { m_delayed_items.clear(); }
+        inline void     clear_delayed() { m_delayed_items.queue().clear(); }
         // clang-format on
 
         // clang-format off
@@ -139,9 +139,7 @@ namespace small {
         inline void start_threads(const int threads_count /* = 1 */)
         {
             m_config.threads_count = threads_count;
-            if (!m_delayed_items_thread_future.valid()) {
-                m_delayed_items_thread_future = std::async(std::launch::async, &jobs_engine::thread_function_delayed, this);
-            }
+            m_delayed_items.start_threads();
             m_workers.start_threads(threads_count);
         }
 
@@ -207,10 +205,6 @@ namespace small {
         //
         inline void push_back(const JobType job_type, const T &t)
         {
-            if (is_exit()) {
-                return;
-            }
-
             // m_job_queues can accessed without locking afterwards because it will not be modified
             auto it = m_jobs.m_queues.find(job_type);
             if (it == m_jobs.m_queues.end()) {
@@ -219,6 +213,10 @@ namespace small {
 
             m_jobs.m_started = true; // mark as started to avoid config later
             auto &job_item   = it->second;
+
+            if (job_item.m_queue_items.is_exit()) {
+                return;
+            }
 
             std::unique_lock l(job_item.m_queue_items);
             ++m_jobs.m_total_count; // inc before adding
@@ -229,10 +227,6 @@ namespace small {
         // push back with move semantics
         inline void push_back(const JobType job_type, T &&t)
         {
-            if (is_exit()) {
-                return;
-            }
-
             // m_job_queues can accessed without locking afterwards because it will not be modified
             auto it = m_jobs.m_queues.find(job_type);
             if (it == m_jobs.m_queues.end()) {
@@ -241,6 +235,10 @@ namespace small {
 
             m_jobs.m_started = true; // mark as started to avoid config later
             auto &job_item   = it->second;
+
+            if (job_item.m_queue_items.is_exit()) {
+                return;
+            }
 
             std::unique_lock l(job_item.m_queue_items);
             ++m_jobs.m_total_count; // inc before adding
@@ -251,10 +249,6 @@ namespace small {
         template <typename... _Args>
         inline void emplace_back(const JobType job_type, _Args &&...__args)
         {
-            if (is_exit()) {
-                return;
-            }
-
             // m_job_queues can accessed without locking afterwards because it will not be modified
             auto it = m_jobs.m_queues.find(job_type);
             if (it == m_jobs.m_queues.end()) {
@@ -263,6 +257,10 @@ namespace small {
 
             m_jobs.m_started = true; // mark as started to avoid config later
             auto &job_item   = it->second;
+
+            if (job_item.m_queue_items.is_exit()) {
+                return;
+            }
 
             std::unique_lock l(job_item.m_queue_items);
             ++m_jobs.m_total_count; // inc before adding
@@ -276,63 +274,39 @@ namespace small {
         template <typename _Rep, typename _Period>
         inline void push_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const JobType job_type, const T &elem)
         {
-            if (is_exit()) {
-                return;
-            }
-
-            m_delayed_items.push_delay_for(__rtime, {job_type, elem});
+            m_delayed_items.queue().push_delay_for(__rtime, {job_type, elem});
         }
 
         // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
         inline void push_back_delay_until(const std::chrono::time_point<typename small::time_queue<T>::TimeClock, typename small::time_queue<T>::TimeDuration> &__atime, const JobType job_type, const T &elem)
         {
-            if (is_exit()) {
-                return;
-            }
-
-            m_delayed_items.push_delay_until(__atime, {job_type, elem});
+            m_delayed_items.queue().push_delay_until(__atime, {job_type, elem});
         }
 
         // push_back move semantics
         template <typename _Rep, typename _Period>
         inline void push_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const JobType job_type, T &&elem)
         {
-            if (is_exit()) {
-                return;
-            }
-
-            m_delayed_items.push_delay_for(__rtime, {job_type, std::forward<T>(elem)});
+            m_delayed_items.queue().push_delay_for(__rtime, {job_type, std::forward<T>(elem)});
         }
 
         // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
         inline void push_back_delay_until(const std::chrono::time_point<typename small::time_queue<T>::TimeClock, typename small::time_queue<T>::TimeDuration> &__atime, const JobType job_type, T &&elem)
         {
-            if (is_exit()) {
-                return;
-            }
-
-            m_delayed_items.push_delay_until(__atime, {job_type, std::forward<T>(elem)});
+            m_delayed_items.queue().push_delay_until(__atime, {job_type, std::forward<T>(elem)});
         }
 
         // emplace_back
         template <typename _Rep, typename _Period, typename... _Args>
         inline void emplace_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const JobType job_type, _Args &&...__args)
         {
-            if (is_exit()) {
-                return;
-            }
-
-            m_delayed_items.push_delay_for(__rtime, {job_type, T{std::forward<_Args>(__args)...}});
+            m_delayed_items.queue().push_delay_for(__rtime, {job_type, T{std::forward<_Args>(__args)...}});
         }
 
         template </* typename _Clock, typename _Duration, */ typename... _Args> // avoid time_casting from one clock to another
         inline void emplace_back_delay_until(const std::chrono::time_point<typename small::time_queue<T>::TimeClock, typename small::time_queue<T>::TimeDuration> &__atime, const JobType job_type, _Args &&...__args)
         {
-            if (is_exit()) {
-                return;
-            }
-
-            m_delayed_items.push_delay_until(__atime, {job_type, T{std::forward<_Args>(__args)...}});
+            m_delayed_items.queue().push_delay_until(__atime, {job_type, T{std::forward<_Args>(__args)...}});
         }
 
         // clang-format off
@@ -341,15 +315,15 @@ namespace small {
         //
         inline void signal_exit_force       ()  { 
             m_workers.signal_exit_force(); 
-            m_delayed_items.signal_exit_force(); 
+            m_delayed_items.queue().signal_exit_force(); 
             for(auto &[job_type, job_item]: m_jobs.m_queues) {
                 job_item.m_queue_items.signal_exit_force();
             }
         }
-        inline void signal_exit_when_done   ()  { m_delayed_items.signal_exit_when_done(); /*when the delayed will be finished will signal the queue items to exit when done*/ }
+        inline void signal_exit_when_done   ()  { m_delayed_items.queue().signal_exit_when_done(); /*when the delayed will be finished will signal the queue items to exit when done*/ }
         
         // to be used in processing function
-        inline bool is_exit                 ()  { return m_workers.is_exit() || m_delayed_items.is_exit_force(); }
+        inline bool is_exit                 ()  { return m_workers.is_exit() || m_delayed_items.queue().is_exit_force(); }
         // clang-format on
 
         //
@@ -358,7 +332,8 @@ namespace small {
         inline EnumLock wait()
         {
             signal_exit_when_done();
-            m_delayed_items_thread_future.wait();
+
+            m_delayed_items.wait();
 
             // only now can signal exit when done for queue items (when no more delayed items can be pushed)
             for (auto &[job_type, job_item] : m_jobs.m_queues) {
@@ -393,8 +368,9 @@ namespace small {
         inline EnumLock wait_until(const std::chrono::time_point<_Clock, _Duration> &__atime)
         {
             signal_exit_when_done();
-            auto fstatus = m_delayed_items_thread_future.wait_until(__atime);
-            if (fstatus == std::future_status::timeout) {
+
+            auto delayed_status = m_delayed_items.wait_until(__atime);
+            if (delayed_status == small::EnumLock::kTimeout) {
                 return small::EnumLock::kTimeout;
             }
 
@@ -406,7 +382,7 @@ namespace small {
             for (auto &[job_type, job_item] : m_jobs.m_queues) {
                 std::unique_lock l(job_item.m_queue_items);
 
-                auto status = m_jobs.m_queues_exit_condition.wait_until(l, __atime, [t = job_type, q = &job_item.m_queue_items]() -> bool {
+                auto status = m_jobs.m_queues_exit_condition.wait_until(l, __atime, [q = &job_item.m_queue_items]() -> bool {
                     return q->empty() || q->is_exit_force();
                 });
                 if (!status) {
@@ -420,9 +396,8 @@ namespace small {
 
     private:
         // some prevention
-        jobs_engine(const jobs_engine &) = delete;
-        jobs_engine(jobs_engine &&)      = delete;
-
+        jobs_engine(const jobs_engine &)            = delete;
+        jobs_engine(jobs_engine &&)                 = delete;
         jobs_engine &operator=(const jobs_engine &) = delete;
         jobs_engine &operator=(jobs_engine &&__t)   = delete;
 
@@ -497,28 +472,12 @@ namespace small {
         // inner thread function for delayed items
         //
         using JobDelayedItems = std::pair<JobType, T>;
+        using JobDelayedT     = small::time_queue_thread<JobDelayedItems, small::jobs_engine<JobType, T>>;
+        friend JobDelayedT;
 
-        inline void thread_function_delayed()
+        inline void push_back(JobDelayedItems &&item)
         {
-            std::vector<JobDelayedItems> vec_elems;
-            const int                    bulk_count = 1;
-            while (true) {
-                // wait
-                small::EnumLock ret = m_delayed_items.wait_pop(vec_elems, bulk_count);
-
-                if (ret == small::EnumLock::kExit) {
-                    // force stop
-                    break;
-                } else if (ret == small::EnumLock::kTimeout) {
-                    // nothing to do
-                } else if (ret == small::EnumLock::kElement) {
-                    // put them to active items queue // TODO add support for push vec
-                    for (auto &elem : vec_elems) {
-                        push_back(elem.first, std::move(elem.second));
-                    }
-                }
-                small::sleepMicro(1);
-            }
+            push_back(item.first, std::move(item.second));
         }
 
     private:
@@ -554,11 +513,10 @@ namespace small {
             std::atomic<long long>                        m_total_count;           // count of all jobs types
         };
 
-        config_jobs_engine                 m_config;                      // config
-        JobTypeDefault                     m_default;                     // default config and default processing function
-        JobQueues                          m_jobs;                        // curent queues by type
-        small::time_queue<JobDelayedItems> m_delayed_items{};             // queue of delayed items
-        std::future<void>                  m_delayed_items_thread_future; // delayed threads future (needed to wait for)
+        config_jobs_engine m_config;               // config
+        JobTypeDefault     m_default;              // default config and default processing function
+        JobQueues          m_jobs;                 // curent queues by type
+        JobDelayedT        m_delayed_items{*this}; // queue of delayed items
 
         //
         // pool of thread workers

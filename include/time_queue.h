@@ -114,7 +114,7 @@ namespace small {
         // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
         inline void push_delay_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, const T &elem)
         {
-            if (is_push_forbidden()) {
+            if (is_exit()) {
                 return;
             }
 
@@ -138,7 +138,7 @@ namespace small {
         // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
         inline void push_delay_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, T &&elem)
         {
-            if (is_push_forbidden()) {
+            if (is_exit()) {
                 return;
             }
 
@@ -162,7 +162,7 @@ namespace small {
         template </* typename _Clock, typename _Duration, */ typename... _Args> // avoid time_casting from one clock to another
         inline void emplace_delay_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, _Args &&...__args)
         {
-            if (is_push_forbidden()) {
+            if (is_exit()) {
                 return;
             }
 
@@ -379,7 +379,7 @@ namespace small {
         //
         // check if push is allowed/forbidden
         //
-        inline bool is_push_forbidden()
+        inline bool is_exit()
         {
             return is_exit_force() || is_exit_when_done();
         }
