@@ -202,13 +202,13 @@ namespace small {
         template <typename _Rep, typename _Period, typename... _Args>
         inline void emplace_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, _Args &&...__args)
         {
-            m_delayed_items.emplace_delay_for(__rtime, std::forward<T>(__args)...);
+            m_delayed_items.queue().emplace_delay_for(__rtime, std::forward<T>(__args)...);
         }
 
         template </* typename _Clock, typename _Duration, */ typename... _Args> // avoid time_casting from one clock to another
         inline void emplace_back_delay_until(const std::chrono::time_point<typename small::time_queue<T>::TimeClock, typename small::time_queue<T>::TimeDuration> &__atime, _Args &&...__args)
         {
-            m_delayed_items.emplace_delay_until(__atime, std::forward<T>(__args)...);
+            m_delayed_items.queue().emplace_delay_until(__atime, std::forward<T>(__args)...);
         }
 
         // clang-format off
@@ -300,32 +300,6 @@ namespace small {
                 } else if (ret == small::EnumLock::kElement) {
                     // process
                     m_processing_function(vec_elems); // bind the std::placeholders::_1
-                }
-                small::sleepMicro(1);
-            }
-        }
-
-        //
-        // inner thread function for delayed items
-        //
-        inline void thread_function_delayed()
-        {
-            std::vector<T> vec_elems;
-            const int      bulk_count = std::max(m_config.bulk_count, 1);
-            while (true) {
-                // wait
-                small::EnumLock ret = m_delayed_items.wait_pop(vec_elems, bulk_count);
-
-                if (ret == small::EnumLock::kExit) {
-                    // force stop
-                    break;
-                } else if (ret == small::EnumLock::kTimeout) {
-                    // nothing to do
-                } else if (ret == small::EnumLock::kElement) {
-                    // put them to active items queue // TODO add support for push vec
-                    for (auto &elem : vec_elems) {
-                        push_back(std::move(elem));
-                    }
                 }
                 small::sleepMicro(1);
             }
