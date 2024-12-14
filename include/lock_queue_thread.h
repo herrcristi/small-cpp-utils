@@ -12,15 +12,16 @@ namespace small {
     //
     // add threads to process items from queue
     //
-    template <typename T>
+    template <typename T, typename ParentCallerT>
     class lock_queue_thread
     {
     public:
         //
         // lock_queue_thread
         //
-        explicit lock_queue_thread(ActiveQueueT &active_queue)
-            : m_active_queue(active_queue)
+        explicit lock_queue_thread(ParentCallerT &parent_caller)
+            : m_parent_caller(parent_caller)
+
         {
             // threads must be manually started
         }
@@ -93,7 +94,7 @@ namespace small {
         inline void thread_function()
         {
             std::vector<T> vec_elems;
-            const int      bulk_count = std::max(m_bulk_count, 1);
+            const int      bulk_count = std::max(m_parent_caller.config().bulk_count, 1);
             for (; true; small::sleepMicro(1)) {
                 // wait
                 small::EnumLock ret = m_lock_queue.wait_pop_front(vec_elems, bulk_count);
@@ -104,10 +105,7 @@ namespace small {
                 } else if (ret == small::EnumLock::kTimeout) {
                     // nothing to do
                 } else if (ret == small::EnumLock::kElement) {
-                    // put them to active items queue // TODO add support for push vec
-                    for (auto &elem : vec_elems) {
-                        m_active_queue.push_back(std::move(elem));
-                    }
+                    m_parent_caller.process_items(std::move(vec_elems));
                 }
             }
         }
@@ -124,8 +122,7 @@ namespace small {
         // members
         //
         small::lock_queue<T>           m_lock_queue;      // a time priority queue for delayed items
-        ActiveQueueT                  &m_active_queue;    // active queue where to push
-        int                            m_bulk_count{1};   // bulk count for processing
         std::vector<std::future<void>> m_threads_futures; // threads futures (needed to wait for)
+        ParentCallerT                 &m_parent_caller;   // active queue where to push
     };
 } // namespace small

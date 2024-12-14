@@ -13,15 +13,15 @@ namespace small {
     // on separate thread when items from time queue become accessible
     // they are pushed to active queue
     //
-    template <typename T, typename ActiveQueueT>
+    template <typename T, typename ParentCallerT>
     class time_queue_thread
     {
     public:
         //
         // time_queue_thread
         //
-        explicit time_queue_thread(ActiveQueueT &active_queue)
-            : m_active_queue(active_queue)
+        explicit time_queue_thread(ParentCallerT &parent_caller)
+            : m_parent_caller(parent_caller)
         {
             // threads must be manually started
         }
@@ -107,7 +107,7 @@ namespace small {
                     // nothing to do
                 } else if (ret == small::EnumLock::kElement) {
                     // put them to active items queue
-                    m_active_queue.push_back(std::move(vec_elems));
+                    m_parent_caller.push_back(std::move(vec_elems));
                 }
             }
         }
@@ -125,6 +125,6 @@ namespace small {
         //
         small::time_queue<T>           m_time_queue;      // a time priority queue for delayed items
         std::vector<std::future<void>> m_threads_futures; // threads futures (needed to wait for)
-        ActiveQueueT                  &m_active_queue;    // active queue where to push
+        ParentCallerT                 &m_parent_caller;   // active queue where to push
     };
 } // namespace small
