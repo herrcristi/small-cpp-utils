@@ -133,7 +133,9 @@ namespace small {
         inline void clear()
         {
             std::unique_lock l(m_wait);
-            m_prio_queues.clear();
+            for (auto &[prio, q] : m_prio_queues) {
+                q.clear();
+            }
         }
 
         inline void clear(const PrioT priority)
