@@ -174,7 +174,7 @@ namespace small {
             if (__reltime < __rtime) {
                 ++__reltime;
             }
-            push_delay_until(TimeClock::now() + __reltime, std::forward<T>(elems));
+            push_delay_until(TimeClock::now() + __reltime, std::forward<std::vector<T>>(elems));
         }
 
         // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //

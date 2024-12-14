@@ -79,7 +79,7 @@ namespace {
         ASSERT_EQ(q.size(), 1);
 
         // pop
-        int value{};
+        int  value{};
         auto ret = q.wait_pop_front(&value);
         ASSERT_EQ(ret, small::EnumLock::kElement);
         ASSERT_EQ(value, 5);
@@ -94,15 +94,20 @@ namespace {
         ASSERT_EQ(q.size(), 0);
 
         // push
-        q.push_back(5);
-        ASSERT_EQ(q.size(), 1);
+        q.push_back({5, 6});
+        std::vector<int> v{7, 8};
+        q.push_back(v);
+        ASSERT_EQ(q.size(), 4);
 
         // pop
         std::vector<int> values;
-        auto ret = q.wait_pop_front(values, 10);
+        auto             ret = q.wait_pop_front(values, 10);
         ASSERT_EQ(ret, small::EnumLock::kElement);
-        ASSERT_EQ(values.size(), 1);
+        ASSERT_EQ(values.size(), 4);
         ASSERT_EQ(values[0], 5);
+        ASSERT_EQ(values[1], 6);
+        ASSERT_EQ(values[2], 7);
+        ASSERT_EQ(values[3], 8);
 
         // check size
         ASSERT_EQ(q.size(), 0);
@@ -115,7 +120,7 @@ namespace {
 
         // wait with timeout (since no elements)
         auto timeStart = small::timeNow();
-        int value{};
+        int  value{};
         auto ret = q.wait_pop_front_for(std::chrono::milliseconds(300), &value);
         ASSERT_EQ(ret, small::EnumLock::kTimeout);
 
@@ -128,17 +133,17 @@ namespace {
 
         // pop
         value = {};
-        ret = q.wait_pop_front_for(std::chrono::milliseconds(300), &value);
+        ret   = q.wait_pop_front_for(std::chrono::milliseconds(300), &value);
         ASSERT_EQ(ret, small::EnumLock::kElement);
         ASSERT_EQ(value, 5);
 
         ASSERT_EQ(q.size(), 0);
 
         // pop again
-        value = {};
+        value     = {};
         timeStart = small::timeNow();
-        ret = q.wait_pop_front_until(timeStart + std::chrono::milliseconds(300), &value);
-        elapsed = small::timeDiffMs(timeStart);
+        ret       = q.wait_pop_front_until(timeStart + std::chrono::milliseconds(300), &value);
+        elapsed   = small::timeDiffMs(timeStart);
 
         ASSERT_GE(elapsed, 300 - 1); // due conversion
         ASSERT_EQ(ret, small::EnumLock::kTimeout);
@@ -150,9 +155,9 @@ namespace {
         ASSERT_EQ(q.size(), 0);
 
         // wait with timeout (since no elements)
-        auto timeStart = small::timeNow();
+        auto             timeStart = small::timeNow();
         std::vector<int> values;
-        auto ret = q.wait_pop_front_for(std::chrono::milliseconds(300), values, 10);
+        auto             ret = q.wait_pop_front_for(std::chrono::milliseconds(300), values, 10);
         ASSERT_EQ(ret, small::EnumLock::kTimeout);
 
         auto elapsed = small::timeDiffMs(timeStart);
@@ -174,8 +179,8 @@ namespace {
 
         // pop again
         timeStart = small::timeNow();
-        ret = q.wait_pop_front_until(timeStart + std::chrono::milliseconds(300), values, 10);
-        elapsed = small::timeDiffMs(timeStart);
+        ret       = q.wait_pop_front_until(timeStart + std::chrono::milliseconds(300), values, 10);
+        elapsed   = small::timeDiffMs(timeStart);
 
         ASSERT_GE(elapsed, 300 - 1); // due conversion
         ASSERT_EQ(ret, small::EnumLock::kTimeout);
@@ -188,7 +193,7 @@ namespace {
 
         // push inside thread
         auto timeStart = small::timeNow();
-        auto thread = std::jthread([](small::lock_queue<int> &_q) {
+        auto thread    = std::jthread([](small::lock_queue<int> &_q) {
             small::sleep(300);
 
             int value{5};
@@ -197,8 +202,8 @@ namespace {
                                    std::ref(q));
 
         // wait and pop
-        int value = {};
-        auto ret = q.wait_pop_front(&value);
+        int  value   = {};
+        auto ret     = q.wait_pop_front(&value);
         auto elapsed = small::timeDiffMs(timeStart);
 
         ASSERT_EQ(ret, small::EnumLock::kElement);
@@ -218,15 +223,15 @@ namespace {
         ASSERT_EQ(q.size(), 1);
 
         // wait and pop
-        int value = {};
-        auto ret = q.wait_pop_front(&value);
+        int  value = {};
+        auto ret   = q.wait_pop_front(&value);
         ASSERT_EQ(ret, small::EnumLock::kElement);
         ASSERT_EQ(value, 5);
         ASSERT_EQ(q.size(), 0);
 
         // create thread
         auto timeStart = small::timeNow();
-        auto thread = std::jthread([](small::lock_queue<int> &_q) {
+        auto thread    = std::jthread([](small::lock_queue<int> &_q) {
             // signal after some time
             small::sleep(300);
             _q.signal_exit_force();
@@ -234,8 +239,8 @@ namespace {
                                    std::ref(q));
 
         // check
-        value = {};
-        ret = q.wait_pop_front(&value);
+        value        = {};
+        ret          = q.wait_pop_front(&value);
         auto elapsed = small::timeDiffMs(timeStart);
 
         ASSERT_EQ(ret, small::EnumLock::kExit);
@@ -256,15 +261,15 @@ namespace {
         ASSERT_EQ(q.size(), 1);
 
         // wait and pop
-        int value = {};
-        auto ret = q.wait_pop_front(&value);
+        int  value = {};
+        auto ret   = q.wait_pop_front(&value);
         ASSERT_EQ(ret, small::EnumLock::kElement);
         ASSERT_EQ(value, 5);
         ASSERT_EQ(q.size(), 0);
 
         // create thread
         auto timeStart = small::timeNow();
-        auto thread = std::jthread([](small::lock_queue<int> &_q) {
+        auto thread    = std::jthread([](small::lock_queue<int> &_q) {
             // signal after some time
             small::sleep(300);
             _q.signal_exit_when_done();
@@ -272,8 +277,8 @@ namespace {
                                    std::ref(q));
 
         // check that exit happened because there is nothing in queue
-        value = {};
-        ret = q.wait_pop_front(&value);
+        value        = {};
+        ret          = q.wait_pop_front(&value);
         auto elapsed = small::timeDiffMs(timeStart);
 
         ASSERT_EQ(ret, small::EnumLock::kExit);
