@@ -45,9 +45,6 @@
 //
 
 namespace small {
-    //
-    // small class for worker threads
-    //
 
     // config the entire jobs engine
     struct config_jobs_engine
@@ -62,6 +59,9 @@ namespace small {
         int bulk_count{1};    // how many objects are processed at once
     };
 
+    //
+    // small class for jobs
+    //
     template <typename JobType, typename T>
     class jobs_engine
     {
