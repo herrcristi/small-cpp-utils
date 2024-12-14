@@ -4,17 +4,17 @@ Small project
 
 Contains useful every day features and also a great material for didactic purposes and learning about usefull data structures
 
-Thiscan be used in following ways:
+This can be used in following ways:
 
 -   event (it combines mutex and condition variable to create an event which is either automatic or manual)
 
--   lock_queue (queue with waiting mechanism to be used in a thread safe manner in concurrent environment)
--   time_queue (queue for delay requests)
--   prio_queue (queue for requests with priority like high, normal, low, etc)
+-   lock_queue (thread safe queue with waiting mechanism to be used in concurrent environment)
+-   time_queue (thread safe queue for delay requests)
+-   prio_queue (thread safe queue for requests with priority like high, normal, low, etc)
 
 -   worker_thread (creates workers on separate threads that do task when requested, based on lock_queue and time_queue)
 
--   jobs_engine (using a thread pool based on worker_thread process different jobs with config execution pattern)
+-   jobs_engine (uses a thread pool based on worker_thread to process different jobs with config execution pattern)
 
 -   spinlock (or critical_section to do quick locks)
 
