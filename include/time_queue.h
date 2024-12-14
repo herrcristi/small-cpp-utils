@@ -314,7 +314,7 @@ namespace small {
             // check queue size
             if (m_queue.empty()) {
                 if (is_exit_when_done()) {
-                    // exit but dont reset event to allow other threads to exit
+                    // exit
                     return small::WaitFlags::kExit_When_Done;
                 }
 

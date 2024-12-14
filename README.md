@@ -7,6 +7,7 @@ Contains useful everyday features that can be used in following ways:
 -   event (it combines mutex and condition variable to create an event which is either automatic or manual)
 -   lock_queue (queue with waiting mechanism to use in concurrent environment)
 -   time_queue (creates a queue for delay requests)
+-   prio_queue (creates a queue for requests with priority)
 -   worker_thread (creates workers on separate threads that do task when requested, based on lock_queue and time_queue)
 -   jobs_engine (using a thread pool based on worker_thread process different jobs with config execution pattern)
 -   spinlock (or critical_section to do quick locks)
@@ -185,6 +186,63 @@ q.push_delay_for( std::chrono::seconds(1), 1 );
 int e = 0;
 auto ret = q.wait_pop( &e );
 //auto ret = q.wait_pop_for( std::chrono::minutes( 1 ), &e );
+
+// ret can be small::EnumLock::kExit,
+// small::EnumLock::kTimeout or small::EnumLock::kElement
+
+if ( ret == small::EnumLock::kElement )
+{
+     // do something with e
+    ...
+}
+
+...
+// on main thread, no more processing
+q.signal_exit_force(); // q.signal_exit_when_done();
+...
+// make sure that all calls to wait_* are finished before calling destructor (like in worker_thread)
+```
+
+#
+
+### prio_queue
+
+A queue for requests with priority
+
+The following functions are available
+
+For container
+
+`size, empty, clear, reset`
+
+`push_back, emplace_back`
+
+For events or locking
+
+`lock, unlock, try_lock`
+
+Wait for items
+
+`wait_pop_front, wait_pop_front_for, wait_pop_front_until`
+
+Signal exit when we no longer want to use the queue
+
+`signal_exit_force, is_exit_force` // exit immediatly ignoring what is left in the queue
+
+`signal_exit_when_done, is_exit_when_done` // exit when queue is empty
+
+Use it like this
+
+```
+small::prio_queue<int> q;
+...
+q.push_back( small::EnumPriorities::kNormal, 1 );
+...
+
+// on some thread
+int e = 0;
+auto ret = q.wait_pop_front( &e );
+//auto ret = q.wait_pop_front_for( std::chrono::minutes( 1 ), &e );
 
 // ret can be small::EnumLock::kExit,
 // small::EnumLock::kTimeout or small::EnumLock::kElement

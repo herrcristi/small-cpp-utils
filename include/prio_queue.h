@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <deque>
+#include <optional>
 #include <unordered_map>
 #include <utility>
 
@@ -36,32 +37,31 @@ namespace small {
     //
     enum class EnumPriorities : unsigned int
     {
-        kCritical = 0,
-        kVeryHigh,
+        kHighest = 0,
         kHigh,
         kNormal,
         kLow,
-        kVeryLow
+        kLowest
     };
 
     template <typename PrioT = EnumPriorities>
     struct config_prio_queue
     {
-        std::vector<std::pair<PrioT, int /*ratio*/>> priorities; // list of used priorities ordered from high to low
-                                                                 // ex: { { kHigh, 3 }, { kNormal, 3 }, { kLow, 0 } }
-                                                                 // ratio 3:1, means after 3 High priorities execute 1 Normal, after 3 Normal execute 1 Low, etc
+        std::vector<std::pair<PrioT, unsigned int /*ratio*/>> priorities; // list of used priorities ordered from high to low
+                                                                          // ex: { { kHigh, 3 }, { kNormal, 3 }, { kLow, 0 } }
+                                                                          // ratio 3:1, means after 3 High priorities execute 1 Normal, after 3 Normal execute 1 Low, etc
     };
 
     // setup default for EnumPriorities
     template <>
     struct config_prio_queue<EnumPriorities>
     {
-        std::vector<EnumPriorities> priorities{{small::EnumPriorities::kCritical, 3},
-                                               {small::EnumPriorities::kVeryHigh, 3},
-                                               {small::EnumPriorities::kHigh, 3},
-                                               {small::EnumPriorities::kNormal, 3},
-                                               {small::EnumPriorities::kLow, 3},
-                                               {small::EnumPriorities::kVeryLow, 0}};
+        std::vector<std::pair<EnumPriorities, unsigned int /*ratio*/>> priorities{
+            {small::EnumPriorities::kHighest, 3},
+            {small::EnumPriorities::kHigh, 3},
+            {small::EnumPriorities::kNormal, 3},
+            {small::EnumPriorities::kLow, 3},
+            {small::EnumPriorities::kLowest, 0}};
     };
 
     //
@@ -78,7 +78,7 @@ namespace small {
             : m_config(config)
         {
             // create queues
-            for (auto prio : m_config.priotities) {
+            for (auto &[prio, ratio] : m_config.priorities) {
                 m_prio_queues[prio];
             }
         }
@@ -88,14 +88,14 @@ namespace small {
 
         prio_queue &operator=(const prio_queue &o)
         {
-            std::scoped_lock l(m_lock, o.m_lock);
+            std::scoped_lock l(m_wait, o.m_wait);
             m_config      = o.m_config;
             m_prio_queues = o.m_prio_queues;
             return *this;
         }
         prio_queue &operator=(prio_queue &&o) noexcept
         {
-            std::scoped_lock l(m_lock, o.m_lock);
+            std::scoped_lock l(m_wait, o.m_wait);
             m_config      = std::move(o.m_config);
             m_prio_queues = std::move(o.m_prio_queues);
             return *this;
@@ -106,7 +106,7 @@ namespace small {
         //
         inline size_t size()
         {
-            std::unique_lock l(m_lock);
+            std::unique_lock l(m_wait);
 
             std::size_t total = 0;
             for (auto &[prio, q] : m_prio_queues) {
@@ -119,7 +119,7 @@ namespace small {
 
         inline size_t size(const PrioT priority)
         {
-            std::unique_lock l(m_lock);
+            std::unique_lock l(m_wait);
 
             auto it = m_prio_queues.find(priority);
             return it != m_prio_queues.end() ? it->second.size() : 0;
@@ -133,7 +133,7 @@ namespace small {
         inline void clear()
         {
             std::unique_lock l(m_wait);
-            m_queue.clear();
+            m_prio_queues.clear();
         }
 
         inline void clear(const PrioT priority)
@@ -342,30 +342,109 @@ namespace small {
         using BaseWaitPop = small::base_wait_pop<T, small::prio_queue<T>>;
         friend BaseWaitPop;
 
+        struct Stats
+        {
+            unsigned int m_count_executed{}; // how many times was executed
+        };
+
+        // reset higher priority credits
+        inline void reset_higher_stats(const PrioT priority)
+        {
+            for (auto &[prio, ratio] : m_config.priorities) {
+                if (prio == priority) {
+                    break;
+                }
+                auto &stats            = m_prio_stats[prio];
+                stats.m_count_executed = 0;
+            }
+        }
+
+        inline void reset_all_stats()
+        {
+            for (auto &[prio, ratio] : m_config.priorities) {
+                auto &stats            = m_prio_stats[prio];
+                stats.m_count_executed = 0;
+            }
+        }
+
+        inline small::WaitFlags pop_front(std::deque<T> &queue, T *elem)
+        {
+            // get elem
+            if (elem) {
+                *elem = std::move(queue.front());
+            }
+            queue.pop_front();
+
+            return small::WaitFlags::kElement;
+        }
+
+        // extract from queue
         inline small::WaitFlags test_and_get(T *elem, typename BaseWaitPop::TimePoint * /* time_wait_until */)
         {
-            // TODO
             if (is_exit_force()) {
                 return small::WaitFlags::kExit_Force;
             }
 
-            // check queue size
-            if (m_queue.empty()) {
-                if (is_exit_when_done()) {
-                    // exit but dont reset event to allow other threads to exit
-                    return small::WaitFlags::kExit_When_Done;
+            std::optional<PrioT> prio_with_non_empty_queue;
+
+            // iterate priorities from high to low
+            for (auto &[prio, ratio] : m_config.priorities) {
+                auto &queue = m_prio_queues[prio];
+                auto &stats = m_prio_stats[prio];
+
+                // save the first priority for which the queue is not empty
+                if (!queue.empty() && !prio_with_non_empty_queue) {
+                    prio_with_non_empty_queue = prio;
                 }
 
-                return small::WaitFlags::kNone;
+                // check if it has credits
+                if (stats.m_count_executed >= ratio) {
+                    // no more credit here, go to next priority
+                    continue;
+                }
+
+                // increase counter for current prio (see above that all previous (with higher priorities) are reseted)
+                // do this even if nothing is in the queue (to avoid the kLowest to be executed too quickly with kVeryHigh)
+                ++stats.m_count_executed;
+                reset_higher_stats(prio);
+
+                if (queue.empty()) {
+                    // choose one from previous
+                    if (prio_with_non_empty_queue) {
+                        queue            = m_prio_queues[prio_with_non_empty_queue.value()];
+                        auto &prev_stats = m_prio_stats[prio_with_non_empty_queue.value()];
+                        ++prev_stats.m_count_executed;
+                    }
+
+                    // all queues are empty so far so go to a lower prio
+                    if (queue.empty()) {
+                        continue;
+                    }
+                }
+
+                // get elem
+                return pop_front(queue, elem);
             }
 
-            // get elem
-            if (elem) {
-                *elem = std::move(m_queue.front());
-            }
-            m_queue.pop_front();
+            // reset all stats
+            reset_all_stats();
 
-            return small::WaitFlags::kElement;
+            if (prio_with_non_empty_queue) {
+                auto &queue      = m_prio_queues[prio_with_non_empty_queue.value()];
+                auto &prev_stats = m_prio_stats[prio_with_non_empty_queue.value()];
+                ++prev_stats.m_count_executed;
+
+                // get elem
+                return pop_front(queue, elem);
+            }
+
+            // here all queues are empty
+            if (is_exit_when_done()) {
+                // exit
+                return small::WaitFlags::kExit_When_Done;
+            }
+
+            return small::WaitFlags::kWait;
         }
 
     private:
@@ -374,6 +453,7 @@ namespace small {
         //
         mutable BaseWaitPop                      m_wait{*this}; // implements locks & wait
         config_prio_queue<PrioT>                 m_config;      // config for priorities and ratio of executions
+        std::unordered_map<PrioT, Stats>         m_prio_stats;  // keep credits per priority to implement the ratio (ex: 3:1)
         std::unordered_map<PrioT, std::deque<T>> m_prio_queues; // map of queues based on priorities
     };
 } // namespace small

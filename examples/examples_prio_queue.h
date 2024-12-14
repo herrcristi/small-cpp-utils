@@ -20,12 +20,14 @@ namespace examples::prio_queue {
         std::jthread t([](small::prio_queue<qc> &_q) {
             std::this_thread::sleep_for(std::chrono::milliseconds(300));
             std::cout << "push {1, \"A\"}" << std::endl;
-            _q.push_back(small::EnumPriorities::kNormal, {1, "Normal"});
-            _q.push_back(small::EnumPriorities::kLow, {2, "Low"});
-            _q.push_back(small::EnumPriorities::kHigh, {3, "High"});
+            for (int i = 0; i < 5; ++i) {
+                _q.push_back(small::EnumPriorities::kNormal, {i, "Med "});
+                _q.push_back(small::EnumPriorities::kLow, {i, "Low "});
+                _q.push_back(small::EnumPriorities::kHigh, {i, "High"});
+            }
 
             std::this_thread::sleep_for(std::chrono::milliseconds(300));
-            std::cout << "push {2, \"b\"}" << std::endl;
+            std::cout << "push {4, \"Normal again\"}" << std::endl;
             _q.emplace_back(small::EnumPriorities::kNormal, 4, "Normal again");
 
             std::this_thread::sleep_for(std::chrono::milliseconds(300));
@@ -44,9 +46,13 @@ namespace examples::prio_queue {
             ret = q.wait_pop_front(&e);
 
             if (ret == small::EnumLock::kExit) {
-                std::cout << "ret=" << static_cast<int>(ret) << "\n";
+                std::cout << "ret=" << static_cast<int>(ret) << " as exit \n";
             } else {
-                std::cout << "ret=" << static_cast<int>(ret) << ", pop " << e.first << "," << e.second << std::endl;
+                std::cout << "ret=" << static_cast<int>(ret)
+                          << ", pop " << e.first << "," << e.second
+                          << ", qsize " << q.size()
+                          << " time " << small::toISOString(small::timeNow())
+                          << "\n";
             }
         }
 
