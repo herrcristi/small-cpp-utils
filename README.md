@@ -2,12 +2,20 @@
 
 Small project
 
-Contains useful everyday features that can be used in following ways:
+Contains useful every day features and also a great material for didactic purposes and learning about usefull data structures
+
+This can be used in following ways:
 
 -   event (it combines mutex and condition variable to create an event which is either automatic or manual)
--   lock_queue (queue with waiting mechanism to use in concurrent environment)
--   time_queue (creates a queue for delay requests)
+
+-   lock_queue (thread safe queue with waiting mechanism to be used in concurrent environment)
+-   time_queue (thread safe queue for delay requests)
+-   prio_queue (thread safe queue for requests with priority like high, normal, low, etc)
+
 -   worker_thread (creates workers on separate threads that do task when requested, based on lock_queue and time_queue)
+
+-   jobs_engine (uses a thread pool based on worker_thread to process different jobs with config execution pattern)
+
 -   spinlock (or critical_section to do quick locks)
 
 #
@@ -18,7 +26,7 @@ Contains useful everyday features that can be used in following ways:
 
 -   base64 (quick functions for base64 encode & decode)
 -   qhash (a quick hash function for buffers and null termination strings)
--   util functions (like small::icasecmp for use with map/set, sleep, timeNow, timeDiff, rand, uuid, ...)
+-   util functions (like small::icasecmp for use with map/set, sleep, timeNow, timeDiff, toISOString, rand, uuid, ...)
 
 #
 
@@ -33,9 +41,9 @@ For windows if you include windows.h you must undefine small because there is a 
 
 ### event
 
-Event is based on mutex and condition_variable
+Event is based on recursive_mutex and condition_variable_any
 
-##### !!Important!! An automatic event stay set until it is consumed, a manual event stay set until is reseted
+##### !!Important!! An automatic event is set until it is consumed, a manual event is set until is manually reseted
 
 The main functions are
 
@@ -43,7 +51,7 @@ The main functions are
 
 `wait, wait_for, wait_until`
 
-Also these functions are available (thanks to mutex)
+Also these functions are available (thanks to mutex). Can be used multiple times on a thread because the mutex is recursive
 
 `lock, unlock, try_lock`
 
@@ -89,7 +97,7 @@ e.reset_event()
 
 ### lock_queue
 
-A queue that wait for items until they are available
+A queue that waits for items until they are available
 
 The following functions are available
 
@@ -111,7 +119,7 @@ Signal exit when we no longer want to use the queue
 
 `signal_exit_force, is_exit_force` // exit immediatly ignoring what is left in the queue
 
-`signal_exit_when_done, is_exit_when_done` // exit when queue is empty
+`signal_exit_when_done, is_exit_when_done` // exit when queue is empty, after this flag is set no more items can be pushed in the queue
 
 Use it like this
 
@@ -139,7 +147,7 @@ if ( ret == small::EnumLock::kElement )
 // on main thread, no more processing
 q.signal_exit_force(); // q.signal_exit_when_done();
 ...
-// make sure that all calls to wait_* are finished before calling destructor (like in worker_thread)
+// make sure that all calls to wait_* are finished before calling destructor (like it is done in worker_thread)
 ```
 
 #
@@ -170,7 +178,7 @@ Signal exit when we no longer want to use the queue
 
 `signal_exit_force, is_exit_force` // exit immediatly ignoring what is left in the queue
 
-`signal_exit_when_done, is_exit_when_done` // exit when queue is empty
+`signal_exit_when_done, is_exit_when_done` // exit when queue is empty, after this flag is set no more items can be pushed in the queue
 
 Use it like this
 
@@ -198,7 +206,68 @@ if ( ret == small::EnumLock::kElement )
 // on main thread, no more processing
 q.signal_exit_force(); // q.signal_exit_when_done();
 ...
-// make sure that all calls to wait_* are finished before calling destructor (like in worker_thread)
+// make sure that all calls to wait_* are finished before calling destructor (like it is done in worker_thread)
+```
+
+#
+
+### prio_queue
+
+A queue for requests with priority
+
+Works with any user priorities and by default small::EnumPriorities are used (kHighest, kHigh, kNormal, kLow, kLowest)
+
+To avoid antistarvation a config ratio is set, for example 3:1 means that after 3 execution of kHighest there will be 1 execution of kHigh, and so on ...
+
+The following functions are available
+
+For container
+
+`size, empty, clear, reset`
+
+`push_back, emplace_back`
+
+For events or locking
+
+`lock, unlock, try_lock`
+
+Wait for items
+
+`wait_pop_front, wait_pop_front_for, wait_pop_front_until`
+
+Signal exit when we no longer want to use the queue
+
+`signal_exit_force, is_exit_force` // exit immediatly ignoring what is left in the queue
+
+`signal_exit_when_done, is_exit_when_done` // exit when queue is empty, after this flag is set no more items can be pushed in the queue
+
+Use it like this
+
+```
+small::prio_queue<int> q;
+...
+q.push_back( small::EnumPriorities::kNormal, 1 );
+...
+
+// on some thread
+int e = 0;
+auto ret = q.wait_pop_front( &e );
+//auto ret = q.wait_pop_front_for( std::chrono::minutes( 1 ), &e );
+
+// ret can be small::EnumLock::kExit,
+// small::EnumLock::kTimeout or small::EnumLock::kElement
+
+if ( ret == small::EnumLock::kElement )
+{
+     // do something with e
+    ...
+}
+
+...
+// on main thread, no more processing
+q.signal_exit_force(); // q.signal_exit_when_done();
+...
+// make sure that all calls to wait_* are finished before calling destructor (like it is done in worker_thread)
 ```
 
 #
@@ -206,6 +275,8 @@ q.signal_exit_force(); // q.signal_exit_when_done();
 ### worker_thread
 
 A class that creates several threads for producer/consumer
+
+Is using the lock_queue and time_queue for convenient functions to push items
 
 The following functions are available
 
@@ -221,7 +292,7 @@ To use it as a locker
 
 `lock, unlock, try_lock`
 
-Signal exit when we no longer want to use worker threads,
+Signal exit when we no longer want to use worker threads
 
 `signal_exit_force, is_exit`
 
@@ -276,8 +347,86 @@ workers.push_back_delay_for( std::chrono::milliseconds(300), { 4, "f" } );
 ...
 // when finishing after signal_exit_force the work is aborted
 workers.signal_exit_force(); // workers.signal_exit_when_done();
-//
+...
+// workers.wait() or will automatically wait on destructor for all threads to finish, also it sets flag exit_when_done and no other pushes are allowed
 
+```
+
+#
+
+### jobs_engine
+
+A class that process different jobs type using the same thread pool
+
+Every job is defined by type and request
+
+Every type has a config associated specifying how many threads to use from the pool, how many for bulk processing, etc
+
+The following functions are available
+
+For data
+
+`size, empty, clear`
+
+`push_back, emplace_back`
+
+`push_back_delay_for`, `push_back_delay_until`, `emplace_back_delay_for`, `emplace_back_delay_until`
+
+To use it as a locker
+
+`lock, unlock, try_lock`
+
+Signal exit when we no longer want to use it,
+
+`signal_exit_force, is_exit`
+
+`signal_exit_when_done`
+
+Use it like this
+
+```
+using qc = std::pair<int, std::string>;
+...
+enum JobType
+{
+    job1,
+    job2
+};
+...
+small::jobs_engine<JobType, qc> jobs(
+    {.threads_count = 0 /*dont start any thread yet*/},             // global config
+    {.threads_count = 1, .bulk_count = 1},                          // default job type config
+    [](auto &j /*this*/, const auto job_type, const auto &items) {  // default processing function
+        ...
+        for (auto &[i, s] : items) {
+          ...
+        }
+        ...
+    });
+...
+// add specific function for job1
+jobs.add_job_type(JobType::job1, {.threads_count = 2}, [](auto &j /*this*/, const auto job_type, const auto &items, auto b /*extra param b*/) {
+    ...
+    for(auto &[i, s]:items){
+      ...
+    }
+    ...
+}, 5 /*param b*/);
+...
+// use default config and default processing function for job2
+jobs.add_job_type(JobType::job2);
+...
+// manual start threads
+jobs.start_threads(3);
+...
+// push
+jobs.push_back(JobType::job1, {1, "a"});
+jobs.push_back(JobType::job2, {2, "b"});
+...
+auto ret = jobs.wait_for(std::chrono::milliseconds(0)); // wait to finished
+...
+jobs.wait(); // wait here for jobs to finish, it sets the flag exit_when_done and no more items can be pushed
+...
 ```
 
 #
@@ -379,7 +528,7 @@ When you want to do a simple hash
 
 The following function is available
 
-`qhash`
+`qhash, qhashz`
 
 Use it like this
 
@@ -402,12 +551,18 @@ The following functions are available
 
 `stricmp, struct icasecmp`
 
+`toLowerCase`, `toUpperCase`, `toCapitalizeCase`, `toHex`, `toHexF with 0 prefill`
+
 Use it like this
 
 ```
 int r = small::stricmp( "a", "C" );
 ...
 std::map<std::string, int, small::icasecmp> m;
+...
+std::string s = "Some text";
+small::toLowerCase(s);
+
 ```
 
 `sleep`
@@ -422,6 +577,8 @@ small::sleep(100/*ms*/);
 
 `timeNow, timeDiffMs, timeDiffMicro, timeDiffNano`
 
+`toUnixTimestamp`, `toISOString`
+
 Use it like this
 
 ```
@@ -429,6 +586,8 @@ auto timeStart = small::timeNow();
 ...
 auto elapsed = small::timeDiffMs(timeStart);
 ...
+auto timestamp = small::toUnixTimestamp(timeStart);
+auto time_str = small::toISOString(timeStart);
 ```
 
 `rand8, rand16, rand32, rand64`
