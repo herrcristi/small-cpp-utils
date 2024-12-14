@@ -11,7 +11,7 @@ namespace small {
 
     //
     // on separate thread when items from time queue become accessible
-    // they are pushed to active queue
+    // they are pushed to active queue (parent caller must implement 'push_back')
     //
     template <typename T, typename ParentCallerT>
     class time_queue_thread

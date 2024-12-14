@@ -11,6 +11,7 @@
 #include "examples/examples_hash.h"
 #include "examples/examples_jobs_engine.h"
 #include "examples/examples_lock_queue.h"
+#include "examples/examples_prio_queue.h"
 #include "examples/examples_spinlock.h"
 #include "examples/examples_time_queue.h"
 #include "examples/examples_util.h"
@@ -28,6 +29,7 @@ int main()
     examples::event::Example1();
     examples::lock_queue::Example1();
     examples::time_queue::Example1();
+    examples::prio_queue::Example1();
 
     examples::worker_thread::Example1();
     examples::worker_thread::Example2();

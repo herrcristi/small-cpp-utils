@@ -10,7 +10,7 @@
 namespace small {
 
     //
-    // add threads to process items from queue
+    // add threads to process items from queue (parent caller must implement 'config' and 'process_items')
     //
     template <typename T, typename ParentCallerT>
     class lock_queue_thread

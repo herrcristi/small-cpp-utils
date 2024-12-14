@@ -3,7 +3,7 @@
 #include <atomic>
 #include <deque>
 
-#include "base_lock.h"
+#include "base_wait_pop.h"
 
 // a queue with events so we can wait for items to be available
 //
@@ -45,13 +45,15 @@ namespace small {
 
         lock_queue &operator=(const lock_queue &o)
         {
-            std::scoped_lock l(m_lock, o.m_lock);
+            std::scoped_lock l(m_wait, o.m_wait);
+            m_wait  = o.m_wait;
             m_queue = o.m_queue;
             return *this;
         }
         lock_queue &operator=(lock_queue &&o) noexcept
         {
-            std::scoped_lock l(m_lock, o.m_lock);
+            std::scoped_lock l(m_wait, o.m_wait);
+            m_wait  = std::move(o.m_wait);
             m_queue = std::move(o.m_queue);
             return *this;
         }
@@ -61,7 +63,7 @@ namespace small {
         //
         inline size_t size()
         {
-            std::unique_lock l(m_lock);
+            std::unique_lock l(m_wait);
             return m_queue.size();
         }
 
@@ -72,24 +74,15 @@ namespace small {
         //
         inline void clear()
         {
-            std::unique_lock l(m_lock);
+            std::unique_lock l(m_wait);
             m_queue.clear();
         }
 
-        // reset the event and clears all elements
-        inline void reset()
-        {
-            std::unique_lock l(m_lock);
-            clear();
-            m_lock.reset_exit_force();
-            m_lock.reset_exit_when_done();
-        }
-
         // clang-format off
-        // use it as locker (std::unique_lock<small:m_LockQueue<T>> m...)
-        inline void lock        () { m_lock.lock(); }
-        inline void unlock      () { m_lock.unlock(); }
-        inline bool try_lock    () { return m_lock.try_lock(); }
+        // use it as locker
+        inline void lock        () { m_wait.lock(); }
+        inline void unlock      () { m_wait.unlock(); }
+        inline bool try_lock    () { return m_wait.try_lock(); }
         // clang-format on
 
         //
@@ -101,9 +94,9 @@ namespace small {
                 return;
             }
 
-            std::unique_lock l(m_lock);
+            std::unique_lock l(m_wait);
             m_queue.push_back(elem);
-            m_lock.notify_one();
+            m_wait.notify_one();
         }
 
         inline void push_back(const std::vector<T> &elems)
@@ -112,11 +105,11 @@ namespace small {
                 return;
             }
 
-            std::unique_lock l(m_lock);
+            std::unique_lock l(m_wait);
             for (auto &elem : elems) {
                 m_queue.push_back(elem);
             }
-            m_lock.notify_all();
+            m_wait.notify_all();
         }
 
         // push_back move semantics
@@ -126,9 +119,9 @@ namespace small {
                 return;
             }
 
-            std::unique_lock l(m_lock);
+            std::unique_lock l(m_wait);
             m_queue.push_back(std::forward<T>(elem));
-            m_lock.notify_one();
+            m_wait.notify_one();
         }
 
         inline void push_back(std::vector<T> &&elems)
@@ -137,11 +130,11 @@ namespace small {
                 return;
             }
 
-            std::unique_lock l(m_lock);
+            std::unique_lock l(m_wait);
             for (auto &elem : elems) {
                 m_queue.push_back(std::forward<T>(elem));
             }
-            m_lock.notify_all();
+            m_wait.notify_all();
         }
 
         // emplace_back
@@ -152,239 +145,82 @@ namespace small {
                 return;
             }
 
-            std::unique_lock l(m_lock);
+            std::unique_lock l(m_wait);
             m_queue.emplace_back(std::forward<_Args>(__args)...);
-            m_lock.notify_one();
+            m_wait.notify_one();
         }
 
+        // clang-format off
         //
         // exit
         //
-        inline void signal_exit_force()
-        {
-            std::unique_lock l(m_lock);
-            m_lock.signal_exit_force(); // will notify_all
-        }
-        inline void reset_exit_force()
-        {
-            m_lock.reset_exit_force();
-        }
-        inline bool is_exit_force()
-        {
-            return m_lock.is_exit_force();
-        }
+        inline void signal_exit_force   ()  { m_wait.signal_exit_force(); }
+        inline bool is_exit_force       ()  { return m_wait.is_exit_force(); }
 
-        inline void signal_exit_when_done()
-        {
-            std::unique_lock l(m_lock);
-            m_lock.signal_exit_when_done(); // will notify_all
-        }
-        inline bool is_exit_when_done()
-        {
-            return m_lock.is_exit_when_done();
-        }
-
-        inline bool is_exit()
-        {
-            return is_exit_force() || is_exit_when_done();
-        }
+        inline void signal_exit_when_done() { m_wait.signal_exit_when_done(); }
+        inline bool is_exit_when_done   ()  { return m_wait.is_exit_when_done(); }
+        
+        inline bool is_exit             ()  { return is_exit_force() || is_exit_when_done(); }
+        // clang-format on
 
         //
-        // wait pop_front and return that element
+        // wait and return that element
         //
         inline EnumLock wait_pop_front(T *elem)
         {
-            std::unique_lock l(m_lock);
-
-            for (; true;) {
-                // check queue and element
-                auto ret_flag = test_and_get_front(elem);
-                if (ret_flag == Flags::kExit_Force || ret_flag == Flags::kExit_When_Done) {
-                    return EnumLock::kExit;
-                }
-
-                if (ret_flag == Flags::kElement) {
-                    return EnumLock::kElement;
-                }
-
-                // wait for a notification
-                m_lock.wait(l);
-
-                // check if there is a new element
-            }
+            return m_wait.wait_pop(elem);
         }
 
         inline EnumLock wait_pop_front(std::vector<T> &vec_elems, int max_count = 1)
         {
-            vec_elems.clear();
-            vec_elems.reserve(max_count);
-
-            std::unique_lock l(m_lock);
-
-            T elem{};
-            for (; true;) {
-                // check queue and element
-                for (int i = 0; i < max_count; ++i) {
-                    auto ret_flag = test_and_get_front(&elem);
-
-                    if (ret_flag == Flags::kExit_Force) {
-                        return EnumLock::kExit;
-                    }
-
-                    if (ret_flag == Flags::kExit_When_Done) {
-                        // return what was collected until now
-                        return vec_elems.size() ? EnumLock::kElement : EnumLock::kExit;
-                    }
-
-                    if (ret_flag != Flags::kElement) {
-                        break;
-                    }
-
-                    vec_elems.emplace_back(std::move(elem));
-                }
-
-                if (vec_elems.size()) {
-                    return EnumLock::kElement;
-                }
-
-                // wait for a notification
-                m_lock.wait(l);
-
-                // check if there is a new element
-            }
+            return m_wait.wait_pop(vec_elems, max_count);
         }
 
-        //
-        // wait pop_front_for and return that element
-        //
         template <typename _Rep, typename _Period>
         inline EnumLock wait_pop_front_for(const std::chrono::duration<_Rep, _Period> &__rtime, T *elem)
         {
-            using __dur    = typename std::chrono::system_clock::duration;
-            auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
-            if (__reltime < __rtime) {
-                ++__reltime;
-            }
-            return wait_pop_front_until(std::chrono::system_clock::now() + __reltime, elem);
+            return m_wait.wait_pop_for(__rtime, elem);
         }
 
         template <typename _Rep, typename _Period>
         inline EnumLock wait_pop_front_for(const std::chrono::duration<_Rep, _Period> &__rtime, std::vector<T> &vec_elems, int max_count = 1)
         {
-            using __dur    = typename std::chrono::system_clock::duration;
-            auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
-            if (__reltime < __rtime) {
-                ++__reltime;
-            }
-            return wait_pop_front_until(std::chrono::system_clock::now() + __reltime, vec_elems, max_count);
+            return m_wait.wait_pop_for(__rtime, vec_elems, max_count);
         }
 
-        //
-        // wait until
-        //
         template <typename _Clock, typename _Duration>
         inline EnumLock wait_pop_front_until(const std::chrono::time_point<_Clock, _Duration> &__atime, T *elem)
         {
-            std::unique_lock l(m_lock);
-
-            for (; true;) {
-                // check
-                auto ret_flag = test_and_get_front(elem);
-
-                if (ret_flag == Flags::kExit_Force || ret_flag == Flags::kExit_When_Done) {
-                    return EnumLock::kExit;
-                }
-
-                if (ret_flag == Flags::kElement) {
-                    return EnumLock::kElement;
-                }
-
-                // wait for a notification
-                auto ret_w = m_lock.wait_until(l, __atime);
-                if (ret_w == EnumLock::kExit) {
-                    return EnumLock::kExit;
-                }
-                if (ret_w == EnumLock::kTimeout) {
-                    return EnumLock::kTimeout;
-                }
-
-                // check if there is a new element
-            }
+            return m_wait.wait_pop_until(__atime, elem);
         }
 
         template <typename _Clock, typename _Duration>
         inline EnumLock wait_pop_front_until(const std::chrono::time_point<_Clock, _Duration> &__atime, std::vector<T> &vec_elems, int max_count = 1)
         {
-            vec_elems.clear();
-            vec_elems.reserve(max_count);
-
-            std::unique_lock l(m_lock);
-
-            T elem{};
-            for (; true;) {
-                // check for elements
-                for (int i = 0; i < max_count; ++i) {
-                    auto ret_flag = test_and_get_front(&elem);
-
-                    if (ret_flag == Flags::kExit_Force) {
-                        return EnumLock::kExit;
-                    }
-
-                    if (ret_flag == Flags::kExit_When_Done) {
-                        // return what was collected until now
-                        return vec_elems.size() ? EnumLock::kElement : EnumLock::kExit;
-                    }
-
-                    if (ret_flag != Flags::kElement) {
-                        break;
-                    }
-
-                    vec_elems.emplace_back(std::move(elem));
-                }
-
-                if (vec_elems.size()) {
-                    return EnumLock::kElement;
-                }
-
-                // wait for a notification
-                auto ret_w = m_lock.wait_until(l, __atime);
-                if (ret_w == EnumLock::kExit) {
-                    return EnumLock::kExit;
-                }
-                if (ret_w == EnumLock::kTimeout) {
-                    return EnumLock::kTimeout;
-                }
-
-                // check if there is a new element
-            }
+            return m_wait.wait_pop_until(__atime, vec_elems, max_count);
         }
 
     private:
+        using BaseWaitPop = small::base_wait_pop<T, small::lock_queue<T>>;
+        friend BaseWaitPop;
+
         //
         // check for front element
         //
-        enum class Flags : unsigned int
-        {
-            kNone           = 0,
-            kExit_Force     = 1,
-            kExit_When_Done = 2,
-            kElement        = 3,
-        };
-
-        inline Flags test_and_get_front(T *elem)
+        inline small::WaitFlags test_and_get(T *elem, typename BaseWaitPop::TimePoint * /* time_wait_until */)
         {
             if (is_exit_force()) {
-                return Flags::kExit_Force;
+                return small::WaitFlags::kExit_Force;
             }
 
             // check queue size
             if (m_queue.empty()) {
                 if (is_exit_when_done()) {
                     // exit but dont reset event to allow other threads to exit
-                    return Flags::kExit_When_Done;
+                    return small::WaitFlags::kExit_When_Done;
                 }
 
-                return Flags::kNone;
+                return small::WaitFlags::kWait;
             }
 
             // get elem
@@ -393,14 +229,14 @@ namespace small {
             }
             m_queue.pop_front();
 
-            return Flags::kElement;
+            return small::WaitFlags::kElement;
         }
 
     private:
         //
         // members
         //
-        mutable small::base_lock m_lock;  // locker
-        std::deque<T>            m_queue; // queue
+        mutable BaseWaitPop m_wait{*this}; // implements locks & wait
+        std::deque<T>       m_queue;       // queue
     };
 } // namespace small
