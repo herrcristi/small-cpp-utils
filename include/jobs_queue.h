@@ -16,16 +16,16 @@
 //      kJobGroup1
 // };
 //
-// small::jobs_queue<JobType, int> q;
-// q.set_job_type_group( JobType:kJob1, JobGroupType:kJobGroup1 );
+// small::jobs_queue<JobType, int, JobGroupType> q;
+// q.set_job_type_group( JobType::kJob1, JobGroupType::kJobGroup1 );
 // ...
-// q.push_back( small::EnumPriorities::kNormal, JobType:kJob1, 1 );
+// q.push_back( small::EnumPriorities::kNormal, JobType::kJob1, 1 );
 // ...
 //
 // // on some thread
-// int e = 0;
-// auto ret = q.wait_pop_front( JobGroupType:kJobGroup1, &e );
-// // or wait_pop_front_for( std::chrono::minutes( 1 ), JobGroupType:kJobGroup1, &e );
+// std::pair<JobType, int> e{};
+// auto ret = q.wait_pop_front( JobGroupType::kJobGroup1, &e );
+// // or wait_pop_front_for( std::chrono::minutes( 1 ), JobGroupType::kJobGroup1, &e );
 // // ret can be small::EnumLock::kExit, small::EnumLock::kTimeout or ret == small::EnumLock::kElement
 // if ( ret == small::EnumLock::kElement )
 // {
@@ -46,11 +46,16 @@ namespace small {
     template <typename JobTypeT, typename JobElemT, typename JobGroupT = JobTypeT, typename PrioT = EnumPriorities>
     class jobs_queue
     {
+        using JobTypeQueue = small::prio_queue<std::pair<JobTypeT, JobElemT>>;
+
     public:
         //
         // jobs_queue
         //
-        jobs_queue() = default;
+        explicit jobs_queue(const small::config_prio_queue<PrioT> &config = {})
+            : m_prio_config{config}
+        {
+        }
         jobs_queue(const jobs_queue &o) : jobs_queue() { operator=(o); };
         jobs_queue(jobs_queue &&o) noexcept : jobs_queue() { operator=(std::move(o)); };
 
@@ -78,7 +83,7 @@ namespace small {
         {
             // m_job_queues will be initialized only here so later it can be accessed even without locking
             m_jobs_types_groups[job_type] = job_group;
-            m_jobs_queues[job_group]      = {};
+            m_jobs_queues[job_group]      = JobTypeQueue{m_prio_config};
         }
 
         //
@@ -420,8 +425,6 @@ namespace small {
         }
 
     private:
-        using JobTypeQueue = small::prio_queue<std::pair<JobTypeT, JobElemT>, PrioT>;
-
         // get job type queue from the group queues
         JobTypeQueue *get_job_type_group_queue(const JobTypeT job_type)
         {
@@ -440,16 +443,17 @@ namespace small {
                 return nullptr;
             }
 
-            return it_q->second;
+            return &it_q->second;
         }
 
     private:
         //
         // members
         //
-        mutable small::base_lock                                          m_lock;              // global locker
-        std::atomic<std::size_t>                                          m_total_count{};     // count of all jobs items
-        std::unordered_map<JobTypeT, JobGroupT>                           m_jobs_types_groups; // map to get the group for a job type
-        std::unordered_map<JobGroupT, small::prio_queue<JobElemT, PrioT>> m_jobs_queues;       // map of queues grouped
+        mutable small::base_lock                    m_lock;              // global locker
+        std::atomic<std::size_t>                    m_total_count{};     // count of all jobs items
+        std::unordered_map<JobTypeT, JobGroupT>     m_jobs_types_groups; // map to get the group for a job type
+        small::config_prio_queue<PrioT>             m_prio_config;       // config for the priority queue
+        std::unordered_map<JobGroupT, JobTypeQueue> m_jobs_queues;       // map of queues grouped
     };
 } // namespace small

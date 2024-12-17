@@ -74,7 +74,7 @@ namespace small {
         //
         // prio_queue
         //
-        explicit prio_queue(config_prio_queue<PrioT> config = {})
+        explicit prio_queue(const config_prio_queue<PrioT> &config = {})
             : m_config(config)
         {
             // create queues

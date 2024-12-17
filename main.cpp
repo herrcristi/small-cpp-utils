@@ -36,6 +36,7 @@ int main()
     examples::worker_thread::Example3_Perf();
 
     examples::jobs_engine::Example1();
+    examples::jobs_engine::Example2();
 
     return 0;
 }
