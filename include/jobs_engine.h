@@ -2,6 +2,7 @@
 
 #include <unordered_map>
 
+#include "jobs_queue.h"
 #include "worker_thread.h"
 
 // // example
