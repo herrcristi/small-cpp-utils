@@ -72,12 +72,20 @@ namespace {
     //
     TEST_F(PrioQueueTest, Queue_Operations)
     {
-        small::prio_queue<int> q;
+        small::prio_queue<int, small::EnumPriorities> q{
+            {.priorities{{
+                {small::EnumPriorities::kHigh, 3},
+                {small::EnumPriorities::kNormal, 3},
+                {small::EnumPriorities::kLow, 3},
+            }}}};
         ASSERT_EQ(q.size(), 0);
 
         // push
         auto r_push = q.push_back(small::EnumPriorities::kNormal, 5);
         ASSERT_EQ(r_push, 1);
+
+        r_push = q.push_back(small::EnumPriorities::kHighest, 5); // is ignored, priorty not setup
+        ASSERT_EQ(r_push, 0);
 
         r_push = q.push_back({small::EnumPriorities::kNormal, 6}); // as a pair
         ASSERT_EQ(r_push, 1);
