@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <stdlib.h>
 #include <string>
 #include <vector>
@@ -80,14 +81,14 @@ namespace small::base64impl {
     inline bool tobase64(char *base64, const char *src, const std::size_t src_length)
     {
         unsigned int encoded_word = 0;
-        int count_bits = 0;
-        int multiple = 0;
+        int          count_bits   = 0;
+        int          multiple     = 0;
         unsigned int base64_index = 0;
 
         char ch = 0;
         for (std::size_t i = 0; i < src_length; ++i, ++src) {
-            encoded_word = encoded_word << 8 | static_cast<unsigned char>(*src);
-            count_bits += 8;
+            encoded_word  = encoded_word << 8 | static_cast<unsigned char>(*src);
+            count_bits   += 8;
 
             for (; count_bits >= 6;) {
                 ++multiple;
@@ -95,23 +96,23 @@ namespace small::base64impl {
                     multiple = 0;
                 }
 
-                count_bits -= 6;
-                base64_index = 0x3F & (encoded_word >> count_bits);
+                count_bits   -= 6;
+                base64_index  = 0x3F & (encoded_word >> count_bits);
 
-                ch = get_base64char_at(base64_index);
+                ch        = get_base64char_at(base64_index);
                 *base64++ = ch;
             }
         }
 
         // still left something
         if (multiple > 0) {
-            encoded_word = encoded_word << 8 | ((unsigned char)'\0');
-            count_bits += 8;
+            encoded_word  = encoded_word << 8 | ((unsigned char)'\0');
+            count_bits   += 8;
 
-            count_bits -= 6;
-            base64_index = 0x3F & (encoded_word >> count_bits);
+            count_bits   -= 6;
+            base64_index  = 0x3F & (encoded_word >> count_bits);
 
-            ch = get_base64char_at(base64_index);
+            ch        = get_base64char_at(base64_index);
             *base64++ = ch;
 
             //  add '='
@@ -138,7 +139,7 @@ namespace small::base64impl {
         std::size_t decoded_length = 0;
 
         int decoded_word = 0;
-        int count_bits = 0;
+        int count_bits   = 0;
 
         for (std::size_t i = 0; i < base64_length; ++i, ++base64) {
             const char ch = *base64;
@@ -150,12 +151,12 @@ namespace small::base64impl {
             if (add < 0)
                 continue;
 
-            decoded_word = decoded_word << 6 | add;
-            count_bits += 6;
+            decoded_word  = decoded_word << 6 | add;
+            count_bits   += 6;
 
             if (count_bits >= 8) {
-                count_bits -= 8;
-                unsigned char decoded_ch = (unsigned char)(0xFF & (decoded_word >> count_bits));
+                count_bits               -= 8;
+                unsigned char decoded_ch  = (unsigned char)(0xFF & (decoded_word >> count_bits));
 
                 *decoded_buffer++ = static_cast<char>(decoded_ch);
                 ++decoded_length;

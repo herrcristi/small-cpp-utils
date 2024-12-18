@@ -101,17 +101,22 @@ namespace {
         auto timeStart = small::timeNow();
 
         // push
-        q.push_delay_for(std::chrono::milliseconds(0), 5);
-        q.push_delay_for(std::chrono::milliseconds(0), 6);
-        q.push_delay_for(std::chrono::milliseconds(0), {7, 8});
+        auto r_push = q.push_delay_for(std::chrono::milliseconds(0), 5);
+        ASSERT_EQ(r_push, 1);
+        r_push = q.push_delay_for(std::chrono::milliseconds(0), 6);
+        ASSERT_EQ(r_push, 1);
+        r_push = q.push_delay_for(std::chrono::milliseconds(0), {7, 8});
+        ASSERT_EQ(r_push, 2);
+
         std::vector<int> v{9};
         q.push_delay_for(std::chrono::milliseconds(0), v);
         ASSERT_EQ(q.size(), 5);
 
         // pop
         std::vector<int> values;
-        auto             ret     = q.wait_pop(values, 10);
-        auto             elapsed = small::timeDiffMs(timeStart);
+        auto             ret = q.wait_pop(values, 10);
+
+        auto elapsed = small::timeDiffMs(timeStart);
 
         ASSERT_EQ(ret, small::EnumLock::kElement);
         ASSERT_EQ(values.size(), 5);
@@ -301,7 +306,8 @@ namespace {
         ASSERT_GE(elapsed, 300 - 1); // due conversion
 
         // push is no longer accepted
-        q.push_delay_for(std::chrono::milliseconds(0), 5);
+        auto r_push = q.push_delay_for(std::chrono::milliseconds(0), 5);
+        ASSERT_EQ(r_push, 0);
         ASSERT_EQ(q.size(), 0);
     }
 
@@ -339,7 +345,8 @@ namespace {
         ASSERT_GE(elapsed, 300 - 1); // due conversion
 
         // push is no longer accepted
-        q.push_delay_for(std::chrono::milliseconds(0), 5);
+        auto r_push = q.push_delay_for(std::chrono::milliseconds(0), 5);
+        ASSERT_EQ(r_push, 0);
         ASSERT_EQ(q.size(), 0);
     }
 

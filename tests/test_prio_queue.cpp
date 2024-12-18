@@ -72,12 +72,23 @@ namespace {
     //
     TEST_F(PrioQueueTest, Queue_Operations)
     {
-        small::prio_queue<int> q;
+        small::prio_queue<int, small::EnumPriorities> q{
+            {.priorities{{
+                {small::EnumPriorities::kHigh, 3},
+                {small::EnumPriorities::kNormal, 3},
+                {small::EnumPriorities::kLow, 3},
+            }}}};
         ASSERT_EQ(q.size(), 0);
 
         // push
-        q.push_back(small::EnumPriorities::kNormal, 5);
-        q.push_back({small::EnumPriorities::kNormal, 6}); // as a pair
+        auto r_push = q.push_back(small::EnumPriorities::kNormal, 5);
+        ASSERT_EQ(r_push, 1);
+
+        r_push = q.push_back(small::EnumPriorities::kHighest, 5); // is ignored, priority not setup
+        ASSERT_EQ(r_push, 0);
+
+        r_push = q.push_back({small::EnumPriorities::kNormal, 6}); // as a pair
+        ASSERT_EQ(r_push, 1);
         ASSERT_EQ(q.size(), 2);
 
         // pop
@@ -93,6 +104,20 @@ namespace {
 
         // check size
         ASSERT_EQ(q.size(), 0);
+
+        // other q
+        small::prio_queue<int, int /*priorities*/> q1{
+            {.priorities{{{1 /*prio*/, 3}}}}};
+        ASSERT_EQ(q1.size(), 0);
+
+        r_push = q1.push_back(1 /*prio*/, 5);
+        ASSERT_EQ(r_push, 1);
+        r_push = q1.push_back(2 /*prio*/, 5); // ignored
+        ASSERT_EQ(r_push, 0);
+        ASSERT_EQ(q1.size(), 1);
+
+        q1.clear();
+        ASSERT_EQ(q1.size(), 0);
     }
 
     TEST_F(PrioQueueTest, Queue_Operations_Vec)
@@ -101,10 +126,15 @@ namespace {
         ASSERT_EQ(q.size(), 0);
 
         // push
-        q.push_back(small::EnumPriorities::kNormal, {1, 2, 3, 4});
+        auto r_push = q.push_back(small::EnumPriorities::kNormal, {1, 2, 3, 4});
+        ASSERT_EQ(r_push, 4);
+
         std::vector<int> v{5, 6, 7, 8};
-        q.push_back(small::EnumPriorities::kHigh, v);
-        q.push_back(small::EnumPriorities::kLow, {9, 10, 11, 12});
+        r_push = q.push_back(small::EnumPriorities::kHigh, v);
+        ASSERT_EQ(r_push, 4);
+
+        r_push = q.push_back(small::EnumPriorities::kLow, {9, 10, 11, 12});
+        ASSERT_EQ(r_push, 4);
         ASSERT_EQ(q.size(), 12);
 
         // pop
@@ -284,7 +314,8 @@ namespace {
         ASSERT_GE(elapsed, 300 - 1); // due conversion
 
         // push is no longer accepted
-        q.push_back(small::EnumPriorities::kNormal, 5);
+        auto r_push = q.push_back(small::EnumPriorities::kNormal, 5);
+        ASSERT_EQ(r_push, 0);
         ASSERT_EQ(q.size(), 0);
     }
 
@@ -322,7 +353,8 @@ namespace {
         ASSERT_GE(elapsed, 300 - 1); // due conversion
 
         // push is no longer accepted
-        q.push_back(small::EnumPriorities::kNormal, 5);
+        auto r_push = q.push_back(small::EnumPriorities::kNormal, 5);
+        ASSERT_EQ(r_push, 0);
         ASSERT_EQ(q.size(), 0);
     }
 

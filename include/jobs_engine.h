@@ -2,6 +2,7 @@
 
 #include <unordered_map>
 
+#include "jobs_queue.h"
 #include "worker_thread.h"
 
 // // example
@@ -204,110 +205,113 @@ namespace small {
         // push_back
         // TODO add std::pair<T>
         // TODO add std::vector<T>, etc
-        inline void push_back(const JobType job_type, const T &t)
+        inline std::size_t push_back(const JobType job_type, const T &t)
         {
             // m_job_queues can accessed without locking afterwards because it will not be modified
             auto it = m_jobs.m_queues.find(job_type);
             if (it == m_jobs.m_queues.end()) {
-                return;
+                return 0;
             }
 
             m_jobs.m_started = true; // mark as started to avoid config later
             auto &job_item   = it->second;
 
             if (job_item.m_queue_items.is_exit()) {
-                return;
+                return 0;
             }
 
             std::unique_lock l(job_item.m_queue_items);
-            ++m_jobs.m_total_count; // inc before adding
-            job_item.m_queue_items.push_back(t);
+            ++m_jobs.m_total_count;                           // inc before adding
+            auto count = job_item.m_queue_items.push_back(t); // TODO count
             job_action_start(job_type, job_item);
+            return count;
         }
 
         // push back with move semantics
-        inline void push_back(const JobType job_type, T &&t)
+        inline std::size_t push_back(const JobType job_type, T &&t)
         {
             // m_job_queues can accessed without locking afterwards because it will not be modified
             auto it = m_jobs.m_queues.find(job_type);
             if (it == m_jobs.m_queues.end()) {
-                return;
+                return 0;
             }
 
             m_jobs.m_started = true; // mark as started to avoid config later
             auto &job_item   = it->second;
 
             if (job_item.m_queue_items.is_exit()) {
-                return;
+                return 0;
             }
 
             std::unique_lock l(job_item.m_queue_items);
-            ++m_jobs.m_total_count; // inc before adding
-            job_item.m_queue_items.push_back(std::forward<T>(t));
+            ++m_jobs.m_total_count;                                            // inc before adding
+            auto count = job_item.m_queue_items.push_back(std::forward<T>(t)); // TODO inc above or decrease
             job_action_start(job_type, job_item);
+            return count;
         }
         // emplace_back
         template <typename... _Args>
-        inline void emplace_back(const JobType job_type, _Args &&...__args)
+        inline std::size_t emplace_back(const JobType job_type, _Args &&...__args)
         {
             // m_job_queues can accessed without locking afterwards because it will not be modified
             auto it = m_jobs.m_queues.find(job_type);
             if (it == m_jobs.m_queues.end()) {
-                return;
+                return 0;
             }
 
             m_jobs.m_started = true; // mark as started to avoid config later
             auto &job_item   = it->second;
 
             if (job_item.m_queue_items.is_exit()) {
-                return;
+                return 0;
             }
 
             std::unique_lock l(job_item.m_queue_items);
-            ++m_jobs.m_total_count; // inc before adding
-            job_item.m_queue_items.emplace_back(std::forward<_Args>(__args)...);
+            ++m_jobs.m_total_count;                                                           // inc before adding
+            auto count = job_item.m_queue_items.emplace_back(std::forward<_Args>(__args)...); // TODO count
             job_action_start(job_type, job_item);
+            return count;
         }
 
         //
         // push_back with specific timeings
         //
         template <typename _Rep, typename _Period>
-        inline void push_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const JobType job_type, const T &elem)
+        inline std::size_t push_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const JobType job_type, const T &elem)
         {
-            m_delayed_items.queue().push_delay_for(__rtime, {job_type, elem});
+            return m_delayed_items.queue().push_delay_for(__rtime, {job_type, elem});
         }
 
         // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
-        inline void push_back_delay_until(const std::chrono::time_point<typename small::time_queue<T>::TimeClock, typename small::time_queue<T>::TimeDuration> &__atime, const JobType job_type, const T &elem)
+        inline std::size_t push_back_delay_until(const std::chrono::time_point<typename small::time_queue<T>::TimeClock, typename small::time_queue<T>::TimeDuration> &__atime, const JobType job_type, const T &elem)
         {
-            m_delayed_items.queue().push_delay_until(__atime, {job_type, elem});
+            return m_delayed_items.queue().push_delay_until(__atime, {job_type, elem});
         }
 
         // push_back move semantics
         template <typename _Rep, typename _Period>
-        inline void push_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const JobType job_type, T &&elem)
+        inline std::size_t push_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const JobType job_type, T &&elem)
         {
-            m_delayed_items.queue().push_delay_for(__rtime, {job_type, std::forward<T>(elem)});
+            return m_delayed_items.queue().push_delay_for(__rtime, {job_type, std::forward<T>(elem)});
         }
 
         // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
-        inline void push_back_delay_until(const std::chrono::time_point<typename small::time_queue<T>::TimeClock, typename small::time_queue<T>::TimeDuration> &__atime, const JobType job_type, T &&elem)
+        inline std::size_t push_back_delay_until(const std::chrono::time_point<typename small::time_queue<T>::TimeClock, typename small::time_queue<T>::TimeDuration> &__atime, const JobType job_type, T &&elem)
         {
-            m_delayed_items.queue().push_delay_until(__atime, {job_type, std::forward<T>(elem)});
+            return m_delayed_items.queue().push_delay_until(__atime, {job_type, std::forward<T>(elem)});
         }
 
         // emplace_back
         template <typename _Rep, typename _Period, typename... _Args>
-        inline void emplace_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const JobType job_type, _Args &&...__args)
+        inline std::size_t emplace_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const JobType job_type, _Args &&...__args)
         {
-            m_delayed_items.queue().push_delay_for(__rtime, {job_type, T{std::forward<_Args>(__args)...}});
+            return m_delayed_items.queue().push_delay_for(__rtime, {job_type, T{std::forward<_Args>(__args)...}});
         }
 
         template </* typename _Clock, typename _Duration, */ typename... _Args> // avoid time_casting from one clock to another
-        inline void emplace_back_delay_until(const std::chrono::time_point<typename small::time_queue<T>::TimeClock, typename small::time_queue<T>::TimeDuration> &__atime, const JobType job_type, _Args &&...__args)
+        inline std::size_t emplace_back_delay_until(const std::chrono::time_point<typename small::time_queue<T>::TimeClock, typename small::time_queue<T>::TimeDuration> &__atime, const JobType job_type, _Args &&...__args)
         {
-            m_delayed_items.queue().push_delay_until(__atime, {job_type, T{std::forward<_Args>(__args)...}});
+            return m_delayed_items.queue().push_delay_until(__atime, {job_type, T{std::forward<_Args>(__args)...}});
         }
 
         // clang-format off
@@ -476,11 +480,13 @@ namespace small {
         using JobDelayedT     = small::time_queue_thread<JobDelayedItems, small::jobs_engine<JobType, T>>;
         friend JobDelayedT;
 
-        inline void push_back(std::vector<JobDelayedItems> &&items)
+        inline std::size_t push_back(std::vector<JobDelayedItems> &&items)
         {
+            std::size_t count = 0;
             for (auto &item : items) {
-                push_back(item.first, std::move(item.second));
+                count += push_back(item.first, std::move(item.second));
             }
+            return count;
         }
 
     private:

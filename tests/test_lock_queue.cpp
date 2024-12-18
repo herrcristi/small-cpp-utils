@@ -75,7 +75,8 @@ namespace {
         ASSERT_EQ(q.size(), 0);
 
         // push
-        q.push_back(5);
+        auto r_push = q.push_back(5);
+        ASSERT_EQ(r_push, 1);
         ASSERT_EQ(q.size(), 1);
 
         // pop
@@ -94,14 +95,18 @@ namespace {
         ASSERT_EQ(q.size(), 0);
 
         // push
-        q.push_back({5, 6});
+        auto r_push = q.push_back({5, 6});
+        ASSERT_EQ(r_push, 2);
+
         std::vector<int> v{7, 8};
-        q.push_back(v);
+        r_push = q.push_back(v);
+        ASSERT_EQ(r_push, 2);
         ASSERT_EQ(q.size(), 4);
 
         // pop
         std::vector<int> values;
-        auto             ret = q.wait_pop_front(values, 10);
+
+        auto ret = q.wait_pop_front(values, 10);
         ASSERT_EQ(ret, small::EnumLock::kElement);
         ASSERT_EQ(values.size(), 4);
         ASSERT_EQ(values[0], 5);
@@ -155,9 +160,11 @@ namespace {
         ASSERT_EQ(q.size(), 0);
 
         // wait with timeout (since no elements)
-        auto             timeStart = small::timeNow();
+        auto timeStart = small::timeNow();
+
         std::vector<int> values;
-        auto             ret = q.wait_pop_front_for(std::chrono::milliseconds(300), values, 10);
+
+        auto ret = q.wait_pop_front_for(std::chrono::milliseconds(300), values, 10);
         ASSERT_EQ(ret, small::EnumLock::kTimeout);
 
         auto elapsed = small::timeDiffMs(timeStart);
@@ -247,7 +254,8 @@ namespace {
         ASSERT_GE(elapsed, 300 - 1); // due conversion
 
         // push is no longer accepted
-        q.push_back(5);
+        auto r_push = q.push_back(5);
+        ASSERT_EQ(r_push, 0);
         ASSERT_EQ(q.size(), 0);
     }
 
@@ -285,7 +293,8 @@ namespace {
         ASSERT_GE(elapsed, 300 - 1); // due conversion
 
         // push is no longer accepted
-        q.push_back(5);
+        auto r_push = q.push_back(5);
+        ASSERT_EQ(r_push, 0);
         ASSERT_EQ(q.size(), 0);
     }
 

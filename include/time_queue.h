@@ -95,124 +95,135 @@ namespace small {
         // push_back with specific timeings
         //
         template <typename _Rep, typename _Period>
-        inline void push_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const T &elem)
+        inline std::size_t push_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const T &elem)
         {
             using __dur    = TimeDuration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
             if (__reltime < __rtime) {
                 ++__reltime;
             }
-            push_delay_until(TimeClock::now() + __reltime, elem);
+            return push_delay_until(TimeClock::now() + __reltime, elem);
         }
 
         // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
-        inline void push_delay_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, const T &elem)
+        inline std::size_t push_delay_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, const T &elem)
         {
             if (is_exit()) {
-                return;
+                return 0;
             }
 
             std::unique_lock  l(m_wait);
             auto_notification n(this);
             m_queue.push({__atime, elem});
+            return 1;
         }
 
         template <typename _Rep, typename _Period>
-        inline void push_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const std::vector<T> &elems)
+        inline std::size_t push_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const std::vector<T> &elems)
         {
             using __dur    = TimeDuration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
             if (__reltime < __rtime) {
                 ++__reltime;
             }
-            push_delay_until(TimeClock::now() + __reltime, elems);
+            return push_delay_until(TimeClock::now() + __reltime, elems);
         }
 
         // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
-        inline void push_delay_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, const std::vector<T> &elems)
+        inline std::size_t push_delay_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, const std::vector<T> &elems)
         {
             if (is_exit()) {
-                return;
+                return 0;
             }
 
             std::unique_lock  l(m_wait);
             auto_notification n(this);
+
+            std::size_t count = 0;
             for (auto &elem : elems) {
                 m_queue.push({__atime, elem});
+                ++count;
             }
+            return count;
         }
 
         // push_back move semantics
         template <typename _Rep, typename _Period>
-        inline void push_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, T &&elem)
+        inline std::size_t push_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, T &&elem)
         {
             using __dur    = TimeDuration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
             if (__reltime < __rtime) {
                 ++__reltime;
             }
-            push_delay_until(TimeClock::now() + __reltime, std::forward<T>(elem));
+            return push_delay_until(TimeClock::now() + __reltime, std::forward<T>(elem));
         }
 
         // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
-        inline void push_delay_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, T &&elem)
+        inline std::size_t push_delay_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, T &&elem)
         {
             if (is_exit()) {
-                return;
+                return 0;
             }
 
             std::unique_lock  l(m_wait);
             auto_notification n(this);
             m_queue.push({__atime, std::forward<T>(elem)});
+            return 1;
         }
 
         template <typename _Rep, typename _Period>
-        inline void push_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, std::vector<T> &&elems)
+        inline std::size_t push_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, std::vector<T> &&elems)
         {
             using __dur    = TimeDuration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
             if (__reltime < __rtime) {
                 ++__reltime;
             }
-            push_delay_until(TimeClock::now() + __reltime, std::forward<std::vector<T>>(elems));
+            return push_delay_until(TimeClock::now() + __reltime, std::forward<std::vector<T>>(elems));
         }
 
         // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
-        inline void push_delay_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, std::vector<T> &&elems)
+        inline std::size_t push_delay_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, std::vector<T> &&elems)
         {
             if (is_exit()) {
-                return;
+                return 0;
             }
 
             std::unique_lock  l(m_wait);
             auto_notification n(this);
+
+            std::size_t count = 0;
             for (auto &elem : elems) {
                 m_queue.push({__atime, std::forward<T>(elem)});
+                ++count;
             }
+            return count;
         }
 
         // emplace_back
         template <typename _Rep, typename _Period, typename... _Args>
-        inline void emplace_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, _Args &&...__args)
+        inline std::size_t emplace_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, _Args &&...__args)
         {
             using __dur    = TimeDuration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
             if (__reltime < __rtime) {
                 ++__reltime;
             }
-            emplace_delay_until(TimeClock::now() + __reltime, std::forward<_Args>(__args)...);
+            return emplace_delay_until(TimeClock::now() + __reltime, std::forward<_Args>(__args)...);
         }
 
         template </* typename _Clock, typename _Duration, */ typename... _Args> // avoid time_casting from one clock to another
-        inline void emplace_delay_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, _Args &&...__args)
+        inline std::size_t emplace_delay_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, _Args &&...__args)
         {
             if (is_exit()) {
-                return;
+                return 0;
             }
 
             std::unique_lock  l(m_wait);
             auto_notification n(this);
             m_queue.emplace(__atime, T(std::forward<_Args>(__args)...));
+            return 1;
         }
 
         // clang-format off

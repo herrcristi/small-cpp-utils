@@ -165,7 +165,8 @@ namespace {
         ASSERT_EQ(workers.size(), 1);
 
         // push after exit will not work
-        workers.push_back(5);
+        auto r_push = workers.push_back(5);
+        ASSERT_EQ(r_push, 0);
         ASSERT_EQ(workers.size(), 1);
 
         // wait to finish
