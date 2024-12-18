@@ -114,6 +114,8 @@ namespace small {
         inline void clear()
         {
             for (auto &[job_group, q] : m_jobs_queues) {
+                std::unique_lock l(q);
+                m_total_count.fetch_sub(q.size());
                 q.clear();
             }
         }
@@ -122,6 +124,8 @@ namespace small {
         {
             auto it = m_jobs_queues.find(job_group);
             if (it != m_jobs_queues.end()) {
+                std::unique_lock l(it->second);
+                m_total_count.fetch_sub(it->second.size());
                 it->second.clear();
             }
         }
@@ -382,7 +386,7 @@ namespace small {
             }
 
             // wait
-            auto ret = it_q->second.wait_pop_for(__rtime, elem);
+            auto ret = it_q->second.wait_pop_front_for(__rtime, elem);
             if (ret == small::EnumLock::kElement) {
                 --m_total_count; // decrease total count
             }
@@ -403,7 +407,7 @@ namespace small {
             }
 
             // wait
-            auto ret = it_q->second.wait_pop_for(__rtime, vec_elems, max_count);
+            auto ret = it_q->second.wait_pop_front_for(__rtime, vec_elems, max_count);
             if (ret == small::EnumLock::kElement) {
                 for (std::size_t i = 0; i < vec_elems.size(); ++i) {
                     --m_total_count; // decrease total count
@@ -428,7 +432,7 @@ namespace small {
             }
 
             // wait
-            auto ret = it_q->second.wait_pop_until(__atime, elem);
+            auto ret = it_q->second.wait_pop_front_until(__atime, elem);
             if (ret == small::EnumLock::kElement) {
                 --m_total_count; // decrease total count
             }
@@ -450,7 +454,7 @@ namespace small {
             }
 
             // wait
-            auto ret = it_q->second.wait_pop_until(__atime, vec_elems, max_count);
+            auto ret = it_q->second.wait_pop_front_until(__atime, vec_elems, max_count);
             if (ret == small::EnumLock::kElement) {
                 for (std::size_t i = 0; i < vec_elems.size(); ++i) {
                     --m_total_count; // decrease total count
