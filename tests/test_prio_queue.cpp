@@ -84,7 +84,7 @@ namespace {
         auto r_push = q.push_back(small::EnumPriorities::kNormal, 5);
         ASSERT_EQ(r_push, 1);
 
-        r_push = q.push_back(small::EnumPriorities::kHighest, 5); // is ignored, priorty not setup
+        r_push = q.push_back(small::EnumPriorities::kHighest, 5); // is ignored, priority not setup
         ASSERT_EQ(r_push, 0);
 
         r_push = q.push_back({small::EnumPriorities::kNormal, 6}); // as a pair
