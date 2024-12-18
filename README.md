@@ -358,7 +358,8 @@ workers.signal_exit_force(); // workers.signal_exit_when_done();
 
 A class that process different jobs type using the same thread pool
 
-Every job is defined by type, group, priority and request
+Every job is defined by type, group, priority and request.
+Multiple job type can be grouped together under one group, and if 1 thread will serve that group all that job type requests will actually behave like serialized.
 
 Every type has a config associated specifying how many threads to use from the pool, how many for bulk processing, etc
 
