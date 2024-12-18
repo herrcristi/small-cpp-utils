@@ -352,7 +352,7 @@ namespace small {
         }
 
     private:
-        using BaseWaitPop = small::base_wait_pop<T, small::prio_queue<T>>;
+        using BaseWaitPop = small::base_wait_pop<T, small::prio_queue<T, PrioT>>;
         friend BaseWaitPop;
 
         struct Stats

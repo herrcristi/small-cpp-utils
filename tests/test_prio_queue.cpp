@@ -104,6 +104,20 @@ namespace {
 
         // check size
         ASSERT_EQ(q.size(), 0);
+
+        // other q
+        small::prio_queue<int, int /*priorities*/> q1{
+            {.priorities{{{1 /*prio*/, 3}}}}};
+        ASSERT_EQ(q1.size(), 0);
+
+        r_push = q1.push_back(1 /*prio*/, 5);
+        ASSERT_EQ(r_push, 1);
+        r_push = q1.push_back(2 /*prio*/, 5); // ignored
+        ASSERT_EQ(r_push, 0);
+        ASSERT_EQ(q1.size(), 1);
+
+        q1.clear();
+        ASSERT_EQ(q1.size(), 0);
     }
 
     TEST_F(PrioQueueTest, Queue_Operations_Vec)
