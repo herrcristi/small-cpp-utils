@@ -76,8 +76,11 @@ namespace {
         ASSERT_EQ(q.size(), 0);
 
         // push
-        q.push_back(small::EnumPriorities::kNormal, 5);
-        q.push_back({small::EnumPriorities::kNormal, 6}); // as a pair
+        auto r_push = q.push_back(small::EnumPriorities::kNormal, 5);
+        ASSERT_EQ(r_push, 1);
+
+        r_push = q.push_back({small::EnumPriorities::kNormal, 6}); // as a pair
+        ASSERT_EQ(r_push, 1);
         ASSERT_EQ(q.size(), 2);
 
         // pop
@@ -101,10 +104,15 @@ namespace {
         ASSERT_EQ(q.size(), 0);
 
         // push
-        q.push_back(small::EnumPriorities::kNormal, {1, 2, 3, 4});
+        auto r_push = q.push_back(small::EnumPriorities::kNormal, {1, 2, 3, 4});
+        ASSERT_EQ(r_push, 4);
+
         std::vector<int> v{5, 6, 7, 8};
-        q.push_back(small::EnumPriorities::kHigh, v);
-        q.push_back(small::EnumPriorities::kLow, {9, 10, 11, 12});
+        r_push = q.push_back(small::EnumPriorities::kHigh, v);
+        ASSERT_EQ(r_push, 4);
+
+        r_push = q.push_back(small::EnumPriorities::kLow, {9, 10, 11, 12});
+        ASSERT_EQ(r_push, 4);
         ASSERT_EQ(q.size(), 12);
 
         // pop

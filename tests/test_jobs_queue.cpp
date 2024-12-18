@@ -93,10 +93,18 @@ namespace {
         ASSERT_EQ(q.size(), 0);
 
         // push
-        q.push_back(small::EnumPriorities::kNormal, JobType::kJob1, 5);
-        q.push_back(small::EnumPriorities::kHigh, {JobType::kJob2, 6});    // as a pair
-        q.push_back(small::EnumPriorities::kHighest, {JobType::kJob2, 7}); // is ignored, priority not setup
-        q.push_back(small::EnumPriorities::kNormal, JobType::kJob3, 8);
+        auto r_push = q.push_back(small::EnumPriorities::kNormal, JobType::kJob1, 5);
+        ASSERT_EQ(r_push, 1);
+
+        r_push = q.push_back(small::EnumPriorities::kHigh, {JobType::kJob2, 6}); // as a pair
+        ASSERT_EQ(r_push, 1);
+
+        r_push = q.push_back(small::EnumPriorities::kHighest, {JobType::kJob2, 7}); // is ignored, priority not setup
+        ASSERT_EQ(r_push, 0);
+
+        r_push = q.push_back(small::EnumPriorities::kNormal, JobType::kJob3, 8);
+        ASSERT_EQ(r_push, 1);
+
         ASSERT_EQ(q.size(), 3);
 
         // pop
@@ -133,10 +141,15 @@ namespace {
         ASSERT_EQ(q.size(), 0);
 
         // push
-        q.push_back(small::EnumPriorities::kNormal, JobType::kJob1, {1, 2, 3, 4});
+        auto r_push = q.push_back(small::EnumPriorities::kNormal, JobType::kJob1, {1, 2, 3, 4});
+        ASSERT_EQ(r_push, 4);
+
         std::vector<int> v{5, 6, 7, 8};
-        q.push_back(small::EnumPriorities::kHigh, JobType::kJob2, v);
-        q.push_back(small::EnumPriorities::kLow, JobType::kJob1, {9, 10, 11, 12});
+        r_push = q.push_back(small::EnumPriorities::kHigh, JobType::kJob2, v);
+        ASSERT_EQ(r_push, 4);
+
+        r_push = q.push_back(small::EnumPriorities::kLow, JobType::kJob1, {9, 10, 11, 12});
+        ASSERT_EQ(r_push, 4);
         ASSERT_EQ(q.size(), 12);
 
         // pop
