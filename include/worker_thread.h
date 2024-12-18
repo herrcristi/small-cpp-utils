@@ -137,97 +137,97 @@ namespace small {
         // add items to be processed
         // push_back
         //
-        inline void push_back(const T &t)
+        inline std::size_t push_back(const T &t)
         {
-            m_queue_items.queue().push_back(t);
+            return m_queue_items.queue().push_back(t);
         }
 
-        inline void push_back(const std::vector<T> &items)
+        inline std::size_t push_back(const std::vector<T> &items)
         {
-            m_queue_items.queue().push_back(items);
+            return m_queue_items.queue().push_back(items);
         }
 
         // push back with move semantics
-        inline void push_back(T &&t)
+        inline std::size_t push_back(T &&t)
         {
-            m_queue_items.queue().push_back(std::forward<T>(t));
+            return m_queue_items.queue().push_back(std::forward<T>(t));
         }
 
-        inline void push_back(std::vector<T> &&items)
+        inline std::size_t push_back(std::vector<T> &&items)
         {
-            m_queue_items.queue().push_back(std::forward<std::vector<T>>(items));
+            return m_queue_items.queue().push_back(std::forward<std::vector<T>>(items));
         }
 
         //
         // push_back with specific timeings
         //
         template <typename _Rep, typename _Period>
-        inline void push_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const T &elem)
+        inline std::size_t push_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const T &elem)
         {
-            m_delayed_items.queue().push_delay_for(__rtime, elem);
+            return m_delayed_items.queue().push_delay_for(__rtime, elem);
         }
 
         // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
-        inline void push_back_delay_until(const std::chrono::time_point<typename small::time_queue<T>::TimeClock, typename small::time_queue<T>::TimeDuration> &__atime, const T &elem)
+        inline std::size_t push_back_delay_until(const std::chrono::time_point<typename small::time_queue<T>::TimeClock, typename small::time_queue<T>::TimeDuration> &__atime, const T &elem)
         {
-            m_delayed_items.queue().push_delay_until(__atime, elem);
+            return m_delayed_items.queue().push_delay_until(__atime, elem);
         }
 
         template <typename _Rep, typename _Period>
-        inline void push_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const std::vector<T> &elems)
+        inline std::size_t push_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const std::vector<T> &elems)
         {
-            m_delayed_items.queue().push_delay_for(__rtime, elems);
+            return m_delayed_items.queue().push_delay_for(__rtime, elems);
         }
 
         // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
-        inline void push_back_delay_until(const std::chrono::time_point<typename small::time_queue<T>::TimeClock, typename small::time_queue<T>::TimeDuration> &__atime, const std::vector<T> &elems)
+        inline std::size_t push_back_delay_until(const std::chrono::time_point<typename small::time_queue<T>::TimeClock, typename small::time_queue<T>::TimeDuration> &__atime, const std::vector<T> &elems)
         {
-            m_delayed_items.queue().push_delay_until(__atime, elems);
+            return m_delayed_items.queue().push_delay_until(__atime, elems);
         }
 
         // push_back move semantics
         template <typename _Rep, typename _Period>
-        inline void push_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, T &&elem)
+        inline std::size_t push_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, T &&elem)
         {
-            m_delayed_items.queue().push_delay_for(__rtime, std::forward<T>(elem));
+            return m_delayed_items.queue().push_delay_for(__rtime, std::forward<T>(elem));
         }
 
         // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
-        inline void push_back_delay_until(const std::chrono::time_point<typename small::time_queue<T>::TimeClock, typename small::time_queue<T>::TimeDuration> &__atime, T &&elem)
+        inline std::size_t push_back_delay_until(const std::chrono::time_point<typename small::time_queue<T>::TimeClock, typename small::time_queue<T>::TimeDuration> &__atime, T &&elem)
         {
-            m_delayed_items.queue().push_delay_until(__atime, std::forward<T>(elem));
+            return m_delayed_items.queue().push_delay_until(__atime, std::forward<T>(elem));
         }
 
         template <typename _Rep, typename _Period>
-        inline void push_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, std::vector<T> &&elems)
+        inline std::size_t push_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, std::vector<T> &&elems)
         {
-            m_delayed_items.queue().push_delay_for(__rtime, std::forward<std::vector<T>>(elems));
+            return m_delayed_items.queue().push_delay_for(__rtime, std::forward<std::vector<T>>(elems));
         }
 
         // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
-        inline void push_back_delay_until(const std::chrono::time_point<typename small::time_queue<T>::TimeClock, typename small::time_queue<T>::TimeDuration> &__atime, std::vector<T> &&elems)
+        inline std::size_t push_back_delay_until(const std::chrono::time_point<typename small::time_queue<T>::TimeClock, typename small::time_queue<T>::TimeDuration> &__atime, std::vector<T> &&elems)
         {
-            m_delayed_items.queue().push_delay_until(__atime, std::forward<std::vector<T>>(elems));
+            return m_delayed_items.queue().push_delay_until(__atime, std::forward<std::vector<T>>(elems));
         }
 
         // emplace_back
         template <typename... _Args>
-        inline void emplace_back(_Args &&...__args)
+        inline std::size_t emplace_back(_Args &&...__args)
         {
-            m_queue_items.queue().emplace_back(std::forward<_Args>(__args)...);
+            return m_queue_items.queue().emplace_back(std::forward<_Args>(__args)...);
         }
 
         // emplace_back
         template <typename _Rep, typename _Period, typename... _Args>
-        inline void emplace_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, _Args &&...__args)
+        inline std::size_t emplace_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, _Args &&...__args)
         {
-            m_delayed_items.queue().emplace_delay_for(__rtime, std::forward<T>(__args)...);
+            return m_delayed_items.queue().emplace_delay_for(__rtime, std::forward<T>(__args)...);
         }
 
         template </* typename _Clock, typename _Duration, */ typename... _Args> // avoid time_casting from one clock to another
-        inline void emplace_back_delay_until(const std::chrono::time_point<typename small::time_queue<T>::TimeClock, typename small::time_queue<T>::TimeDuration> &__atime, _Args &&...__args)
+        inline std::size_t emplace_back_delay_until(const std::chrono::time_point<typename small::time_queue<T>::TimeClock, typename small::time_queue<T>::TimeDuration> &__atime, _Args &&...__args)
         {
-            m_delayed_items.queue().emplace_delay_until(__atime, std::forward<T>(__args)...);
+            return m_delayed_items.queue().emplace_delay_until(__atime, std::forward<T>(__args)...);
         }
 
         // clang-format off

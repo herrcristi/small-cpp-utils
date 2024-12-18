@@ -88,66 +88,77 @@ namespace small {
         //
         // push_back
         //
-        inline void push_back(const T &elem)
+        inline std::size_t push_back(const T &elem)
         {
             if (is_exit()) {
-                return;
+                return 0;
             }
 
             std::unique_lock l(m_wait);
             m_queue.push_back(elem);
             m_wait.notify_one();
+            return 1;
         }
 
-        inline void push_back(const std::vector<T> &elems)
+        inline std::size_t push_back(const std::vector<T> &elems)
         {
             if (is_exit()) {
-                return;
+                return 0;
             }
 
             std::unique_lock l(m_wait);
+
+            std::size_t count = 0;
             for (auto &elem : elems) {
                 m_queue.push_back(elem);
+                ++count;
             }
             m_wait.notify_all();
+            return count;
         }
 
         // push_back move semantics
-        inline void push_back(T &&elem)
+        inline std::size_t push_back(T &&elem)
         {
             if (is_exit()) {
-                return;
+                return 0;
             }
 
             std::unique_lock l(m_wait);
             m_queue.push_back(std::forward<T>(elem));
             m_wait.notify_one();
+            return 1;
         }
 
-        inline void push_back(std::vector<T> &&elems)
+        inline std::size_t push_back(std::vector<T> &&elems)
         {
             if (is_exit()) {
-                return;
+                return 0;
             }
 
             std::unique_lock l(m_wait);
+
+            std::size_t count = 0;
             for (auto &elem : elems) {
                 m_queue.push_back(std::forward<T>(elem));
+                ++count;
             }
             m_wait.notify_all();
+            return count;
         }
 
         // emplace_back
         template <typename... _Args>
-        inline void emplace_back(_Args &&...__args)
+        inline std::size_t emplace_back(_Args &&...__args)
         {
             if (is_exit()) {
-                return;
+                return 0;
             }
 
             std::unique_lock l(m_wait);
             m_queue.emplace_back(std::forward<_Args>(__args)...);
             m_wait.notify_one();
+            return 1;
         }
 
         // clang-format off

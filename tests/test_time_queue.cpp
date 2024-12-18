@@ -301,7 +301,8 @@ namespace {
         ASSERT_GE(elapsed, 300 - 1); // due conversion
 
         // push is no longer accepted
-        q.push_delay_for(std::chrono::milliseconds(0), 5);
+        auto r_push = q.push_delay_for(std::chrono::milliseconds(0), 5);
+        ASSERT_EQ(r_push, 0);
         ASSERT_EQ(q.size(), 0);
     }
 
@@ -339,7 +340,8 @@ namespace {
         ASSERT_GE(elapsed, 300 - 1); // due conversion
 
         // push is no longer accepted
-        q.push_delay_for(std::chrono::milliseconds(0), 5);
+        auto r_push = q.push_delay_for(std::chrono::milliseconds(0), 5);
+        ASSERT_EQ(r_push, 0);
         ASSERT_EQ(q.size(), 0);
     }
 

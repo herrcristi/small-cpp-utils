@@ -83,7 +83,11 @@ namespace small {
         {
             // m_job_queues will be initialized only here so later it can be accessed even without locking
             m_jobs_types_groups[job_type] = job_group;
-            m_jobs_queues[job_group]      = JobTypeQueue{m_prio_config};
+
+            auto it_group = m_jobs_queues.find(job_group);
+            if (it_group == m_jobs_queues.end()) {
+                m_jobs_queues[job_group] = JobTypeQueue{m_prio_config};
+            }
         }
 
         //
@@ -132,26 +136,30 @@ namespace small {
         //
         // push_back
         //
-        inline void push_back(const PrioT priority, const JobTypeT job_type, const JobElemT &elem)
+        inline std::size_t push_back(const PrioT priority, const JobTypeT job_type, const JobElemT &elem)
         {
             if (is_exit()) {
-                return;
+                return 0;
             }
 
             // get queue
             auto q = get_job_type_group_queue(job_type);
             if (!q) {
-                return;
+                return 0;
             }
 
             ++m_total_count; // increase before adding
-            q->push_back(priority, {job_type, elem});
+            auto ret = q->push_back(priority, {job_type, elem});
+            if (!ret) {
+                --m_total_count;
+            }
+            return ret;
         }
 
-        inline void push_back(const PrioT priority, const std::pair<JobTypeT, JobElemT> &pair_elem)
+        inline std::size_t push_back(const PrioT priority, const std::pair<JobTypeT, JobElemT> &pair_elem)
         {
             if (is_exit()) {
-                return;
+                return 0;
             }
 
             auto job_type = pair_elem.first;
@@ -159,52 +167,66 @@ namespace small {
             // get queue
             auto q = get_job_type_group_queue(job_type);
             if (!q) {
-                return;
+                return 0;
             }
 
             ++m_total_count; // increase before adding
-            q->push_back(priority, pair_elem);
+            auto ret = q->push_back(priority, pair_elem);
+            if (!ret) {
+                --m_total_count;
+            }
+            return ret;
         }
 
-        inline void push_back(const PrioT priority, const JobTypeT job_type, const std::vector<JobElemT> &elems)
+        inline std::size_t push_back(const PrioT priority, const JobTypeT job_type, const std::vector<JobElemT> &elems)
         {
             if (is_exit()) {
-                return;
+                return 0;
             }
 
             // get queue
             auto q = get_job_type_group_queue(job_type);
             if (!q) {
-                return;
+                return 0;
             }
 
+            std::size_t count = 0;
             for (auto &elem : elems) {
                 ++m_total_count; // increase before adding
-                q->push_back(priority, {job_type, elem});
+                auto ret = q->push_back(priority, {job_type, elem});
+                if (!ret) {
+                    --m_total_count;
+                }
+                count += ret;
             }
+            return count;
         }
 
         // push_back move semantics
-        inline void push_back(const PrioT priority, const JobTypeT job_type, JobElemT &&elem)
+        inline std::size_t push_back(const PrioT priority, const JobTypeT job_type, JobElemT &&elem)
         {
             if (is_exit()) {
-                return;
+                return 0;
             }
 
             // get queue
             auto q = get_job_type_group_queue(job_type);
             if (!q) {
-                return;
+                return 0;
             }
 
             ++m_total_count; // increase before adding
-            q->push_back(priority, {job_type, std::forward<JobElemT>(elem)});
+            auto ret = q->push_back(priority, {job_type, std::forward<JobElemT>(elem)});
+            if (!ret) {
+                --m_total_count;
+            }
+            return ret;
         }
 
-        inline void push_back(const PrioT priority, std::pair<JobTypeT, JobElemT> &&pair_elem)
+        inline std::size_t push_back(const PrioT priority, std::pair<JobTypeT, JobElemT> &&pair_elem)
         {
             if (is_exit()) {
-                return;
+                return 0;
             }
 
             auto job_type = pair_elem.first;
@@ -212,47 +234,61 @@ namespace small {
             // get queue
             auto q = get_job_type_group_queue(job_type);
             if (!q) {
-                return;
+                return 0;
             }
 
             ++m_total_count; // increase before adding
-            q->push_back(priority, std::forward<std::pair<JobTypeT, JobElemT>>(pair_elem));
+            auto ret = q->push_back(priority, std::forward<std::pair<JobTypeT, JobElemT>>(pair_elem));
+            if (!ret) {
+                --m_total_count;
+            }
+            return ret;
         }
 
-        inline void push_back(const PrioT priority, const JobTypeT job_type, std::vector<JobElemT> &&elems)
+        inline std::size_t push_back(const PrioT priority, const JobTypeT job_type, std::vector<JobElemT> &&elems)
         {
             if (is_exit()) {
-                return;
+                return 0;
             }
 
             // get queue
             auto q = get_job_type_group_queue(job_type);
             if (!q) {
-                return;
+                return 0;
             }
 
+            std::size_t count = 0;
             for (auto &elem : elems) {
                 ++m_total_count; // increase before adding
-                q->push_back(priority, {job_type, std::forward<JobElemT>(elem)});
+                auto ret = q->push_back(priority, {job_type, std::forward<JobElemT>(elem)});
+                if (!ret) {
+                    --m_total_count;
+                }
+                count += ret;
             }
+            return count;
         }
 
         // emplace_back
         template <typename... _Args>
-        inline void emplace_back(const PrioT priority, const JobTypeT job_type, _Args &&...__args)
+        inline std::size_t emplace_back(const PrioT priority, const JobTypeT job_type, _Args &&...__args)
         {
             if (is_exit()) {
-                return;
+                return 0;
             }
 
             // get queue
             auto q = get_job_type_group_queue(job_type);
             if (!q) {
-                return;
+                return 0;
             }
 
             ++m_total_count; // increase before adding
-            q->emplace_back(priority, job_type, std::forward<_Args>(__args)...);
+            auto ret = q->emplace_back(priority, job_type, std::forward<_Args>(__args)...);
+            if (!ret) {
+                --m_total_count;
+            }
+            return ret;
         }
 
         //

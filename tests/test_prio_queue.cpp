@@ -284,7 +284,8 @@ namespace {
         ASSERT_GE(elapsed, 300 - 1); // due conversion
 
         // push is no longer accepted
-        q.push_back(small::EnumPriorities::kNormal, 5);
+        auto r_push = q.push_back(small::EnumPriorities::kNormal, 5);
+        ASSERT_EQ(r_push, 0);
         ASSERT_EQ(q.size(), 0);
     }
 
@@ -322,7 +323,8 @@ namespace {
         ASSERT_GE(elapsed, 300 - 1); // due conversion
 
         // push is no longer accepted
-        q.push_back(small::EnumPriorities::kNormal, 5);
+        auto r_push = q.push_back(small::EnumPriorities::kNormal, 5);
+        ASSERT_EQ(r_push, 0);
         ASSERT_EQ(q.size(), 0);
     }
 

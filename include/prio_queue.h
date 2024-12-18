@@ -158,130 +158,141 @@ namespace small {
         //
         // push_back
         //
-        inline void push_back(const PrioT priority, const T &elem)
+        inline std::size_t push_back(const PrioT priority, const T &elem)
         {
             if (is_exit()) {
-                return;
+                return 0;
             }
 
             std::unique_lock l(m_wait);
 
             auto it = m_prio_queues.find(priority);
             if (it == m_prio_queues.end()) {
-                return;
+                return 0;
             }
 
             it->second.push_back(elem);
             m_wait.notify_one();
+            return 1;
         }
 
-        inline void push_back(const std::pair<PrioT, T> &pair_elem)
+        inline std::size_t push_back(const std::pair<PrioT, T> &pair_elem)
         {
             if (is_exit()) {
-                return;
+                return 0;
             }
 
             std::unique_lock l(m_wait);
 
             auto it = m_prio_queues.find(pair_elem.first);
             if (it == m_prio_queues.end()) {
-                return;
+                return 0;
             }
 
             it->second.push_back(pair_elem.second);
             m_wait.notify_one();
+            return 1;
         }
 
-        inline void push_back(const PrioT priority, const std::vector<T> &elems)
+        inline std::size_t push_back(const PrioT priority, const std::vector<T> &elems)
         {
             if (is_exit()) {
-                return;
+                return 0;
             }
 
             std::unique_lock l(m_wait);
 
             auto it = m_prio_queues.find(priority);
             if (it == m_prio_queues.end()) {
-                return;
+                return 0;
             }
 
+            std::size_t count = 0;
             for (auto &elem : elems) {
                 it->second.push_back(elem);
+                ++count;
             }
             m_wait.notify_all();
+            return count;
         }
 
         // push_back move semantics
-        inline void push_back(const PrioT priority, T &&elem)
+        inline std::size_t push_back(const PrioT priority, T &&elem)
         {
             if (is_exit()) {
-                return;
+                return 0;
             }
 
             std::unique_lock l(m_wait);
 
             auto it = m_prio_queues.find(priority);
             if (it == m_prio_queues.end()) {
-                return;
+                return 0;
             }
 
             it->second.push_back(std::forward<T>(elem));
             m_wait.notify_one();
+            return 1;
         }
 
-        inline void push_back(std::pair<PrioT, T> &&pair_elem)
+        inline std::size_t push_back(std::pair<PrioT, T> &&pair_elem)
         {
             if (is_exit()) {
-                return;
+                return 0;
             }
 
             std::unique_lock l(m_wait);
 
             auto it = m_prio_queues.find(pair_elem.first);
             if (it == m_prio_queues.end()) {
-                return;
+                return 0;
             }
 
             it->second.push_back(std::forward<T>(pair_elem.second));
             m_wait.notify_one();
+            return 1;
         }
 
-        inline void push_back(const PrioT priority, std::vector<T> &&elems)
+        inline std::size_t push_back(const PrioT priority, std::vector<T> &&elems)
         {
             if (is_exit()) {
-                return;
+                return 0;
             }
 
             std::unique_lock l(m_wait);
 
             auto it = m_prio_queues.find(priority);
             if (it == m_prio_queues.end()) {
-                return;
+                return 0;
             }
 
+            std::size_t count = 0;
             for (auto &elem : elems) {
                 it->second.push_back(std::forward<T>(elem));
+                ++count;
             }
             m_wait.notify_all();
+            return count;
         }
 
         // emplace_back
         template <typename... _Args>
-        inline void emplace_back(const PrioT priority, _Args &&...__args)
+        inline std::size_t emplace_back(const PrioT priority, _Args &&...__args)
         {
             if (is_exit()) {
-                return;
+                return 0;
             }
 
             std::unique_lock l(m_wait);
 
             auto it = m_prio_queues.find(priority);
             if (it == m_prio_queues.end()) {
-                return;
+                return 0;
             }
 
             it->second.emplace_back(std::forward<_Args>(__args)...);
             m_wait.notify_one();
+            return 1;
         }
 
         // clang-format off
