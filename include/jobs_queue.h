@@ -496,9 +496,6 @@ namespace small {
             signal_exit_when_done();
 
             for (auto &[job_group, q] : m_jobs_group_queues) {
-                // while (!q.empty() && !q.is_exit_force()) {
-                //     std::this_thread::yield();
-                // }
                 std::unique_lock l(q);
                 m_queues_exit_condition.wait(l, [_q = &q]() -> bool {
                     return _q->empty() || _q->is_exit_force();
