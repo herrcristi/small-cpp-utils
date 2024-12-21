@@ -470,6 +470,59 @@ namespace small {
             return ret;
         }
 
+        //
+        // wait for queues to becom empty
+        //
+        inline EnumLock wait()
+        {
+            signal_exit_when_done();
+
+            for (auto &[job_group, q] : m_jobs_group_queues) {
+                while (!q.empty() && !q.is_exit_force()) {
+                    std::this_thread::yield();
+                }
+                // std::unique_lock l(q);
+                // m_queues_exit_condition.wait(l, [q = &q]() -> bool {
+                //     return q->empty() || q->is_exit_force();
+                // });
+            }
+
+            return small::EnumLock::kExit;
+        }
+
+        template <typename _Rep, typename _Period>
+        inline EnumLock wait_for(const std::chrono::duration<_Rep, _Period> &__rtime)
+        {
+            using __dur    = typename std::chrono::system_clock::duration;
+            auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
+            if (__reltime < __rtime) {
+                ++__reltime;
+            }
+            return wait_until(std::chrono::system_clock::now() + __reltime);
+        }
+
+        template <typename _Clock, typename _Duration>
+        inline EnumLock wait_until(const std::chrono::time_point<_Clock, _Duration> &__atime)
+        {
+            signal_exit_when_done();
+
+            for (auto &[job_group, q] : m_jobs_group_queues) {
+                while (!q.empty() && !q.is_exit_force()) {
+                    std::this_thread::yield();
+                }
+                // std::unique_lock l(q);
+
+                //     auto status = m_queues_exit_condition.wait_until(l, __atime, [q = &q]() -> bool {
+                //         return q->empty() || q->is_exit_force();
+                //     });
+                //     if (!status) {
+                //         return small::EnumLock::kTimeout;
+                //     }
+            }
+
+            return small::EnumLock::kExit;
+        }
+
     private:
         // get job type queue from the group queues
         inline JobTypeQueue *get_job_type_group_queue(const JobTypeT job_type)

@@ -321,16 +321,7 @@ namespace small {
             m_delayed_items.wait();
 
             // only now can signal exit when done for all queues (when no more delayed items can be pushed)
-            m_jobs_queues.signal_exit_when_done();
-
-            // m_jobs_queues.wait();
-
-            // for (auto &[job_type, job_item] : m_jobs.m_queues) {
-            //     std::unique_lock l(job_item.m_queue_items);
-            //     m_jobs.m_queues_exit_condition.wait(l, [q = &job_item.m_queue_items]() -> bool {
-            //         return q->empty() || q->is_exit_force();
-            //     });
-            // }
+            m_jobs_queues.wait();
 
             // only now can signal exit when done for workers (when no more items exists)
             return m_scheduler.wait();
@@ -361,18 +352,10 @@ namespace small {
             }
 
             // only now can signal exit when done for all queues (when no more delayed items can be pushed)
-            m_jobs_queues.signal_exit_when_done();
-
-            // for (auto &[job_type, job_item] : m_jobs.m_queues) {
-            //     std::unique_lock l(job_item.m_queue_items);
-
-            //     auto status = m_jobs.m_queues_exit_condition.wait_until(l, __atime, [q = &job_item.m_queue_items]() -> bool {
-            //         return q->empty() || q->is_exit_force();
-            //     });
-            //     if (!status) {
-            //         return small::EnumLock::kTimeout;
-            //     }
-            // }
+            delayed_status = m_jobs_queues.wait_until(__atime);
+            if (delayed_status == small::EnumLock::kTimeout) {
+                return small::EnumLock::kTimeout;
+            }
 
             // only now can signal exit when done for workers  (when no more items exists)
             return m_scheduler.wait_until(__atime);
@@ -470,13 +453,6 @@ namespace small {
             std::unordered_map<JobGroupT, config_job_group> m_jobs_groups;                   // config by job group
             std::unordered_map<JobTypeT, JobTypeConfig>     m_jobs_types;                    // config by job type
         };
-
-        // struct JobImpl
-        // {
-
-        //     std::condition_variable_any m_queues_exit_condition; // condition to wait for when signal exit when done for queue items
-        //
-        // };
 
         JobEngineConfig                                         m_config;               // configs for all: engine, groups, job types
         small::jobs_queue<JobTypeT, JobElemT, JobGroupT, PrioT> m_jobs_queues;          // curent jobs queues (with grouping and priority) for job types
