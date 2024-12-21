@@ -198,6 +198,7 @@ namespace small {
             m_config.m_jobs_types[job_type] = {
                 .m_config              = m_config.m_default_job_type,
                 .m_processing_function = m_config.m_default_processing_function};
+            m_jobs_queues.set_job_type_group(job_type, m_config.m_default_job_type.group);
         }
 
         inline void add_job_type(const JobTypeT job_type, const config_job_type<JobGroupT> &config)
@@ -206,6 +207,7 @@ namespace small {
             m_config.m_jobs_types[job_type] = {
                 .m_config              = config,
                 .m_processing_function = m_config.m_processing_function};
+            m_jobs_queues.set_job_type_group(job_type, config.group);
         }
 
         template <typename _Callable, typename... Args>
@@ -215,6 +217,7 @@ namespace small {
             m_config.m_jobs_types[job_type] = {
                 .m_config              = config,
                 .m_processing_function = std::bind(std::forward<_Callable>(function), std::ref(*this), std::placeholders::_1 /*job_type*/, std::placeholders::_2 /*items*/, std::forward<Args>(extra_parameters)...)};
+            m_jobs_queues.set_job_type_group(job_type, config.group);
         }
 
         //
@@ -233,7 +236,7 @@ namespace small {
         // push back with move semantics
         inline std::size_t push_back(const PrioT priority, const JobTypeT job_type, JobElemT &&elem)
         {
-            auto ret = m_jobs_queues.push_back(priority, job_type, elem);
+            auto ret = m_jobs_queues.push_back(priority, job_type, std::forward<JobElemT>(elem));
             if (ret) {
                 m_scheduler.job_start(job_type);
             }

@@ -288,7 +288,7 @@ namespace small {
             }
 
             ++m_total_count; // increase before adding
-            auto ret = q->emplace_back(priority, job_type, std::forward<_Args>(__args)...);
+            auto ret = q->emplace_back(priority, job_type, JobElemT{std::forward<_Args>(__args)...});
             if (!ret) {
                 --m_total_count;
             }
@@ -468,6 +468,7 @@ namespace small {
         // get job type queue from the group queues
         inline JobTypeQueue *get_job_type_group_queue(const JobTypeT job_type)
         {
+            // TODO
             // this can be optimized to do only one find instead of two
 
             // get job_group
