@@ -489,7 +489,7 @@ namespace small {
         }
 
         //
-        // wait for queues to becom empty
+        // wait for queues to become empty
         //
         inline EnumLock wait()
         {
