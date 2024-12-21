@@ -349,10 +349,13 @@ namespace small {
             }
 
             // wait
-            auto ret = it_q->second.wait_pop_front(elem);
+            auto &q   = it_q->second;
+            auto  ret = q.wait_pop_front(elem);
             if (ret == small::EnumLock::kElement) {
                 --m_total_count; // decrease total count
             }
+
+            notify_if_empty(q);
 
             return ret;
         }
@@ -368,12 +371,15 @@ namespace small {
             }
 
             // wait
-            auto ret = it_q->second.wait_pop_front(vec_elems, max_count);
+            auto &q   = it_q->second;
+            auto  ret = q.wait_pop_front(vec_elems, max_count);
             if (ret == small::EnumLock::kElement) {
                 for (std::size_t i = 0; i < vec_elems.size(); ++i) {
                     --m_total_count; // decrease total count
                 }
             }
+
+            notify_if_empty(q);
 
             return ret;
         }
@@ -393,10 +399,13 @@ namespace small {
             }
 
             // wait
-            auto ret = it_q->second.wait_pop_front_for(__rtime, elem);
+            auto &q   = it_q->second;
+            auto  ret = q.wait_pop_front_for(__rtime, elem);
             if (ret == small::EnumLock::kElement) {
                 --m_total_count; // decrease total count
             }
+
+            notify_if_empty(q);
 
             return ret;
         }
@@ -414,12 +423,15 @@ namespace small {
             }
 
             // wait
-            auto ret = it_q->second.wait_pop_front_for(__rtime, vec_elems, max_count);
+            auto &q   = it_q->second;
+            auto  ret = q.wait_pop_front_for(__rtime, vec_elems, max_count);
             if (ret == small::EnumLock::kElement) {
                 for (std::size_t i = 0; i < vec_elems.size(); ++i) {
                     --m_total_count; // decrease total count
                 }
             }
+
+            notify_if_empty(q);
 
             return ret;
         }
@@ -439,10 +451,13 @@ namespace small {
             }
 
             // wait
-            auto ret = it_q->second.wait_pop_front_until(__atime, elem);
+            auto &q   = it_q->second;
+            auto  ret = q.wait_pop_front_until(__atime, elem);
             if (ret == small::EnumLock::kElement) {
                 --m_total_count; // decrease total count
             }
+
+            notify_if_empty(q);
 
             return ret;
         }
@@ -460,12 +475,15 @@ namespace small {
             }
 
             // wait
-            auto ret = it_q->second.wait_pop_front_until(__atime, vec_elems, max_count);
+            auto &q   = it_q->second;
+            auto  ret = q.wait_pop_front_until(__atime, vec_elems, max_count);
             if (ret == small::EnumLock::kElement) {
                 for (std::size_t i = 0; i < vec_elems.size(); ++i) {
                     --m_total_count; // decrease total count
                 }
             }
+
+            notify_if_empty(q);
 
             return ret;
         }
@@ -478,13 +496,13 @@ namespace small {
             signal_exit_when_done();
 
             for (auto &[job_group, q] : m_jobs_group_queues) {
-                while (!q.empty() && !q.is_exit_force()) {
-                    std::this_thread::yield();
-                }
-                // std::unique_lock l(q);
-                // m_queues_exit_condition.wait(l, [q = &q]() -> bool {
-                //     return q->empty() || q->is_exit_force();
-                // });
+                // while (!q.empty() && !q.is_exit_force()) {
+                //     std::this_thread::yield();
+                // }
+                std::unique_lock l(q);
+                m_queues_exit_condition.wait(l, [_q = &q]() -> bool {
+                    return _q->empty() || _q->is_exit_force();
+                });
             }
 
             return small::EnumLock::kExit;
@@ -507,24 +525,23 @@ namespace small {
             signal_exit_when_done();
 
             for (auto &[job_group, q] : m_jobs_group_queues) {
-                while (!q.empty() && !q.is_exit_force()) {
-                    std::this_thread::yield();
-                }
-                // std::unique_lock l(q);
+                std::unique_lock l(q);
 
-                //     auto status = m_queues_exit_condition.wait_until(l, __atime, [q = &q]() -> bool {
-                //         return q->empty() || q->is_exit_force();
-                //     });
-                //     if (!status) {
-                //         return small::EnumLock::kTimeout;
-                //     }
+                auto status = m_queues_exit_condition.wait_until(l, __atime, [_q = &q]() -> bool {
+                    return _q->empty() || _q->is_exit_force();
+                });
+                if (!status) {
+                    return small::EnumLock::kTimeout;
+                }
             }
 
             return small::EnumLock::kExit;
         }
 
     private:
+        //
         // get job type queue from the group queues
+        //
         inline JobTypeQueue *get_job_type_group_queue(const JobTypeT job_type)
         {
             // optimization to get the queue from the type
@@ -538,15 +555,27 @@ namespace small {
             return it_q->second;
         }
 
+        //
+        // notify condition if q is empty
+        //
+        inline void notify_if_empty(JobTypeQueue &q)
+        {
+            std::unique_lock l(q);
+            if (q.empty() || q.is_exit_force()) {
+                m_queues_exit_condition.notify_all();
+            }
+        }
+
     private:
         //
         // members
         //
-        mutable small::base_lock                     m_lock;              // global locker
-        std::atomic<std::size_t>                     m_total_count{};     // count of all jobs items
-        std::unordered_map<JobTypeT, JobGroupT>      m_jobs_types_groups; // map to get the group for a job type
-        small::config_prio_queue<PrioT>              m_prio_config;       // config for the priority queue
-        std::unordered_map<JobGroupT, JobTypeQueue>  m_jobs_group_queues; // map of queues grouped by group
-        std::unordered_map<JobTypeT, JobTypeQueue *> m_jobs_types_queues; // optimize from group to type map of queues
+        mutable small::base_lock                     m_lock;                  // global locker
+        std::atomic<std::size_t>                     m_total_count{};         // count of all jobs items
+        std::unordered_map<JobTypeT, JobGroupT>      m_jobs_types_groups;     // map to get the group for a job type
+        small::config_prio_queue<PrioT>              m_prio_config;           // config for the priority queue
+        std::unordered_map<JobGroupT, JobTypeQueue>  m_jobs_group_queues;     // map of queues grouped by group
+        std::unordered_map<JobTypeT, JobTypeQueue *> m_jobs_types_queues;     // optimize from group to type map of queues
+        std::condition_variable_any                  m_queues_exit_condition; // condition to wait for queues to be empty when signal_exit_when_done
     };
 } // namespace small
