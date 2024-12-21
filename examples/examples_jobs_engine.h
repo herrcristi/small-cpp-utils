@@ -78,8 +78,10 @@ namespace examples::jobs_engine {
                 small::sleep(30);
             });
 
+        jobs.add_job_group(JobType::job1, {.threads_count = 2});
+
         // add specific function for job1
-        jobs.add_job_type(JobType::job1, {.threads_count = 2}, [](auto &j /*this*/, const auto job_type, const auto &items, auto b /*extra param b*/) {
+        jobs.add_job_type(JobType::job1, {.group = JobType::job1}, [](auto &j /*this*/, const auto job_type, const auto &items, auto b /*extra param b*/) {
             // process item using the jobs lock (not recommended)
             {
                 std::unique_lock mlock( j );

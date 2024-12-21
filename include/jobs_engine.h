@@ -84,7 +84,7 @@ namespace small {
         //
         explicit jobs_engine(const config_jobs_engine<PrioT> &config_engine = {})
             : m_config{
-                  .m_engine(config_engine)}
+                  .m_engine{config_engine}}
         {
             // auto start threads if count > 0 otherwise threads should be manually started
             if (m_config.threads_count) {
@@ -203,7 +203,7 @@ namespace small {
         inline void add_job_type(const JobTypeT job_type, const config_job_type<JobGroupT> &config)
         {
             // m_job_queues will be initialized in the initial setup phase and will be accessed without locking afterwards
-            m_jobs.m_queues[job_type] = {
+            m_config.m_jobs_types[job_type] = {
                 .m_config              = config,
                 .m_processing_function = m_config.m_processing_function};
         }
@@ -212,7 +212,7 @@ namespace small {
         inline void add_job_type(const JobTypeT job_type, const config_job_type<JobGroupT> &config, _Callable function, Args... extra_parameters)
         {
             // m_job_queues will be initialized in the initial setup phase and will be accessed without locking afterwards
-            m_jobs.m_queues[job_type] = {
+            m_config.m_jobs_types[job_type] = {
                 .m_config              = config,
                 .m_processing_function = std::bind(std::forward<_Callable>(function), std::ref(*this), std::placeholders::_1 /*job_type*/, std::placeholders::_2 /*items*/, std::forward<Args>(extra_parameters)...)};
         }
@@ -231,7 +231,7 @@ namespace small {
         }
 
         // push back with move semantics
-        inline std::size_t push_back(const PrioT priority, const JobTypeT job_type, T &&t)
+        inline std::size_t push_back(const PrioT priority, const JobTypeT job_type, JobElemT &&elem)
         {
             auto ret = m_jobs_queues.push_back(priority, job_type, elem);
             if (ret) {
@@ -261,7 +261,7 @@ namespace small {
         }
 
         // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
-        inline std::size_t push_back_delay_until(const std::chrono::time_point<typename small::time_queue<T>::TimeClock, typename small::time_queue<T>::TimeDuration> &__atime, const PrioT priority, const JobTypeT job_type, const JobElemT &elem)
+        inline std::size_t push_back_delay_until(const std::chrono::time_point<typename small::time_queue<JobElemT>::TimeClock, typename small::time_queue<JobElemT>::TimeDuration> &__atime, const PrioT priority, const JobTypeT job_type, const JobElemT &elem)
         {
             return m_delayed_items.queue().push_delay_until(__atime, {priority, job_type, elem});
         }
@@ -270,26 +270,26 @@ namespace small {
         template <typename _Rep, typename _Period>
         inline std::size_t push_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const PrioT priority, const JobTypeT job_type, JobElemT &&elem)
         {
-            return m_delayed_items.queue().push_delay_for(__rtime, {priority, job_type, std::forward<T>(elem)});
+            return m_delayed_items.queue().push_delay_for(__rtime, {priority, job_type, std::forward<JobElemT>(elem)});
         }
 
         // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
-        inline std::size_t push_back_delay_until(const std::chrono::time_point<typename small::time_queue<T>::TimeClock, typename small::time_queue<T>::TimeDuration> &__atime, const PrioT priority, const JobTypeT job_type, JobElemT &&elem)
+        inline std::size_t push_back_delay_until(const std::chrono::time_point<typename small::time_queue<JobElemT>::TimeClock, typename small::time_queue<JobElemT>::TimeDuration> &__atime, const PrioT priority, const JobTypeT job_type, JobElemT &&elem)
         {
-            return m_delayed_items.queue().push_delay_until(__atime, {priority, job_type, std::forward<T>(elem)});
+            return m_delayed_items.queue().push_delay_until(__atime, {priority, job_type, std::forward<JobElemT>(elem)});
         }
 
         // emplace_back
         template <typename _Rep, typename _Period, typename... _Args>
         inline std::size_t emplace_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const PrioT priority, const JobTypeT job_type, _Args &&...__args)
         {
-            return m_delayed_items.queue().push_delay_for(__rtime, {priority, job_type, T{std::forward<_Args>(__args)...}});
+            return m_delayed_items.queue().push_delay_for(__rtime, {priority, job_type, JobElemT{std::forward<_Args>(__args)...}});
         }
 
         template </* typename _Clock, typename _Duration, */ typename... _Args> // avoid time_casting from one clock to another
-        inline std::size_t emplace_back_delay_until(const std::chrono::time_point<typename small::time_queue<T>::TimeClock, typename small::time_queue<T>::TimeDuration> &__atime, const PrioT priority, const JobTypeT job_type, _Args &&...__args)
+        inline std::size_t emplace_back_delay_until(const std::chrono::time_point<typename small::time_queue<JobElemT>::TimeClock, typename small::time_queue<JobElemT>::TimeDuration> &__atime, const PrioT priority, const JobTypeT job_type, _Args &&...__args)
         {
-            return m_delayed_items.queue().push_delay_until(__atime, {priority, job_type, T{std::forward<_Args>(__args)...}});
+            return m_delayed_items.queue().push_delay_until(__atime, {priority, job_type, JobElemT{std::forward<_Args>(__args)...}});
         }
 
         // clang-format off
@@ -429,15 +429,16 @@ namespace small {
         //
         // inner thread function for delayed items
         //
+        using ThisJobsEngine   = small::jobs_engine<JobTypeT, JobElemT, JobGroupT, PrioT>;
         using JobDelayedItems  = std::tuple<PrioT, JobTypeT, JobElemT>;
-        using JobQueueDelayedT = small::time_queue_thread<JobDelayedItems, small::jobs_engine<JobTypeT, JobElemT>>;
+        using JobQueueDelayedT = small::time_queue_thread<JobDelayedItems, ThisJobsEngine>;
         friend JobQueueDelayedT;
 
         inline std::size_t push_back(std::vector<JobDelayedItems> &&items)
         {
             std::size_t count = 0;
             for (auto &[priority, job_type, elem] : items) {
-                count += push_back(priority, job_type, std::move(item.second));
+                count += push_back(priority, job_type, std::move(elem));
             }
             return count;
         }
@@ -446,7 +447,7 @@ namespace small {
         //
         // members
         //
-        using ProcessingFunction = std::function<void(const JobType job_type, const std::vector<T> &)>;
+        using ProcessingFunction = std::function<void(const JobTypeT job_type, const std::vector<JobElemT> &)>;
 
         struct JobTypeConfig
         {
@@ -475,6 +476,6 @@ namespace small {
         JobEngineConfig                                         m_config;               // configs for all: engine, groups, job types
         small::jobs_queue<JobTypeT, JobElemT, JobGroupT, PrioT> m_jobs_queues;          // curent jobs queues (with grouping and priority) for job types
         JobQueueDelayedT                                        m_delayed_items{*this}; // queue of delayed items
-        small::jobs_engine_scheduler<JobGroupT>                 m_scheduler{*this};     // scheduler for processing items (by group) using a pool of threads
+        small::jobs_engine_scheduler<JobGroupT, ThisJobsEngine> m_scheduler{*this};     // scheduler for processing items (by group) using a pool of threads
     };
 } // namespace small

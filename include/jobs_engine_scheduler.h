@@ -82,7 +82,7 @@ namespace small {
         //
         inline void signal_exit_force       ()  { m_workers.signal_exit_force(); }
         inline void signal_exit_when_done   ()  { m_workers.signal_exit_when_done(); }
-        inline bool is_exit                 ()  { return m_workers.is_exit() }
+        inline bool is_exit                 ()  { return m_workers.is_exit(); }
         // clang-format on
 
         //
@@ -120,6 +120,12 @@ namespace small {
         jobs_engine_scheduler &operator=(jobs_engine_scheduler &&__t)   = delete;
 
     private:
+        struct JobGroupStats
+        {
+            int m_threads_count{};
+            int m_running{}; // how many requests are currently running
+        };
+
         //
         // to trigger action (if needed for the new job group)
         //
@@ -132,7 +138,7 @@ namespace small {
             std::unique_lock l(*this);
 
             // move from queue to action
-            bool needs_runners = prev_running < stats.m_threads_count;
+            bool needs_runners = stats.m_running < stats.m_threads_count;
             if (needs_runners) {
                 ++stats.m_running;
                 m_workers.push_back(job_group);
@@ -142,7 +148,7 @@ namespace small {
         //
         // job action ended
         //
-        inline void job_action_end(const JobType job_group, const bool has_items)
+        inline void job_action_end(const JobGroupT job_group, const bool has_items)
         {
             auto it = m_scheduler.find(job_group); // map is not changed, so can be access without locking
             if (it == m_scheduler.end()) {
@@ -162,9 +168,6 @@ namespace small {
         //
         inline void thread_function(const std::vector<JobGroupT> &items)
         {
-            std::vector<T> vec_elems;
-            T              elem{};
-
             for (auto job_group : items) {
 
                 bool has_items = false;
@@ -179,18 +182,13 @@ namespace small {
         //
         // members
         //
-        struct JobGroupStats
-        {
-            int m_threads_count{};
-            int m_running{}; // how many requests are currently running
-        };
 
         //
         // pool of thread workers
         //
         struct JobWorkerThreadFunction
         {
-            void operator()(small::worker_thread<JobGroupT> &, const std::vector<JobGroupT> &items, small::jobs_engine_scheduler<JobGroupT> *pThis) const
+            void operator()(small::worker_thread<JobGroupT> &, const std::vector<JobGroupT> &items, small::jobs_engine_scheduler<JobGroupT, ParentCallerT> *pThis) const
             {
                 pThis->thread_function(items);
             }
