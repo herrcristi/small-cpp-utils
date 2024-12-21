@@ -39,11 +39,11 @@ namespace small {
         base_wait_pop(const base_wait_pop &o) : base_wait_pop() { operator=(o); };
         base_wait_pop(base_wait_pop &&o) noexcept : base_wait_pop() { operator=(std::move(o)); };
 
-        base_wait_pop &operator=(const base_wait_pop &)
+        inline base_wait_pop &operator=(const base_wait_pop &)
         {
             return *this;
         }
-        base_wait_pop &operator=(base_wait_pop &&) noexcept
+        inline base_wait_pop &operator=(base_wait_pop &&) noexcept
         {
             return *this;
         }

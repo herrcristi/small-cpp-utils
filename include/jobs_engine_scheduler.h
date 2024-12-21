@@ -54,7 +54,7 @@ namespace small {
         // config processing by job group type
         // this should be done in the initial setup phase once
         //
-        void add_job_group(const JobGroupT job_group, const int &threads_count)
+        inline void add_job_group(const JobGroupT job_group, const int &threads_count)
         {
             m_scheduler[job_group].m_threads_count = threads_count;
         }
@@ -63,15 +63,17 @@ namespace small {
         // when items are added to be processed in parent class the start scheduler should be called
         // to trigger action (if needed for the new job group)
         //
-        inline void job_start(const JobGroupT job_group, const bool has_items)
+        inline void job_start(const JobGroupT job_group)
         {
             auto it = m_scheduler.find(job_group); // map is not changed, so can be access without locking
             if (it == m_scheduler.end()) {
                 return;
             }
 
+            // even if here it is considered that there are items and something will be scheduled,
+            // the actual check if work will still exists will be done in do_action of parent
             auto &stats = it->second;
-            job_action_start(job_group, has_items, stats);
+            job_action_start(job_group, true, stats);
         }
 
         // clang-format off

@@ -49,14 +49,14 @@ namespace small {
         time_queue(const time_queue &o) : time_queue() { operator=(o); };
         time_queue(time_queue &&o) noexcept : time_queue() { operator=(std::move(o)); };
 
-        time_queue &operator=(const time_queue &o)
+        inline time_queue &operator=(const time_queue &o)
         {
             std::scoped_lock l(m_wait, o.m_wait);
             m_wait  = o.m_wait;
             m_queue = o.m_queue;
             return *this;
         }
-        time_queue &operator=(time_queue &&o) noexcept
+        inline time_queue &operator=(time_queue &&o) noexcept
         {
             std::scoped_lock l(m_wait, o.m_wait);
             m_wait  = std::move(o.m_wait);
@@ -282,14 +282,14 @@ namespace small {
         //
         // compute if notification is needed
         //
-        TimePoint get_next_time()
+        inline TimePoint get_next_time()
         {
             // time to wait until the top element (or default if queue is empty)
             return m_queue.size() ? m_queue.top().first : (TimeClock::now() + std::chrono::minutes(10));
         }
 
         // notify all (called from auto_notification)
-        void notify_all()
+        inline void notify_all()
         {
             m_wait.notify_all();
         }

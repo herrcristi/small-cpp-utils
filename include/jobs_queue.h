@@ -59,7 +59,7 @@ namespace small {
         jobs_queue(const jobs_queue &o) : jobs_queue() { operator=(o); };
         jobs_queue(jobs_queue &&o) noexcept : jobs_queue() { operator=(std::move(o)); };
 
-        jobs_queue &operator=(const jobs_queue &o)
+        inline jobs_queue &operator=(const jobs_queue &o)
         {
             std::scoped_lock l(m_lock, o.m_lock);
             m_total_count       = o.m_total_count;
@@ -67,7 +67,7 @@ namespace small {
             m_jobs_queues       = o.m_jobs_queues;
             return *this;
         }
-        jobs_queue &operator=(jobs_queue &&o) noexcept
+        inline jobs_queue &operator=(jobs_queue &&o) noexcept
         {
             std::scoped_lock l(m_lock, o.m_lock);
             m_total_count       = o.m_total_count;
@@ -79,7 +79,7 @@ namespace small {
         //
         // config, map the job_type to a group
         //
-        void set_job_type_group(const JobTypeT job_type, const JobGroupT job_group)
+        inline void set_job_type_group(const JobTypeT job_type, const JobGroupT job_group)
         {
             // m_job_queues will be initialized only here so later it can be accessed even without locking
             m_jobs_types_groups[job_type] = job_group;
@@ -466,7 +466,7 @@ namespace small {
 
     private:
         // get job type queue from the group queues
-        JobTypeQueue *get_job_type_group_queue(const JobTypeT job_type)
+        inline JobTypeQueue *get_job_type_group_queue(const JobTypeT job_type)
         {
             // this can be optimized to do only one find instead of two
 
