@@ -46,7 +46,7 @@ namespace small {
     template <typename JobTypeT, typename JobElemT, typename JobGroupT = JobTypeT, typename PrioT = EnumPriorities>
     class jobs_queue
     {
-        using JobTypeQueue = small::prio_queue<std::pair<JobTypeT, JobElemT>>;
+        using JobTypeQueue = small::prio_queue<std::pair<JobTypeT, JobElemT>, PrioT>;
 
     public:
         //

@@ -396,7 +396,8 @@ enum JobType
 ...
 small::jobs_engine<JobType, qc> jobs(
     {.threads_count = 0 /*dont start any thread yet*/},             // global config
-    {.threads_count = 1, .bulk_count = 1},                          // default job type config
+    {.threads_count = 1, .bulk_count = 1},                          // default job group config
+    {.group = JobType::job1},                                       // default job type config
     [](auto &j /*this*/, const auto job_type, const auto &items) {  // default processing function
         ...
         for (auto &[i, s] : items) {
@@ -405,8 +406,10 @@ small::jobs_engine<JobType, qc> jobs(
         ...
     });
 ...
+jobs.add_job_group(JobType::job1); // will use default group config
+
 // add specific function for job1
-jobs.add_job_type(JobType::job1, {.threads_count = 2}, [](auto &j /*this*/, const auto job_type, const auto &items, auto b /*extra param b*/) {
+jobs.add_job_type(JobType::job1, {.group = JobType::job1}, [](auto &j /*this*/, const auto job_type, const auto &items, auto b /*extra param b*/) {
     ...
     for(auto &[i, s]:items){
       ...
@@ -421,8 +424,8 @@ jobs.add_job_type(JobType::job2);
 jobs.start_threads(3);
 ...
 // push
-jobs.push_back(JobType::job1, {1, "a"});
-jobs.push_back(JobType::job2, {2, "b"});
+jobs.push_back(small::EnumPriorities::kNormal, JobType::job1, {1, "a"});
+jobs.push_back(small::EnumPriorities::kHigh, JobType::job2, {2, "b"});
 ...
 auto ret = jobs.wait_for(std::chrono::milliseconds(0)); // wait to finished
 ...

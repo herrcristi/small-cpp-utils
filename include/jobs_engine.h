@@ -93,7 +93,7 @@ namespace small {
         }
 
         template <typename _Callable, typename... Args>
-        jobs_engine(const config_jobs_engine<PrioT> config_engine, const config_job_group config_default_group, config_job_type<JobTypeT> &config_default_job_type, _Callable function, Args... extra_parameters)
+        jobs_engine(const config_jobs_engine<PrioT> config_engine, const config_job_group config_default_group, const config_job_type<JobGroupT> &config_default_job_type, _Callable function, Args... extra_parameters)
             : m_config{
                   .m_engine{config_engine},
                   .m_default_group{config_default_group},
@@ -101,8 +101,8 @@ namespace small {
                   .m_default_processing_function{std::bind(std::forward<_Callable>(function), std::ref(*this), std::placeholders::_1 /*job_type*/, std::placeholders::_2 /*items*/, std::forward<Args>(extra_parameters)...)}}
 
         {
-            if (m_config.threads_count) {
-                start_threads(m_config.threads_count);
+            if (m_config.m_engine.threads_count) {
+                start_threads(m_config.m_engine.threads_count);
             }
         }
 
@@ -147,7 +147,7 @@ namespace small {
         //
         inline void start_threads(const int threads_count /* = 1 */)
         {
-            m_config.threads_count = threads_count;
+            m_config.m_engine.threads_count = threads_count;
             m_delayed_items.start_threads();
             m_scheduler.start_threads(threads_count);
         }
@@ -386,9 +386,12 @@ namespace small {
         //
         // inner thread function for executing items (should return if there are more items)
         //
-        inline EnumLock do_action(const JobGroupT job_group, bool &has_items)
+        using ThisJobsEngine = small::jobs_engine<JobTypeT, JobElemT, JobGroupT, PrioT>;
+        friend small::jobs_engine_scheduler<JobGroupT, ThisJobsEngine>;
+
+        inline EnumLock do_action(const JobGroupT job_group, bool *has_items)
         {
-            has_items = false;
+            *has_items = false;
 
             // get bulk_count
             auto it_cfg_grp = m_config.m_jobs_groups.find(job_group);
@@ -396,23 +399,23 @@ namespace small {
                 return small::EnumLock::kExit;
             }
 
-            int bulk_count = std::max(it_cfg_grp->second.m_bulk_count, 1);
+            int bulk_count = std::max(it_cfg_grp->second.bulk_count, 1);
             // get items to process
-            std::vector<JobElemT> vec_elems;
+            std::vector<std::pair<JobTypeT, JobElemT>> vec_elems;
 
-            auto ret = m_jobs_queues.wait_pop_front_for(std::chrono::nanoseconds(0), job_group, &vec_elems, bulk_count);
+            auto ret = m_jobs_queues.wait_pop_front_for(std::chrono::nanoseconds(0), job_group, vec_elems, bulk_count);
             if (ret == small::EnumLock::kElement) {
-                has_items = true;
+                *has_items = true;
 
                 // split by type
-                std::unordered_map<JobTypeT, std::vector<JobElemT>> vec_elems_by_type;
+                std::unordered_map<JobTypeT, std::vector<JobElemT>> elems_by_type;
                 for (auto &[job_type, elem] : vec_elems) {
-                    vec_elems_by_type[job_type].reserve(vec_elems.size());
-                    vec_elems_by_type[job_type].push_back(elem);
+                    elems_by_type[job_type].reserve(vec_elems.size());
+                    elems_by_type[job_type].push_back(elem);
                 }
 
                 // process specific job by type
-                for (auto &[job_type, job_elems] : vec_elems_by_type) {
+                for (auto &[job_type, job_elems] : elems_by_type) {
                     auto it_cfg_type = m_config.m_jobs_types.find(job_type);
                     if (it_cfg_type == m_config.m_jobs_types.end()) {
                         continue;
@@ -429,7 +432,6 @@ namespace small {
         //
         // inner thread function for delayed items
         //
-        using ThisJobsEngine   = small::jobs_engine<JobTypeT, JobElemT, JobGroupT, PrioT>;
         using JobDelayedItems  = std::tuple<PrioT, JobTypeT, JobElemT>;
         using JobQueueDelayedT = small::time_queue_thread<JobDelayedItems, ThisJobsEngine>;
         friend JobQueueDelayedT;
@@ -460,7 +462,7 @@ namespace small {
         {
             config_jobs_engine<PrioT>                       m_engine;                        // config for entire engine (threads, priorities, etc)
             config_job_group                                m_default_group{};               // default config for group
-            config_job_type<JobTypeT>                       m_default_job_type{};            // default config for job type
+            config_job_type<JobGroupT>                      m_default_job_type{};            // default config for job type
             ProcessingFunction                              m_default_processing_function{}; // default processing function
             std::unordered_map<JobGroupT, config_job_group> m_jobs_groups;                   // config by job group
             std::unordered_map<JobTypeT, JobTypeConfig>     m_jobs_types;                    // config by job type
