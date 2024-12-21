@@ -418,17 +418,19 @@ jobs.add_job_type(JobType::job1, {.group = JobType::job1}, [](auto &j /*this*/, 
 }, 5 /*param b*/);
 ...
 // use default config and default processing function for job2
+// add job2 with default config and default processing function
 jobs.add_job_type(JobType::job2);
-...
-// manual start threads
+
+// manually start thread pool with 3 threads
 jobs.start_threads(3);
-...
-// push
+
+// push jobs with different priorities and types
 jobs.push_back(small::EnumPriorities::kNormal, JobType::job1, {1, "a"});
 jobs.push_back(small::EnumPriorities::kHigh, JobType::job2, {2, "b"});
-...
-auto ret = jobs.wait_for(std::chrono::milliseconds(0)); // wait to finished
-...
+
+// wait for all jobs to complete with no timeout
+auto ret = jobs.wait_for(std::chrono::milliseconds(0));
+
 jobs.wait(); // wait here for jobs to finish, it sets the flag exit_when_done and no more items can be pushed
 ...
 ```
