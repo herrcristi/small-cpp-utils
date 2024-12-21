@@ -67,6 +67,7 @@ namespace examples::jobs_engine {
         small::jobs_engine<JobType, qc> jobs(
             {.threads_count = 0 /*dont start any thread yet*/},
             {.threads_count = 1, .bulk_count = 1},
+            {.group = JobType::job1},
             [](auto &j /*this*/, const auto job_type, const auto &items) {
                 for (auto &[i, s] : items) {
                     std::cout << "thread " << std::this_thread::get_id()
@@ -77,8 +78,10 @@ namespace examples::jobs_engine {
                 small::sleep(30);
             });
 
+        jobs.add_job_group(JobType::job1, {.threads_count = 1});
+
         // add specific function for job1
-        jobs.add_job_type(JobType::job1, {.threads_count = 2}, [](auto &j /*this*/, const auto job_type, const auto &items, auto b /*extra param b*/) {
+        jobs.add_job_type(JobType::job1, {.group = JobType::job1}, [](auto &j /*this*/, const auto job_type, const auto &items, auto b /*extra param b*/) {
             // process item using the jobs lock (not recommended)
             {
                 std::unique_lock mlock( j );
@@ -97,16 +100,16 @@ namespace examples::jobs_engine {
         jobs.start_threads(3); // manual start threads
 
         // push
-        jobs.push_back(JobType::job1, {1, "a"});
-        jobs.push_back(JobType::job2, {2, "b"});
+        jobs.push_back(small::EnumPriorities::kNormal, JobType::job1, {1, "a"});
+        jobs.push_back(small::EnumPriorities::kHigh, JobType::job2, {2, "b"});
 
-        jobs.push_back(JobType::job1, std::make_pair(3, "c"));
-        jobs.emplace_back(JobType::job1, 4, "d");
-        jobs.emplace_back(JobType::job1, 5, "e");
-        jobs.emplace_back(JobType::job1, 6, "f");
-        jobs.emplace_back_delay_for(std::chrono::milliseconds(300), JobType::job1, 7, "g");
-        jobs.emplace_back_delay_until(small::timeNow() + std::chrono::milliseconds(350), JobType::job1, 8, "h");
-        jobs.push_back_delay_for(std::chrono::milliseconds(400), JobType::job1, {9, "i"});
+        jobs.push_back(small::EnumPriorities::kNormal, JobType::job1, std::make_pair(3, "c"));
+        jobs.emplace_back(small::EnumPriorities::kHigh, JobType::job1, 4, "d");
+        jobs.emplace_back(small::EnumPriorities::kLow, JobType::job1, 5, "e");
+        jobs.emplace_back(small::EnumPriorities::kNormal, JobType::job1, 6, "f");
+        jobs.emplace_back_delay_for(std::chrono::milliseconds(300), small::EnumPriorities::kNormal, JobType::job1, 7, "g");
+        jobs.emplace_back_delay_until(small::timeNow() + std::chrono::milliseconds(350), small::EnumPriorities::kNormal, JobType::job1, 8, "h");
+        jobs.push_back_delay_for(std::chrono::milliseconds(400), small::EnumPriorities::kNormal, JobType::job1, {9, "i"});
 
         small::sleep(50);
         // jobs.signal_exit_force();

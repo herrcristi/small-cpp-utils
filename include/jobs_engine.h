@@ -2,8 +2,8 @@
 
 #include <unordered_map>
 
+#include "jobs_engine_scheduler.h"
 #include "jobs_queue.h"
-#include "worker_thread.h"
 
 // // example
 // using qc = std::pair<int, std::string>;
@@ -15,8 +15,9 @@
 // };
 //
 // small::jobs_engine<JobType, qc> jobs(
-//     {.threads_count = 0 /*dont start any thread yet*/},
-//     {.threads_count = 1, .bulk_count = 1},
+//     {.threads_count = 0 /*dont start any thread yet*/},  // job engine config
+//     {.threads_count = 1, .bulk_count = 1},               // default group config
+//     {.group = JobType::job1},                            // default job type config
 //     [](auto &j /*this*/, const auto job_type, const auto &items) {
 //         for (auto &[i, s] : items) {
 //             ...
@@ -24,7 +25,9 @@
 //     });
 //
 // // add specific function for job1
-// jobs.add_job_type(JobType::job1, {.threads_count = 2}, [](auto &j /*this*/, const auto job_type, const auto &items, auto b /*extra param b*/) {
+// jobs.add_job_group(JobType::job1, {.threads_count = 2} );
+//
+// jobs.add_job_type(JobType::job1, {.group = JobType::job1}, [](auto &j /*this*/, const auto job_type, const auto &items, auto b /*extra param b*/) {
 //     for(auto &[i, s]:items){
 //         ...
 //     }
@@ -36,8 +39,8 @@
 // jobs.start_threads(3);
 //
 // // push
-// jobs.push_back(JobType::job1, {1, "a"});
-// jobs.push_back(JobType::job2, {2, "b"});
+// jobs.push_back(small::EnumPriorities::kNormal, JobType::job1, {1, "a"});
+// jobs.push_back(small::EnumPriorities::kNormal, JobType::job2, {2, "b"});
 //
 //
 // auto ret = jobs.wait_for(std::chrono::milliseconds(0)); // wait to finished
@@ -48,13 +51,22 @@
 namespace small {
 
     // config the entire jobs engine
+    template <typename PrioT = EnumPriorities>
     struct config_jobs_engine
     {
-        int threads_count{1}; // how many threads for processing
+        int                             threads_count{8}; // how many total threads for processing
+        small::config_prio_queue<PrioT> config_prio{};
     };
 
     // config an individual job type
+    template <typename JobGroupT>
     struct config_job_type
+    {
+        JobGroupT group{}; // job type group (multiple job types can be configured to same group)
+    };
+
+    // config the job group (where job types can be grouped)
+    struct config_job_group
     {
         int threads_count{1}; // how many threads for processing (out of the global threads)
         int bulk_count{1};    // how many objects are processed at once
@@ -63,15 +75,16 @@ namespace small {
     //
     // small class for jobs
     //
-    template <typename JobType, typename T>
+    template <typename JobTypeT, typename JobElemT, typename JobGroupT = JobTypeT, typename PrioT = EnumPriorities>
     class jobs_engine
     {
     public:
         //
         // jobs_engine
         //
-        explicit jobs_engine(const config_jobs_engine config_engine)
-            : m_config(config_engine)
+        explicit jobs_engine(const config_jobs_engine<PrioT> &config_engine = {})
+            : m_config{
+                  .m_engine{config_engine}}
         {
             // auto start threads if count > 0 otherwise threads should be manually started
             if (m_config.threads_count) {
@@ -80,15 +93,16 @@ namespace small {
         }
 
         template <typename _Callable, typename... Args>
-        jobs_engine(const config_jobs_engine config_engine, const config_job_type config_default_job, _Callable function, Args... extra_parameters)
-            : m_config(config_engine),
-              m_default{
-                  .m_config{config_default_job},
-                  .m_processing_function{std::bind(std::forward<_Callable>(function), std::ref(*this), std::placeholders::_1 /*job_type*/, std::placeholders::_2 /*items*/, std::forward<Args>(extra_parameters)...)}}
+        jobs_engine(const config_jobs_engine<PrioT> config_engine, const config_job_group config_default_group, const config_job_type<JobGroupT> &config_default_job_type, _Callable function, Args... extra_parameters)
+            : m_config{
+                  .m_engine{config_engine},
+                  .m_default_group{config_default_group},
+                  .m_default_job_type{config_default_job_type},
+                  .m_default_processing_function{std::bind(std::forward<_Callable>(function), std::ref(*this), std::placeholders::_1 /*job_type*/, std::placeholders::_2 /*items*/, std::forward<Args>(extra_parameters)...)}}
 
         {
-            if (m_config.threads_count) {
-                start_threads(m_config.threads_count);
+            if (m_config.m_engine.threads_count) {
+                start_threads(m_config.m_engine.threads_count);
             }
         }
 
@@ -99,25 +113,19 @@ namespace small {
 
         // clang-format off
         // size of active items
-        inline size_t   size        () { return m_jobs.m_total_count.load();  }
+        inline size_t   size        () { return m_jobs_queues.size();  }
         // empty
         inline bool     empty       () { return size() == 0; }
         // clear
-        inline void     clear       () 
-        { 
-            // m_job_queues will be initialized in the initial setup phase and will be accessed without locking afterwards
-            for(auto &[job_type, job_item]: m_jobs.m_queues) {
-                job_item.m_queue_items.clear(); // has its own mutex
-            }
-        }
+        inline void     clear       () { m_jobs_queues.clear(); }
         
         
         // size of working items
-        inline size_t   size_processing () { return m_workers.size();  }
+        inline size_t   size_processing () { return m_scheduler.size();  }
         // empty
         inline bool     empty_processing() { return size_processing() == 0; }
         // clear
-        inline void     clear_processing() { m_workers.clear(); }
+        inline void     clear_processing() { m_scheduler.clear(); }
 
         // size of delayed items
         inline size_t   size_delayed() { return m_delayed_items.queue().size();  }
@@ -129,9 +137,9 @@ namespace small {
 
         // clang-format off
         // use it as locker (std::unique_lock<small:jobs_engine<T>> m...)
-        inline void     lock        () { m_workers.lock(); }
-        inline void     unlock      () { m_workers.unlock(); }
-        inline bool     try_lock    () { return m_workers.try_lock(); }
+        inline void     lock        () { m_scheduler.lock(); }
+        inline void     unlock      () { m_scheduler.unlock(); }
+        inline bool     try_lock    () { return m_scheduler.try_lock(); }
         // clang-format on
 
         //
@@ -139,179 +147,152 @@ namespace small {
         //
         inline void start_threads(const int threads_count /* = 1 */)
         {
-            m_config.threads_count = threads_count;
+            m_config.m_engine.threads_count = threads_count;
             m_delayed_items.start_threads();
-            m_workers.start_threads(threads_count);
+            m_scheduler.start_threads(threads_count);
         }
 
         //
         // config processing by job type
-        // this should be done in the initial setup phase once
-
-        // set default job type config and processing function
+        // THIS SHOULD BE DONE IN THE INITIAL SETUP PHASE ONCE
+        //
+        //
+        // set default job group, job type config and processing function
+        //
         template <typename _Callable, typename... Args>
-        void add_default_job_type(const config_job_type config_default_job, _Callable function, Args... extra_parameters)
+        inline void add_default_config(const config_job_group &config_default_group, const config_job_type<JobGroupT> &config_default_job_type, _Callable function, Args... extra_parameters)
         {
-            // avoid config if engine has started to take items
-            if (m_jobs.m_started) {
-                return;
-            }
-            m_default.m_config              = config_default_job;
-            m_default.m_processing_function = std::bind(std::forward<_Callable>(function), std::ref(*this), std::placeholders::_1 /*job_type*/, std::placeholders::_2 /*items*/, std::forward<Args>(extra_parameters)...);
+            m_config.m_default_group               = config_default_group;
+            m_config.m_default_job_type            = config_default_job_type;
+            m_config.m_default_processing_function = std::bind(std::forward<_Callable>(function), std::ref(*this), std::placeholders::_1 /*job_type*/, std::placeholders::_2 /*items*/, std::forward<Args>(extra_parameters)...);
         }
 
-        void add_job_type(const JobType job_type)
+        //
+        // config groups
+        //
+        inline void add_job_group(const JobGroupT job_group)
         {
-            // avoid config if engine has started to take items
-            if (m_jobs.m_started) {
-                return;
-            }
-
-            // m_job_queues will be initialized in the initial setup phase and will be accessed without locking afterwards
-            m_jobs.m_queues[job_type] = {
-                .m_config              = m_default.m_config,
-                .m_processing_function = m_default.m_processing_function};
+            m_config.m_jobs_groups[job_group] = m_config.m_default_group;
+            m_scheduler.add_job_group(job_group, m_config.m_default_group.threads_count);
         }
 
-        void add_job_type(const JobType job_type, const config_job_type config)
+        inline void add_job_group(const JobGroupT job_group, const config_job_group &config_group)
         {
-            // avoid config if engine has started to take items
-            if (m_jobs.m_started) {
-                return;
-            }
+            m_config.m_jobs_groups[job_group] = config_group;
+            m_scheduler.add_job_group(job_group, config_group.threads_count);
+        }
 
+        inline void add_job_groups(std::vector<std::pair<JobGroupT, config_job_group>> &job_group_configs)
+        {
+            for (auto &[job_group, job_config] : job_group_configs) {
+                add_job_group(job_group, job_config);
+            }
+        }
+
+        //
+        // config job typpes
+        //
+        void add_job_type(const JobTypeT job_type)
+        {
             // m_job_queues will be initialized in the initial setup phase and will be accessed without locking afterwards
-            m_jobs.m_queues[job_type] = {
+            m_config.m_jobs_types[job_type] = {
+                .m_config              = m_config.m_default_job_type,
+                .m_processing_function = m_config.m_default_processing_function};
+            m_jobs_queues.set_job_type_group(job_type, m_config.m_default_job_type.group);
+        }
+
+        inline void add_job_type(const JobTypeT job_type, const config_job_type<JobGroupT> &config)
+        {
+            // m_job_queues will be initialized in the initial setup phase and will be accessed without locking afterwards
+            m_config.m_jobs_types[job_type] = {
                 .m_config              = config,
-                .m_processing_function = m_default.m_processing_function};
+                .m_processing_function = m_config.m_processing_function};
+            m_jobs_queues.set_job_type_group(job_type, config.group);
         }
 
         template <typename _Callable, typename... Args>
-        void add_job_type(const JobType job_type, const config_job_type config, _Callable function, Args... extra_parameters)
+        inline void add_job_type(const JobTypeT job_type, const config_job_type<JobGroupT> &config, _Callable function, Args... extra_parameters)
         {
-            // avoid config if engine has started to take items
-            if (m_jobs.m_started) {
-                return;
-            }
-
             // m_job_queues will be initialized in the initial setup phase and will be accessed without locking afterwards
-            m_jobs.m_queues[job_type] = {
+            m_config.m_jobs_types[job_type] = {
                 .m_config              = config,
                 .m_processing_function = std::bind(std::forward<_Callable>(function), std::ref(*this), std::placeholders::_1 /*job_type*/, std::placeholders::_2 /*items*/, std::forward<Args>(extra_parameters)...)};
+            m_jobs_queues.set_job_type_group(job_type, config.group);
         }
 
         //
         // add items to be processed
         // push_back
-        // TODO add std::pair<T>
-        // TODO add std::vector<T>, etc
-        inline std::size_t push_back(const JobType job_type, const T &t)
+        //
+        inline std::size_t push_back(const PrioT priority, const JobTypeT job_type, const JobElemT &elem)
         {
-            // m_job_queues can accessed without locking afterwards because it will not be modified
-            auto it = m_jobs.m_queues.find(job_type);
-            if (it == m_jobs.m_queues.end()) {
-                return 0;
+            auto ret = m_jobs_queues.push_back(priority, job_type, elem);
+            if (ret) {
+                m_scheduler.job_start(job_type);
             }
-
-            m_jobs.m_started = true; // mark as started to avoid config later
-            auto &job_item   = it->second;
-
-            if (job_item.m_queue_items.is_exit()) {
-                return 0;
-            }
-
-            std::unique_lock l(job_item.m_queue_items);
-            ++m_jobs.m_total_count;                           // inc before adding
-            auto count = job_item.m_queue_items.push_back(t); // TODO count
-            job_action_start(job_type, job_item);
-            return count;
+            return ret;
         }
 
         // push back with move semantics
-        inline std::size_t push_back(const JobType job_type, T &&t)
+        inline std::size_t push_back(const PrioT priority, const JobTypeT job_type, JobElemT &&elem)
         {
-            // m_job_queues can accessed without locking afterwards because it will not be modified
-            auto it = m_jobs.m_queues.find(job_type);
-            if (it == m_jobs.m_queues.end()) {
-                return 0;
+            auto ret = m_jobs_queues.push_back(priority, job_type, std::forward<JobElemT>(elem));
+            if (ret) {
+                m_scheduler.job_start(job_type);
             }
-
-            m_jobs.m_started = true; // mark as started to avoid config later
-            auto &job_item   = it->second;
-
-            if (job_item.m_queue_items.is_exit()) {
-                return 0;
-            }
-
-            std::unique_lock l(job_item.m_queue_items);
-            ++m_jobs.m_total_count;                                            // inc before adding
-            auto count = job_item.m_queue_items.push_back(std::forward<T>(t)); // TODO inc above or decrease
-            job_action_start(job_type, job_item);
-            return count;
+            return ret;
         }
+
         // emplace_back
         template <typename... _Args>
-        inline std::size_t emplace_back(const JobType job_type, _Args &&...__args)
+        inline std::size_t emplace_back(const PrioT priority, const JobTypeT job_type, _Args &&...__args)
         {
-            // m_job_queues can accessed without locking afterwards because it will not be modified
-            auto it = m_jobs.m_queues.find(job_type);
-            if (it == m_jobs.m_queues.end()) {
-                return 0;
+            auto ret = m_jobs_queues.emplace_back(priority, job_type, std::forward<_Args>(__args)...);
+            if (ret) {
+                m_scheduler.job_start(job_type);
             }
-
-            m_jobs.m_started = true; // mark as started to avoid config later
-            auto &job_item   = it->second;
-
-            if (job_item.m_queue_items.is_exit()) {
-                return 0;
-            }
-
-            std::unique_lock l(job_item.m_queue_items);
-            ++m_jobs.m_total_count;                                                           // inc before adding
-            auto count = job_item.m_queue_items.emplace_back(std::forward<_Args>(__args)...); // TODO count
-            job_action_start(job_type, job_item);
-            return count;
+            return ret;
         }
 
         //
         // push_back with specific timeings
         //
         template <typename _Rep, typename _Period>
-        inline std::size_t push_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const JobType job_type, const T &elem)
+        inline std::size_t push_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const PrioT priority, const JobTypeT job_type, const JobElemT &elem)
         {
-            return m_delayed_items.queue().push_delay_for(__rtime, {job_type, elem});
+            return m_delayed_items.queue().push_delay_for(__rtime, {priority, job_type, elem});
         }
 
         // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
-        inline std::size_t push_back_delay_until(const std::chrono::time_point<typename small::time_queue<T>::TimeClock, typename small::time_queue<T>::TimeDuration> &__atime, const JobType job_type, const T &elem)
+        inline std::size_t push_back_delay_until(const std::chrono::time_point<typename small::time_queue<JobElemT>::TimeClock, typename small::time_queue<JobElemT>::TimeDuration> &__atime, const PrioT priority, const JobTypeT job_type, const JobElemT &elem)
         {
-            return m_delayed_items.queue().push_delay_until(__atime, {job_type, elem});
+            return m_delayed_items.queue().push_delay_until(__atime, {priority, job_type, elem});
         }
 
         // push_back move semantics
         template <typename _Rep, typename _Period>
-        inline std::size_t push_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const JobType job_type, T &&elem)
+        inline std::size_t push_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const PrioT priority, const JobTypeT job_type, JobElemT &&elem)
         {
-            return m_delayed_items.queue().push_delay_for(__rtime, {job_type, std::forward<T>(elem)});
+            return m_delayed_items.queue().push_delay_for(__rtime, {priority, job_type, std::forward<JobElemT>(elem)});
         }
 
         // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
-        inline std::size_t push_back_delay_until(const std::chrono::time_point<typename small::time_queue<T>::TimeClock, typename small::time_queue<T>::TimeDuration> &__atime, const JobType job_type, T &&elem)
+        inline std::size_t push_back_delay_until(const std::chrono::time_point<typename small::time_queue<JobElemT>::TimeClock, typename small::time_queue<JobElemT>::TimeDuration> &__atime, const PrioT priority, const JobTypeT job_type, JobElemT &&elem)
         {
-            return m_delayed_items.queue().push_delay_until(__atime, {job_type, std::forward<T>(elem)});
+            return m_delayed_items.queue().push_delay_until(__atime, {priority, job_type, std::forward<JobElemT>(elem)});
         }
 
         // emplace_back
         template <typename _Rep, typename _Period, typename... _Args>
-        inline std::size_t emplace_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const JobType job_type, _Args &&...__args)
+        inline std::size_t emplace_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const PrioT priority, const JobTypeT job_type, _Args &&...__args)
         {
-            return m_delayed_items.queue().push_delay_for(__rtime, {job_type, T{std::forward<_Args>(__args)...}});
+            return m_delayed_items.queue().push_delay_for(__rtime, {priority, job_type, JobElemT{std::forward<_Args>(__args)...}});
         }
 
         template </* typename _Clock, typename _Duration, */ typename... _Args> // avoid time_casting from one clock to another
-        inline std::size_t emplace_back_delay_until(const std::chrono::time_point<typename small::time_queue<T>::TimeClock, typename small::time_queue<T>::TimeDuration> &__atime, const JobType job_type, _Args &&...__args)
+        inline std::size_t emplace_back_delay_until(const std::chrono::time_point<typename small::time_queue<JobElemT>::TimeClock, typename small::time_queue<JobElemT>::TimeDuration> &__atime, const PrioT priority, const JobTypeT job_type, _Args &&...__args)
         {
-            return m_delayed_items.queue().push_delay_until(__atime, {job_type, T{std::forward<_Args>(__args)...}});
+            return m_delayed_items.queue().push_delay_until(__atime, {priority, job_type, JobElemT{std::forward<_Args>(__args)...}});
         }
 
         // clang-format off
@@ -319,16 +300,14 @@ namespace small {
         // signal exit
         //
         inline void signal_exit_force       ()  { 
-            m_workers.signal_exit_force(); 
+            m_scheduler.signal_exit_force(); 
             m_delayed_items.queue().signal_exit_force(); 
-            for(auto &[job_type, job_item]: m_jobs.m_queues) {
-                job_item.m_queue_items.signal_exit_force();
-            }
+            m_jobs_queues.signal_exit_force();
         }
         inline void signal_exit_when_done   ()  { m_delayed_items.queue().signal_exit_when_done(); /*when the delayed will be finished will signal the queue items to exit when done*/ }
         
         // to be used in processing function
-        inline bool is_exit                 ()  { return m_workers.is_exit() || m_delayed_items.queue().is_exit_force(); }
+        inline bool is_exit                 ()  { return m_delayed_items.queue().is_exit_force() || m_scheduler.is_exit(); }
         // clang-format on
 
         //
@@ -338,22 +317,14 @@ namespace small {
         {
             signal_exit_when_done();
 
+            // first wait for delayed items to finish
             m_delayed_items.wait();
 
-            // only now can signal exit when done for queue items (when no more delayed items can be pushed)
-            for (auto &[job_type, job_item] : m_jobs.m_queues) {
-                job_item.m_queue_items.signal_exit_when_done();
-            }
+            // only now can signal exit when done for all queues (when no more delayed items can be pushed)
+            m_jobs_queues.wait();
 
-            for (auto &[job_type, job_item] : m_jobs.m_queues) {
-                std::unique_lock l(job_item.m_queue_items);
-                m_jobs.m_queues_exit_condition.wait(l, [q = &job_item.m_queue_items]() -> bool {
-                    return q->empty() || q->is_exit_force();
-                });
-            }
-
-            // only now can signal exit when done for workers  (when no more items exists)
-            return m_workers.wait();
+            // only now can signal exit when done for workers (when no more items exists)
+            return m_scheduler.wait();
         }
 
         // wait some time then signal exit
@@ -374,29 +345,20 @@ namespace small {
         {
             signal_exit_when_done();
 
+            // first wait for delayed items to finish
             auto delayed_status = m_delayed_items.wait_until(__atime);
             if (delayed_status == small::EnumLock::kTimeout) {
                 return small::EnumLock::kTimeout;
             }
 
-            // only now can signal exit when done for queue items (when no more delayed items can be pushed)
-            for (auto &[job_type, job_item] : m_jobs.m_queues) {
-                job_item.m_queue_items.signal_exit_when_done();
-            }
-
-            for (auto &[job_type, job_item] : m_jobs.m_queues) {
-                std::unique_lock l(job_item.m_queue_items);
-
-                auto status = m_jobs.m_queues_exit_condition.wait_until(l, __atime, [q = &job_item.m_queue_items]() -> bool {
-                    return q->empty() || q->is_exit_force();
-                });
-                if (!status) {
-                    return small::EnumLock::kTimeout;
-                }
+            // only now can signal exit when done for all queues (when no more delayed items can be pushed)
+            delayed_status = m_jobs_queues.wait_until(__atime);
+            if (delayed_status == small::EnumLock::kTimeout) {
+                return small::EnumLock::kTimeout;
             }
 
             // only now can signal exit when done for workers  (when no more items exists)
-            return m_workers.wait_until(__atime);
+            return m_scheduler.wait_until(__atime);
         }
 
     private:
@@ -408,83 +370,63 @@ namespace small {
 
     private:
         //
-        // trigger action (if needed for the new job type)
+        // inner thread function for executing items (should return if there are more items)
         //
-        struct JobTypeQueueItem;
-        inline void job_action_start(const JobType job_type, JobTypeQueueItem &job_item)
+        using ThisJobsEngine = small::jobs_engine<JobTypeT, JobElemT, JobGroupT, PrioT>;
+        friend small::jobs_engine_scheduler<JobGroupT, ThisJobsEngine>;
+
+        inline EnumLock do_action(const JobGroupT job_group, bool *has_items)
         {
-            std::unique_lock l(job_item.m_queue_items);
+            *has_items = false;
 
-            bool has_items     = job_item.m_queue_items.size() > 0;
-            bool needs_runners = job_item.m_processing_stats.m_running < job_item.m_config.threads_count;
-
-            // move from queue to action
-            if (has_items && needs_runners) {
-                ++job_item.m_processing_stats.m_running;
-                m_workers.push_back(job_type);
+            // get bulk_count
+            auto it_cfg_grp = m_config.m_jobs_groups.find(job_group);
+            if (it_cfg_grp == m_config.m_jobs_groups.end()) {
+                return small::EnumLock::kExit;
             }
 
-            if (!has_items) {
-                m_jobs.m_queues_exit_condition.notify_all();
-            }
-        }
+            int bulk_count = std::max(it_cfg_grp->second.bulk_count, 1);
+            // get items to process
+            std::vector<std::pair<JobTypeT, JobElemT>> vec_elems;
 
-        inline void job_action_end(const JobType job_type, JobTypeQueueItem &job_item)
-        {
-            std::unique_lock l(job_item.m_queue_items);
+            auto ret = m_jobs_queues.wait_pop_front_for(std::chrono::nanoseconds(0), job_group, vec_elems, bulk_count);
+            if (ret == small::EnumLock::kElement) {
+                *has_items = true;
 
-            --job_item.m_processing_stats.m_running;
-            job_action_start(job_type, job_item);
-        }
-
-        //
-        // inner thread function for active items
-        //
-        inline void thread_function(const std::vector<JobType> &items)
-        {
-            std::vector<T> vec_elems;
-            T              elem{};
-
-            for (auto job_type : items) {
-                // m_job_queues can accessed without locking afterwards because it will not be modified
-                auto it = m_jobs.m_queues.find(job_type);
-                if (it == m_jobs.m_queues.end()) {
-                    continue;
-                }
-
-                JobTypeQueueItem &job_item = it->second;
-
-                int  max_count = std::max(job_item.m_config.bulk_count, 1);
-                auto ret       = job_item.m_queue_items.wait_pop_front(vec_elems, max_count);
-                if (ret == small::EnumLock::kExit) {
-                    m_jobs.m_queues_exit_condition.notify_all();
-                    return;
-                }
-                // update global counter
-                for (std::size_t i = 0; i < vec_elems.size(); ++i) {
-                    --m_jobs.m_total_count; // dec
+                // split by type
+                std::unordered_map<JobTypeT, std::vector<JobElemT>> elems_by_type;
+                for (auto &[job_type, elem] : vec_elems) {
+                    elems_by_type[job_type].reserve(vec_elems.size());
+                    elems_by_type[job_type].push_back(elem);
                 }
 
                 // process specific job by type
-                job_item.m_processing_function(job_type, vec_elems);
+                for (auto &[job_type, job_elems] : elems_by_type) {
+                    auto it_cfg_type = m_config.m_jobs_types.find(job_type);
+                    if (it_cfg_type == m_config.m_jobs_types.end()) {
+                        continue;
+                    }
 
-                // start another action
-                job_action_end(job_type, job_item);
+                    // process specific job by type
+                    it_cfg_type->second.m_processing_function(job_type, std::move(job_elems));
+                }
             }
+
+            return ret;
         }
 
         //
         // inner thread function for delayed items
         //
-        using JobDelayedItems = std::pair<JobType, T>;
-        using JobDelayedT     = small::time_queue_thread<JobDelayedItems, small::jobs_engine<JobType, T>>;
-        friend JobDelayedT;
+        using JobDelayedItems  = std::tuple<PrioT, JobTypeT, JobElemT>;
+        using JobQueueDelayedT = small::time_queue_thread<JobDelayedItems, ThisJobsEngine>;
+        friend JobQueueDelayedT;
 
         inline std::size_t push_back(std::vector<JobDelayedItems> &&items)
         {
             std::size_t count = 0;
-            for (auto &item : items) {
-                count += push_back(item.first, std::move(item.second));
+            for (auto &[priority, job_type, elem] : items) {
+                count += push_back(priority, job_type, std::move(elem));
             }
             return count;
         }
@@ -493,51 +435,28 @@ namespace small {
         //
         // members
         //
-        using ProcessingFunction = std::function<void(const JobType job_type, const std::vector<T> &)>;
+        using ProcessingFunction = std::function<void(const JobTypeT job_type, const std::vector<JobElemT> &)>;
 
-        struct JobTypeDefault
+        struct JobTypeConfig
         {
-            config_job_type    m_config{};              // config default config
-            ProcessingFunction m_processing_function{}; // default processing Function
+            config_job_type<JobGroupT> m_config{};              // config for this job type (to which group it belongs)
+            ProcessingFunction         m_processing_function{}; // processing Function
         };
 
-        struct JobTypeStats
+        // configs
+        struct JobEngineConfig
         {
-            int m_running{}; // how many requests are currently running
+            config_jobs_engine<PrioT>                       m_engine;                        // config for entire engine (threads, priorities, etc)
+            config_job_group                                m_default_group{};               // default config for group
+            config_job_type<JobGroupT>                      m_default_job_type{};            // default config for job type
+            ProcessingFunction                              m_default_processing_function{}; // default processing function
+            std::unordered_map<JobGroupT, config_job_group> m_jobs_groups;                   // config by job group
+            std::unordered_map<JobTypeT, JobTypeConfig>     m_jobs_types;                    // config by job type
         };
 
-        struct JobTypeQueueItem
-        {
-            config_job_type      m_config{};              // config for this job type
-            JobTypeStats         m_processing_stats;      // keep track of execution stats to help schedule
-            ProcessingFunction   m_processing_function{}; // processing Function
-            small::lock_queue<T> m_queue_items{};         // queue of items
-        };
-
-        struct JobQueues
-        {
-            std::unordered_map<JobType, JobTypeQueueItem> m_queues;                // queue of items by type
-            std::condition_variable_any                   m_queues_exit_condition; // condition to wait for when signal exit when done for queue items
-            std::atomic<bool>                             m_started{};             // when this flag is set no more config is possible
-            std::atomic<long long>                        m_total_count;           // count of all jobs types
-        };
-
-        config_jobs_engine m_config;               // config
-        JobTypeDefault     m_default;              // default config and default processing function
-        JobQueues          m_jobs;                 // curent queues by type
-        JobDelayedT        m_delayed_items{*this}; // queue of delayed items
-
-        //
-        // pool of thread workers
-        //
-        struct JobWorkerThreadFunction
-        {
-            void operator()(small::worker_thread<JobType> &, const std::vector<JobType> &items, small::jobs_engine<JobType, T> *pThis) const
-            {
-                pThis->thread_function(items);
-            }
-        };
-
-        small::worker_thread<JobType> m_workers{{.threads_count = 0}, JobWorkerThreadFunction(), this};
-    }; // namespace small
+        JobEngineConfig                                         m_config;               // configs for all: engine, groups, job types
+        small::jobs_queue<JobTypeT, JobElemT, JobGroupT, PrioT> m_jobs_queues;          // curent jobs queues (with grouping and priority) for job types
+        JobQueueDelayedT                                        m_delayed_items{*this}; // queue of delayed items
+        small::jobs_engine_scheduler<JobGroupT, ThisJobsEngine> m_scheduler{*this};     // scheduler for processing items (by group) using a pool of threads
+    };
 } // namespace small

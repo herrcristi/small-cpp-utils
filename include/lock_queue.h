@@ -43,14 +43,14 @@ namespace small {
         lock_queue(const lock_queue &o) : lock_queue() { operator=(o); };
         lock_queue(lock_queue &&o) noexcept : lock_queue() { operator=(std::move(o)); };
 
-        lock_queue &operator=(const lock_queue &o)
+        inline lock_queue &operator=(const lock_queue &o)
         {
             std::scoped_lock l(m_wait, o.m_wait);
             m_wait  = o.m_wait;
             m_queue = o.m_queue;
             return *this;
         }
-        lock_queue &operator=(lock_queue &&o) noexcept
+        inline lock_queue &operator=(lock_queue &&o) noexcept
         {
             std::scoped_lock l(m_wait, o.m_wait);
             m_wait  = std::move(o.m_wait);
