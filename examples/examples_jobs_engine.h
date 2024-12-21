@@ -78,7 +78,7 @@ namespace examples::jobs_engine {
                 small::sleep(30);
             });
 
-        jobs.add_job_group(JobType::job1, {.threads_count = 2});
+        jobs.add_job_group(JobType::job1, {.threads_count = 1});
 
         // add specific function for job1
         jobs.add_job_type(JobType::job1, {.group = JobType::job1}, [](auto &j /*this*/, const auto job_type, const auto &items, auto b /*extra param b*/) {
@@ -104,8 +104,8 @@ namespace examples::jobs_engine {
         jobs.push_back(small::EnumPriorities::kHigh, JobType::job2, {2, "b"});
 
         jobs.push_back(small::EnumPriorities::kNormal, JobType::job1, std::make_pair(3, "c"));
-        jobs.emplace_back(small::EnumPriorities::kNormal, JobType::job1, 4, "d");
-        jobs.emplace_back(small::EnumPriorities::kNormal, JobType::job1, 5, "e");
+        jobs.emplace_back(small::EnumPriorities::kHigh, JobType::job1, 4, "d");
+        jobs.emplace_back(small::EnumPriorities::kLow, JobType::job1, 5, "e");
         jobs.emplace_back(small::EnumPriorities::kNormal, JobType::job1, 6, "f");
         jobs.emplace_back_delay_for(std::chrono::milliseconds(300), small::EnumPriorities::kNormal, JobType::job1, 7, "g");
         jobs.emplace_back_delay_until(small::timeNow() + std::chrono::milliseconds(350), small::EnumPriorities::kNormal, JobType::job1, 8, "h");

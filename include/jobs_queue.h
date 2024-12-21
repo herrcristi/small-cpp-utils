@@ -64,7 +64,12 @@ namespace small {
             std::scoped_lock l(m_lock, o.m_lock);
             m_total_count       = o.m_total_count;
             m_jobs_types_groups = o.m_jobs_types_groups;
-            m_jobs_queues       = o.m_jobs_queues;
+            m_jobs_group_queues = o.m_jobs_group_queues;
+            // rebuild m_jobs_types_queues
+            m_jobs_types_queues.clear();
+            for (auto &[job_type, job_group] : m_jobs_types_groups) {
+                m_jobs_types_queues[job_type] = &m_jobs_group_queues[job_group];
+            }
             return *this;
         }
         inline jobs_queue &operator=(jobs_queue &&o) noexcept
@@ -72,7 +77,8 @@ namespace small {
             std::scoped_lock l(m_lock, o.m_lock);
             m_total_count       = o.m_total_count;
             m_jobs_types_groups = std::move(o.m_jobs_types_groups);
-            m_jobs_queues       = std::move(o.m_jobs_queues);
+            m_jobs_group_queues = std::move(o.m_jobs_group_queues);
+            m_jobs_types_queues = std::move(o.m_jobs_types_queues);
             return *this;
         }
 
@@ -81,13 +87,14 @@ namespace small {
         //
         inline void set_job_type_group(const JobTypeT job_type, const JobGroupT job_group)
         {
-            // m_job_queues will be initialized only here so later it can be accessed even without locking
+            // m_jobs_group_queues will be initialized only here so later it can be accessed even without locking
             m_jobs_types_groups[job_type] = job_group;
 
-            auto it_group = m_jobs_queues.find(job_group);
-            if (it_group == m_jobs_queues.end()) {
-                m_jobs_queues[job_group] = JobTypeQueue{m_prio_config};
+            auto it_group = m_jobs_group_queues.find(job_group);
+            if (it_group == m_jobs_group_queues.end()) {
+                m_jobs_group_queues[job_group] = JobTypeQueue{m_prio_config};
             }
+            m_jobs_types_queues[job_type] = &m_jobs_group_queues[job_group];
         }
 
         //
@@ -102,8 +109,8 @@ namespace small {
 
         inline size_t size(const JobGroupT job_group)
         {
-            auto it = m_jobs_queues.find(job_group);
-            return it != m_jobs_queues.end() ? it->second.size() : 0;
+            auto it = m_jobs_group_queues.find(job_group);
+            return it != m_jobs_group_queues.end() ? it->second.size() : 0;
         }
 
         inline bool empty(const JobGroupT job_group) { return size(job_group) == 0; }
@@ -113,7 +120,7 @@ namespace small {
         //
         inline void clear()
         {
-            for (auto &[job_group, q] : m_jobs_queues) {
+            for (auto &[job_group, q] : m_jobs_group_queues) {
                 std::unique_lock l(q);
                 m_total_count.fetch_sub(q.size());
                 q.clear();
@@ -122,8 +129,8 @@ namespace small {
 
         inline void clear(const JobGroupT job_group)
         {
-            auto it = m_jobs_queues.find(job_group);
-            if (it != m_jobs_queues.end()) {
+            auto it = m_jobs_group_queues.find(job_group);
+            if (it != m_jobs_group_queues.end()) {
                 std::unique_lock l(it->second);
                 m_total_count.fetch_sub(it->second.size());
                 it->second.clear();
@@ -302,7 +309,7 @@ namespace small {
         {
             std::unique_lock l(m_lock);
             m_lock.signal_exit_force();
-            for (auto &[job_group, q] : m_jobs_queues) {
+            for (auto &[job_group, q] : m_jobs_group_queues) {
                 q.signal_exit_force();
             }
         }
@@ -315,7 +322,7 @@ namespace small {
         {
             std::unique_lock l(m_lock);
             m_lock.signal_exit_when_done();
-            for (auto &[job_group, q] : m_jobs_queues) {
+            for (auto &[job_group, q] : m_jobs_group_queues) {
                 q.signal_exit_when_done();
             }
         }
@@ -336,8 +343,8 @@ namespace small {
                                        std::pair<JobTypeT, JobElemT> *elem)
         {
             // get queue
-            auto it_q = m_jobs_queues.find(job_group);
-            if (it_q == m_jobs_queues.end()) {
+            auto it_q = m_jobs_group_queues.find(job_group);
+            if (it_q == m_jobs_group_queues.end()) {
                 return small::EnumLock::kTimeout;
             }
 
@@ -355,8 +362,8 @@ namespace small {
                                        int                                         max_count = 1)
         {
             // get queue
-            auto it_q = m_jobs_queues.find(job_group);
-            if (it_q == m_jobs_queues.end()) {
+            auto it_q = m_jobs_group_queues.find(job_group);
+            if (it_q == m_jobs_group_queues.end()) {
                 return small::EnumLock::kTimeout;
             }
 
@@ -380,8 +387,8 @@ namespace small {
                                            std::pair<JobTypeT, JobElemT>              *elem)
         {
             // get queue
-            auto it_q = m_jobs_queues.find(job_group);
-            if (it_q == m_jobs_queues.end()) {
+            auto it_q = m_jobs_group_queues.find(job_group);
+            if (it_q == m_jobs_group_queues.end()) {
                 return small::EnumLock::kTimeout;
             }
 
@@ -401,8 +408,8 @@ namespace small {
                                            int                                         max_count = 1)
         {
             // get queue
-            auto it_q = m_jobs_queues.find(job_group);
-            if (it_q == m_jobs_queues.end()) {
+            auto it_q = m_jobs_group_queues.find(job_group);
+            if (it_q == m_jobs_group_queues.end()) {
                 return small::EnumLock::kTimeout;
             }
 
@@ -426,8 +433,8 @@ namespace small {
                                              std::pair<JobTypeT, JobElemT>                    *elem)
         {
             // get queue
-            auto it_q = m_jobs_queues.find(job_group);
-            if (it_q == m_jobs_queues.end()) {
+            auto it_q = m_jobs_group_queues.find(job_group);
+            if (it_q == m_jobs_group_queues.end()) {
                 return small::EnumLock::kTimeout;
             }
 
@@ -446,10 +453,9 @@ namespace small {
                                              std::vector<std::pair<JobTypeT, JobElemT>>       &vec_elems,
                                              int                                               max_count = 1)
         {
-            // return m_lock.wait_pop_until(__atime, vec_elems, max_count);
             // get queue
-            auto it_q = m_jobs_queues.find(job_group);
-            if (it_q == m_jobs_queues.end()) {
+            auto it_q = m_jobs_group_queues.find(job_group);
+            if (it_q == m_jobs_group_queues.end()) {
                 return small::EnumLock::kTimeout;
             }
 
@@ -468,33 +474,26 @@ namespace small {
         // get job type queue from the group queues
         inline JobTypeQueue *get_job_type_group_queue(const JobTypeT job_type)
         {
-            // TODO
-            // this can be optimized to do only one find instead of two
-
-            // get job_group
-            auto it_group = m_jobs_types_groups.find(job_type);
-            if (it_group == m_jobs_types_groups.end()) {
-                return nullptr;
-            }
-            auto job_group = it_group->second;
-
-            // get queue
-            auto it_q = m_jobs_queues.find(job_group);
-            if (it_q == m_jobs_queues.end()) {
+            // optimization to get the queue from the type
+            // instead of getting the group from type from m_jobs_types_groups
+            // and then getting the queue from the m_jobs_group_queues
+            auto it_q = m_jobs_types_queues.find(job_type);
+            if (it_q == m_jobs_types_queues.end()) {
                 return nullptr;
             }
 
-            return &it_q->second;
+            return it_q->second;
         }
 
     private:
         //
         // members
         //
-        mutable small::base_lock                    m_lock;              // global locker
-        std::atomic<std::size_t>                    m_total_count{};     // count of all jobs items
-        std::unordered_map<JobTypeT, JobGroupT>     m_jobs_types_groups; // map to get the group for a job type
-        small::config_prio_queue<PrioT>             m_prio_config;       // config for the priority queue
-        std::unordered_map<JobGroupT, JobTypeQueue> m_jobs_queues;       // map of queues grouped
+        mutable small::base_lock                     m_lock;              // global locker
+        std::atomic<std::size_t>                     m_total_count{};     // count of all jobs items
+        std::unordered_map<JobTypeT, JobGroupT>      m_jobs_types_groups; // map to get the group for a job type
+        small::config_prio_queue<PrioT>              m_prio_config;       // config for the priority queue
+        std::unordered_map<JobGroupT, JobTypeQueue>  m_jobs_group_queues; // map of queues grouped by group
+        std::unordered_map<JobTypeT, JobTypeQueue *> m_jobs_types_queues; // optimize from group to type map of queues
     };
 } // namespace small
