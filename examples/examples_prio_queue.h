@@ -2,7 +2,6 @@
 #include <cstdio>
 #include <iostream>
 #include <thread>
-#include <unistd.h>
 
 #include "../include/prio_queue.h"
 

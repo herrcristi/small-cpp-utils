@@ -3,7 +3,6 @@
 #include <iostream>
 #include <map>
 #include <thread>
-#include <unistd.h>
 
 #include "../include/base64.h"
 
@@ -17,8 +16,8 @@ namespace examples::base64 {
 
         constexpr std::string_view str{"hello world"};
 
-        std::string b64 = small::tobase64(str);
-        auto vb64 = small::tobase64<std::vector<char>>(str.data(), str.size());
+        std::string b64  = small::tobase64(str);
+        auto        vb64 = small::tobase64<std::vector<char>>(str.data(), str.size());
 
         std::cout << "base64(\"" << str << "\") is " << b64 << "\n";
         std::cout << "base64 as vector(\"" << str << "\") is ";
@@ -27,8 +26,8 @@ namespace examples::base64 {
         }
         std::cout << "\n";
 
-        std::string decoded = small::frombase64(vb64);
-        auto decodedvd64 = small::frombase64<std::vector<char>>(b64);
+        std::string decoded     = small::frombase64(vb64);
+        auto        decodedvd64 = small::frombase64<std::vector<char>>(b64);
 
         std::cout << "decoded base64 is \"" << decoded << "\"\n";
 

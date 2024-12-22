@@ -3,7 +3,6 @@
 #include <condition_variable>
 #include <cstdio>
 #include <iostream>
-#include <unistd.h>
 
 #include "../include/spinlock.h"
 

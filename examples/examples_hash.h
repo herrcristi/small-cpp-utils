@@ -3,7 +3,6 @@
 #include <iostream>
 #include <map>
 #include <thread>
-#include <unistd.h>
 
 #include "../include/hash.h"
 

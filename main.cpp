@@ -3,7 +3,6 @@
 #include <iostream>
 #include <map>
 #include <thread>
-#include <unistd.h>
 
 #include "examples/examples_base64.h"
 #include "examples/examples_buffer.h"
