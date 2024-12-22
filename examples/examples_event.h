@@ -2,7 +2,6 @@
 #include <cstdio>
 #include <iostream>
 #include <thread>
-#include <unistd.h>
 
 #include "../include/event.h"
 #include "../include/util.h"
@@ -34,7 +33,7 @@ namespace examples::event {
         };
 
         // create thread
-        const int iterations = 3;
+        const int   iterations = 3;
         std::thread t[3];
         for (size_t i = 0; i < sizeof(t) / sizeof(t[0]); ++i) {
             t[i] = std::thread(fn_t, i, iterations, std::ref(e));

@@ -4,7 +4,6 @@
 #include <map>
 #include <string>
 #include <thread>
-#include <unistd.h>
 
 #include "../include/util.h"
 
@@ -22,8 +21,8 @@ namespace examples::util {
         m[std::string(b)] = 2;
 
         constexpr const char *a = "a";
-        m[a] = 1;
-        m["A"] = 3; // this will have override the "a"
+        m[a]                    = 1;
+        m["A"]                  = 3; // this will have override the "a"
 
         std::cout << "current map values ";
         for (auto &[key, val] : m) {

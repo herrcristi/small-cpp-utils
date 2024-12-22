@@ -17,10 +17,10 @@ namespace small {
     {
     protected:
         // base_buffer (allocates in chunks)
-        base_buffer() = default;
+        base_buffer()                    = default;
         base_buffer(const base_buffer &) = delete;
-        base_buffer(base_buffer &&) = delete;
-        virtual ~base_buffer() = default;
+        base_buffer(base_buffer &&)      = delete;
+        virtual ~base_buffer()           = default;
 
     public:
         // clang-format off
@@ -154,7 +154,7 @@ namespace small {
         inline int compare(const char *s, std::size_t s_length) const
         {
             const std::size_t this_size = size();
-            int cmp = memcmp(data(), s, std::min(this_size, s_length));
+            int               cmp       = memcmp(data(), s, std::min(this_size, s_length));
 
             if (cmp != 0) {
                 // different
@@ -297,7 +297,7 @@ namespace small {
         // !! after every function call setup buffer data
         inline void setup_buffer(char *buffer_data, std::size_t buffer_length)
         {
-            m_buffer_data = buffer_data;
+            m_buffer_data   = buffer_data;
             m_buffer_length = buffer_length;
         }
 
@@ -453,7 +453,7 @@ namespace small {
         // base_buffer empty
         char m_empty_buffer[1]{'\0'};
         // base_buffer use char* instead of vector<char> because it is much faster
-        char *m_buffer_data{nullptr};
+        char       *m_buffer_data{nullptr};
         std::size_t m_buffer_length{0};
     };
 

@@ -2,7 +2,6 @@
 #include <cstdio>
 #include <iostream>
 #include <thread>
-#include <unistd.h>
 
 #include "../include/time_queue.h"
 
@@ -47,7 +46,7 @@ namespace examples::time_queue {
         std::cout << "ret=" << static_cast<int>(ret) << " as timeout\n";
 
         for (; ret != small::EnumLock::kExit;) {
-            ret = q.wait_pop(&e);
+            ret          = q.wait_pop(&e);
             auto elapsed = small::timeDiffMs(timeStart);
             switch (ret) {
             case small::EnumLock::kElement:

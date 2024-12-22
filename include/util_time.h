@@ -52,10 +52,10 @@ namespace small {
     //
     inline std::string toISOString(std::chrono::system_clock::time_point time = std::chrono::system_clock::now())
     {
-        auto tt = std::chrono::system_clock::to_time_t(time);
+        auto    tt = std::chrono::system_clock::to_time_t(time);
         std::tm tt_tm; // = *std::gmtime(&tt) is not thread safe
-#ifdef _WIN32
-        gmtime_s(&&tt_tm, &tt);
+#ifdef _WIN32 || _WIN64
+        gmtime_s(&tt_tm, &tt);
 #else
         gmtime_r(&tt, &tt_tm);
 #endif

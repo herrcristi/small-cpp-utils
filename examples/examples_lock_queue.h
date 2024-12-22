@@ -2,7 +2,6 @@
 #include <cstdio>
 #include <iostream>
 #include <thread>
-#include <unistd.h>
 
 #include "../include/lock_queue.h"
 
@@ -40,12 +39,12 @@ namespace examples::lock_queue {
         ret = q.wait_pop_front(&e);
         std::cout << "ret=" << static_cast<int>(ret) << ", pop " << e.first << "," << e.second << std::endl;
 
-        e = {};
+        e   = {};
         ret = q.wait_pop_front(&e);
         std::cout << "ret=" << static_cast<int>(ret) << ", pop " << e.first << "," << e.second << std::endl;
 
         // force exit signaled
-        e = {};
+        e   = {};
         ret = q.wait_pop_front(&e);
         std::cout << "ret=" << static_cast<int>(ret) << "\n";
 

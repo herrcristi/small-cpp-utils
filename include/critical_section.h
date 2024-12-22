@@ -2,7 +2,7 @@
 
 #include "spinlock.h"
 
-// 
+//
 // small::critical_section lock;
 // ...
 // {
@@ -11,8 +11,7 @@
 //    // do your work
 //    ...
 // }
-// 
-namespace small
-{
+//
+namespace small {
     using critical_section = spinlock;
 }

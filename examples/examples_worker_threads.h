@@ -5,7 +5,6 @@
 #include <iostream>
 #include <map>
 #include <thread>
-#include <unistd.h>
 
 #include "../include/worker_thread.h"
 

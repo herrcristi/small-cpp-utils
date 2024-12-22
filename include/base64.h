@@ -22,7 +22,7 @@ namespace small {
     template <typename T = std::string>
     inline T tobase64(const char *src, const std::size_t src_length)
     {
-        T base64;
+        T           base64;
         std::size_t base64_size = base64impl::get_base64_size(src_length);
         base64.resize(base64_size);
 
@@ -64,7 +64,7 @@ namespace small {
     template <typename T = std::string /*decoded may not be always string*/>
     inline T frombase64(const char *base64, const std::size_t base64_length)
     {
-        T decoded;
+        T           decoded;
         std::size_t decoded_size = base64impl::get_decodedbase64_size(base64_length);
         decoded.resize(decoded_size);
 
