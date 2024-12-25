@@ -44,6 +44,12 @@ namespace small {
         kLowest
     };
 
+    // for the case when priorities are not used (this will reduce this class to a simple lock queue)
+    enum class EnumIgnorePriorities : unsigned int
+    {
+        kNoPriority = 0,
+    };
+
     template <typename PrioT = EnumPriorities>
     struct config_prio_queue
     {
@@ -61,7 +67,15 @@ namespace small {
             {small::EnumPriorities::kHigh, 3},
             {small::EnumPriorities::kNormal, 3},
             {small::EnumPriorities::kLow, 3},
-            {small::EnumPriorities::kLowest, 0}};
+            {small::EnumPriorities::kLowest, 1}};
+    };
+
+    // setup default for EnumPriorities
+    template <>
+    struct config_prio_queue<EnumIgnorePriorities>
+    {
+        std::vector<std::pair<EnumIgnorePriorities, unsigned int /*ratio*/>> priorities{
+            {small::EnumIgnorePriorities::kNoPriority, 1}};
     };
 
     //
@@ -402,11 +416,11 @@ namespace small {
 
             // iterate priorities from high to low
             for (auto &[prio, ratio] : m_config.priorities) {
-                auto &queue = m_prio_queues[prio];
+                auto *queue = &m_prio_queues[prio];
                 auto &stats = m_prio_stats[prio];
 
                 // save the first priority for which the queue is not empty
-                if (!queue.empty() && !prio_with_non_empty_queue) {
+                if (!queue->empty() && !prio_with_non_empty_queue) {
                     prio_with_non_empty_queue = prio;
                 }
 
@@ -421,22 +435,22 @@ namespace small {
                 ++stats.m_count_executed;
                 reset_higher_stats(prio);
 
-                if (queue.empty()) {
+                if (queue->empty()) {
                     // choose one from previous
                     if (prio_with_non_empty_queue) {
-                        queue            = m_prio_queues[prio_with_non_empty_queue.value()];
+                        queue            = &m_prio_queues[prio_with_non_empty_queue.value()];
                         auto &prev_stats = m_prio_stats[prio_with_non_empty_queue.value()];
                         ++prev_stats.m_count_executed;
                     }
 
                     // all queues are empty so far so go to a lower prio
-                    if (queue.empty()) {
+                    if (queue->empty()) {
                         continue;
                     }
                 }
 
                 // get elem
-                return pop_front(queue, elem);
+                return pop_front(*queue, elem);
             }
 
             // reset all stats

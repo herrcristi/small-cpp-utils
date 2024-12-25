@@ -7,6 +7,7 @@
 #include "examples/examples_base64.h"
 #include "examples/examples_buffer.h"
 #include "examples/examples_event.h"
+#include "examples/examples_group_queue.h"
 #include "examples/examples_hash.h"
 #include "examples/examples_jobs_engine.h"
 #include "examples/examples_lock_queue.h"
@@ -29,13 +30,13 @@ int main()
     examples::lock_queue::Example1();
     examples::time_queue::Example1();
     examples::prio_queue::Example1();
+    examples::group_queue::Example1();
 
     examples::worker_thread::Example1();
     examples::worker_thread::Example2();
     examples::worker_thread::Example3_Perf();
 
     examples::jobs_engine::Example1();
-    examples::jobs_engine::Example2();
 
     return 0;
 }

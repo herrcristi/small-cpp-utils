@@ -2,8 +2,8 @@
 
 #include <unordered_map>
 
+#include "group_queue.h"
 #include "jobs_engine_scheduler.h"
-#include "jobs_queue.h"
 
 // // example
 // using qc = std::pair<int, std::string>;
@@ -198,7 +198,7 @@ namespace small {
             m_config.m_jobs_types[job_type] = {
                 .m_config              = m_config.m_default_job_type,
                 .m_processing_function = m_config.m_default_processing_function};
-            m_jobs_queues.set_job_type_group(job_type, m_config.m_default_job_type.group);
+            m_jobs_queues.add_type_group(job_type, m_config.m_default_job_type.group);
         }
 
         inline void add_job_type(const JobTypeT job_type, const config_job_type<JobGroupT> &config)
@@ -207,7 +207,7 @@ namespace small {
             m_config.m_jobs_types[job_type] = {
                 .m_config              = config,
                 .m_processing_function = m_config.m_processing_function};
-            m_jobs_queues.set_job_type_group(job_type, config.group);
+            m_jobs_queues.add_type_group(job_type, config.group);
         }
 
         template <typename _Callable, typename... Args>
@@ -217,7 +217,7 @@ namespace small {
             m_config.m_jobs_types[job_type] = {
                 .m_config              = config,
                 .m_processing_function = std::bind(std::forward<_Callable>(function), std::ref(*this), std::placeholders::_1 /*job_type*/, std::placeholders::_2 /*items*/, std::forward<Args>(extra_parameters)...)};
-            m_jobs_queues.set_job_type_group(job_type, config.group);
+            m_jobs_queues.add_type_group(job_type, config.group);
         }
 
         //
@@ -454,9 +454,9 @@ namespace small {
             std::unordered_map<JobTypeT, JobTypeConfig>     m_jobs_types;                    // config by job type
         };
 
-        JobEngineConfig                                         m_config;               // configs for all: engine, groups, job types
-        small::jobs_queue<JobTypeT, JobElemT, JobGroupT, PrioT> m_jobs_queues;          // curent jobs queues (with grouping and priority) for job types
-        JobQueueDelayedT                                        m_delayed_items{*this}; // queue of delayed items
-        small::jobs_engine_scheduler<JobGroupT, ThisJobsEngine> m_scheduler{*this};     // scheduler for processing items (by group) using a pool of threads
+        JobEngineConfig                                          m_config;               // configs for all: engine, groups, job types
+        small::group_queue<JobTypeT, JobElemT, JobGroupT, PrioT> m_jobs_queues;          // curent jobs queues (with grouping and priority) for job types
+        JobQueueDelayedT                                         m_delayed_items{*this}; // queue of delayed items
+        small::jobs_engine_scheduler<JobGroupT, ThisJobsEngine>  m_scheduler{*this};     // scheduler for processing items (by group) using a pool of threads
     };
 } // namespace small

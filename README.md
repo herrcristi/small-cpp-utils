@@ -11,6 +11,7 @@ This can be used in following ways:
 -   lock_queue (thread safe queue with waiting mechanism to be used in concurrent environment)
 -   time_queue (thread safe queue for delay requests)
 -   prio_queue (thread safe queue for requests with priority like high, normal, low, etc)
+-   group_queue (thread safe queue to group items that have a type, priority and info, more types will be grouped to use same queue)
 
 -   worker_thread (creates workers on separate threads that do task when requested, based on lock_queue and time_queue)
 
@@ -266,6 +267,78 @@ if ( ret == small::EnumLock::kElement )
 ...
 // on main thread, no more processing
 q.signal_exit_force(); // q.signal_exit_when_done();
+...
+// make sure that all calls to wait_* are finished before calling destructor (like it is done in worker_thread)
+```
+
+#
+
+### group_queue
+
+A queue for grouping items that have a type, priority and info (where more types will be grouped to use same queue)
+
+Works with any user priorities and by default small::EnumPriorities are used (kHighest, kHigh, kNormal, kLow, kLowest)
+
+The following functions are available
+
+For container
+
+`size, empty, clear, reset`
+
+Add type elements with priority into queue (the queue must be setup initially to associate the group for a type)
+
+`add_type_group`
+
+`push_back, emplace_back`
+
+For events or locking
+
+`lock, unlock, try_lock`
+
+Wait for items in the group queue
+
+`wait_pop_front, wait_pop_front_for, wait_pop_front_until`
+
+Wait for queue to become empty
+
+`wait`, `wait_for`, `wait_until`
+
+Signal exit when we no longer want to use the queue
+
+`signal_exit_force, is_exit_force` // exit immediatly ignoring what is left in the queue
+
+`signal_exit_when_done, is_exit_when_done` // exit when queue is empty, after this flag is set no more items can be pushed in the queue
+
+Use it like this
+
+```
+enum Type {
+  kType1
+};
+enum GroupType {
+  kGroup1
+};
+
+small::group_queue<Type, int, GroupType> q;
+q.add_type_group( Type::kType1, GroupType::kGroup1 ); // set the group for the type
+...
+q.push_back( small::EnumPriorities::kNormal, Type::kType1, 1 );
+...
+
+// on some thread
+std::pair<Type, int> e{};
+auto ret = q.wait_pop_front( GroupType::kGroup1, &e );
+// or wait_pop_front_for( std::chrono::minutes( 1 ), GroupType::kGroup1, &e );
+// ret can be small::EnumLock::kExit, small::EnumLock::kTimeout or ret == small::EnumLock::kElement
+if ( ret == small::EnumLock::kElement )
+{
+  // do something with e
+  ...
+}
+
+...
+// on main thread no more processing (aborting work)
+q.signal_exit_force(); // q.signal_exit_when_done()
 ...
 // make sure that all calls to wait_* are finished before calling destructor (like it is done in worker_thread)
 ```

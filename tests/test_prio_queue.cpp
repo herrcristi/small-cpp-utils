@@ -120,6 +120,45 @@ namespace {
         ASSERT_EQ(q1.size(), 0);
     }
 
+    //
+    // queue ignored priorities
+    //
+    TEST_F(PrioQueueTest, Queue_Operations_Ignore_Priorities)
+    {
+        small::prio_queue<int, small::EnumIgnorePriorities> q;
+        ASSERT_EQ(q.size(), 0);
+
+        // push
+        auto r_push = q.push_back(small::EnumIgnorePriorities::kNoPriority, 5);
+        ASSERT_EQ(r_push, 1);
+
+        r_push = q.push_back(small::EnumIgnorePriorities::kNoPriority, 6);
+        ASSERT_EQ(r_push, 1);
+
+        r_push = q.push_back({small::EnumIgnorePriorities::kNoPriority, 7}); // as a pair
+        ASSERT_EQ(r_push, 1);
+        ASSERT_EQ(q.size(), 3);
+
+        // pop
+        int  value{};
+        auto ret = q.wait_pop_front(&value);
+        ASSERT_EQ(ret, small::EnumLock::kElement);
+        ASSERT_EQ(value, 5);
+
+        value = {};
+        ret   = q.wait_pop_front(&value);
+        ASSERT_EQ(ret, small::EnumLock::kElement);
+        ASSERT_EQ(value, 6);
+
+        value = {};
+        ret   = q.wait_pop_front(&value);
+        ASSERT_EQ(ret, small::EnumLock::kElement);
+        ASSERT_EQ(value, 7);
+
+        // check size
+        ASSERT_EQ(q.size(), 0);
+    }
+
     TEST_F(PrioQueueTest, Queue_Operations_Vec)
     {
         small::prio_queue<int> q;
