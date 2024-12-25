@@ -122,6 +122,10 @@ Signal exit when we no longer want to use the queue
 
 `signal_exit_when_done, is_exit_when_done` // exit when queue is empty, after this flag is set no more items can be pushed in the queue
 
+Wait for queue to become empty
+
+`wait`, `wait_for`, `wait_until`
+
 Use it like this
 
 ```
@@ -180,6 +184,10 @@ Signal exit when we no longer want to use the queue
 `signal_exit_force, is_exit_force` // exit immediatly ignoring what is left in the queue
 
 `signal_exit_when_done, is_exit_when_done` // exit when queue is empty, after this flag is set no more items can be pushed in the queue
+
+Wait for queue to become empty
+
+`wait`, `wait_for`, `wait_until`
 
 Use it like this
 
@@ -241,6 +249,10 @@ Signal exit when we no longer want to use the queue
 `signal_exit_force, is_exit_force` // exit immediatly ignoring what is left in the queue
 
 `signal_exit_when_done, is_exit_when_done` // exit when queue is empty, after this flag is set no more items can be pushed in the queue
+
+Wait for queue to become empty
+
+`wait`, `wait_for`, `wait_until`
 
 Use it like this
 
@@ -370,6 +382,10 @@ Signal exit when we no longer want to use worker threads
 `signal_exit_force, is_exit`
 
 `signal_exit_when_done`
+
+Wait for queue to become empty
+
+`wait`, `wait_for`, `wait_until`
 
 Use it like this
 

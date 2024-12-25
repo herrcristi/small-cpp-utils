@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <utility>
 
-#include "base_wait_pop.h"
+#include "base_queue_wait.h"
 
 // a queue with prirorites elements having antistarvation mechanism
 //
@@ -365,9 +365,29 @@ namespace small {
             return m_wait.wait_pop_until(__atime, vec_elems, max_count);
         }
 
+        //
+        // wait for queue to become empty (and signal_exit_when_done)
+        //
+        inline EnumLock wait()
+        {
+            return m_wait.wait();
+        }
+
+        template <typename _Rep, typename _Period>
+        inline EnumLock wait_for(const std::chrono::duration<_Rep, _Period> &__rtime)
+        {
+            return m_wait.wait_for(__rtime);
+        }
+
+        template <typename _Clock, typename _Duration>
+        inline EnumLock wait_until(const std::chrono::time_point<_Clock, _Duration> &__atime)
+        {
+            return m_wait.wait_until(__atime);
+        }
+
     private:
-        using BaseWaitPop = small::base_wait_pop<T, small::prio_queue<T, PrioT>>;
-        friend BaseWaitPop;
+        using BaseQueueWait = small::base_queue_wait<T, small::prio_queue<T, PrioT>>;
+        friend BaseQueueWait;
 
         struct Stats
         {
@@ -406,7 +426,7 @@ namespace small {
         }
 
         // extract from queue
-        inline small::WaitFlags test_and_get(T *elem, typename BaseWaitPop::TimePoint * /* time_wait_until */)
+        inline small::WaitFlags test_and_get(T *elem, typename BaseQueueWait::TimePoint * /* time_wait_until */)
         {
             if (is_exit_force()) {
                 return small::WaitFlags::kExit_Force;
@@ -478,7 +498,7 @@ namespace small {
         //
         // members
         //
-        mutable BaseWaitPop                      m_wait{*this}; // implements locks & wait
+        mutable BaseQueueWait                    m_wait{*this}; // implements locks & wait
         config_prio_queue<PrioT>                 m_config;      // config for priorities and ratio of executions
         std::unordered_map<PrioT, Stats>         m_prio_stats;  // keep credits per priority to implement the ratio (ex: 3:1)
         std::unordered_map<PrioT, std::deque<T>> m_prio_queues; // map of queues based on priorities

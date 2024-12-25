@@ -80,6 +80,10 @@ namespace {
         q.push_delay_for(std::chrono::milliseconds(-1), 5);
         ASSERT_EQ(q.size(), 1);
 
+        // wait to be empty
+        auto ret_wait = q.wait_for(std::chrono::milliseconds(100));
+        ASSERT_EQ(ret_wait, small::EnumLock::kTimeout);
+
         // pop
         int  value{};
         auto ret     = q.wait_pop(&value);
@@ -91,6 +95,9 @@ namespace {
         // check size
         ASSERT_EQ(q.size(), 0);
         ASSERT_LE(elapsed, 300);
+
+        ret_wait = q.wait();
+        ASSERT_EQ(ret_wait, small::EnumLock::kExit);
     }
 
     TEST_F(TimeQueueTest, Queue_Operations_Vec)

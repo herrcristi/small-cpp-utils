@@ -3,7 +3,7 @@
 #include <atomic>
 #include <deque>
 
-#include "base_wait_pop.h"
+#include "base_queue_wait.h"
 
 // a queue with events so we can wait for items to be available
 //
@@ -211,14 +211,34 @@ namespace small {
             return m_wait.wait_pop_until(__atime, vec_elems, max_count);
         }
 
+        //
+        // wait for queue to become empty (and signal_exit_when_done)
+        //
+        inline EnumLock wait()
+        {
+            return m_wait.wait();
+        }
+
+        template <typename _Rep, typename _Period>
+        inline EnumLock wait_for(const std::chrono::duration<_Rep, _Period> &__rtime)
+        {
+            return m_wait.wait_for(__rtime);
+        }
+
+        template <typename _Clock, typename _Duration>
+        inline EnumLock wait_until(const std::chrono::time_point<_Clock, _Duration> &__atime)
+        {
+            return m_wait.wait_until(__atime);
+        }
+
     private:
-        using BaseWaitPop = small::base_wait_pop<T, small::lock_queue<T>>;
-        friend BaseWaitPop;
+        using BaseQueueWait = small::base_queue_wait<T, small::lock_queue<T>>;
+        friend BaseQueueWait;
 
         //
         // check for front element
         //
-        inline small::WaitFlags test_and_get(T *elem, typename BaseWaitPop::TimePoint * /* time_wait_until */)
+        inline small::WaitFlags test_and_get(T *elem, typename BaseQueueWait::TimePoint * /* time_wait_until */)
         {
             if (is_exit_force()) {
                 return small::WaitFlags::kExit_Force;
@@ -247,7 +267,7 @@ namespace small {
         //
         // members
         //
-        mutable BaseWaitPop m_wait{*this}; // implements locks & wait
-        std::deque<T>       m_queue;       // queue
+        mutable BaseQueueWait m_wait{*this}; // implements locks & wait
+        std::deque<T>         m_queue;       // queue
     };
 } // namespace small

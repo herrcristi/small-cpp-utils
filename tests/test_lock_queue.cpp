@@ -79,6 +79,10 @@ namespace {
         ASSERT_EQ(r_push, 1);
         ASSERT_EQ(q.size(), 1);
 
+        // wait to be empty
+        auto ret_wait = q.wait_for(std::chrono::milliseconds(100));
+        ASSERT_EQ(ret_wait, small::EnumLock::kTimeout);
+
         // pop
         int  value{};
         auto ret = q.wait_pop_front(&value);
@@ -87,6 +91,9 @@ namespace {
 
         // check size
         ASSERT_EQ(q.size(), 0);
+
+        ret_wait = q.wait();
+        ASSERT_EQ(ret_wait, small::EnumLock::kExit);
     }
 
     TEST_F(LockQueueTest, Queue_Operations_Vec)
