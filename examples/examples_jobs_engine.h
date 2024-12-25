@@ -14,46 +14,7 @@ namespace examples::jobs_engine {
     //
     int Example1()
     {
-        std::cout << "Jobs Queue example 1\n";
-
-        enum JobType
-        {
-            kJob1
-        };
-        enum JobGroupType
-        {
-            kJobGroup1
-        };
-
-        small::jobs_queue<JobType, int, JobGroupType> q;
-        q.set_job_type_group(JobType::kJob1, JobGroupType::kJobGroup1);
-
-        q.push_back(small::EnumPriorities::kNormal, JobType::kJob1, 1);
-
-        // on some thread
-        std::pair<JobType, int> e{};
-        auto                    ret = q.wait_pop_front(JobGroupType ::kJobGroup1, &e);
-        // or wait_pop_front_for( std::chrono::minutes( 1 ), JobGroupType:kJobGroup1, &e );
-        // ret can be small::EnumLock::kExit, small::EnumLock::kTimeout or ret == small::EnumLock::kElement
-        if (ret == small::EnumLock::kElement) {
-            // do something with e
-            std::cout << "elem from jobs q " << e.first << ", " << e.second << "\n";
-        }
-
-        // on main thread no more processing (aborting work)
-        q.signal_exit_force(); // q.signal_exit_when_done()
-
-        std::cout << "Jobs Queue example 1 finish\n\n";
-
-        return 0;
-    }
-
-    //
-    //  example 2
-    //
-    int Example2()
-    {
-        std::cout << "Jobs Engine example 2\n";
+        std::cout << "Jobs Engine example 1\n";
 
         using qc = std::pair<int, std::string>;
 
@@ -116,7 +77,7 @@ namespace examples::jobs_engine {
         std::cout << "wait for with timeout, ret = " << static_cast<int>(ret) << " as timeout\n";
         jobs.wait(); // wait here for jobs to finish due to exit flag
 
-        std::cout << "Jobs Engine example 2 finish\n\n";
+        std::cout << "Jobs Engine example 1 finish\n\n";
 
         return 0;
     }

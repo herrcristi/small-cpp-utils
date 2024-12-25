@@ -54,7 +54,7 @@ namespace small {
     {
         auto    tt = std::chrono::system_clock::to_time_t(time);
         std::tm tt_tm; // = *std::gmtime(&tt) is not thread safe
-#ifdef _WIN32 || _WIN64
+#if defined(_WIN32) || defined(_WIN64)
         gmtime_s(&tt_tm, &tt);
 #else
         gmtime_r(&tt, &tt_tm);

@@ -3,7 +3,7 @@
 #include <latch>
 #include <thread>
 
-#include "../include/jobs_queue.h"
+#include "../include/group_queue.h"
 #include "../include/util.h"
 
 namespace {
@@ -35,13 +35,13 @@ namespace {
     //
     TEST_F(JobsQueueTest, Lock)
     {
-        small::jobs_queue<JobType, int> q;
+        small::group_queue<JobType, int> q;
 
         std::latch sync_thread{1};
         std::latch sync_main{1};
 
         // create thread
-        auto thread = std::jthread([](small::jobs_queue<JobType, int> &_q, std::latch &sync_thread, std::latch &sync_main) {
+        auto thread = std::jthread([](small::group_queue<JobType, int> &_q, std::latch &sync_thread, std::latch &sync_main) {
             std::unique_lock lock(_q);
             sync_thread.count_down(); // signal that thread is started (and also locked is acquired)
             sync_main.wait();         // wait that the main finished executing test to proceed further
@@ -81,15 +81,15 @@ namespace {
     //
     TEST_F(JobsQueueTest, Queue_Operations)
     {
-        small::jobs_queue<JobType, int, JobType /*as group*/, small::EnumPriorities> q(
+        small::group_queue<JobType, int, JobType /*as group*/, small::EnumPriorities> q(
             {.priorities{{
                 {small::EnumPriorities::kHigh, 3},
                 {small::EnumPriorities::kNormal, 3},
                 {small::EnumPriorities::kLow, 3},
             }}});
-        q.set_job_type_group(JobType::kJob1, JobType::kJob1 /*as group*/);
-        q.set_job_type_group(JobType::kJob2, JobType::kJob1 /*as group*/); // same group
-        q.set_job_type_group(JobType::kJob3, JobType::kJob3 /*as group*/);
+        q.add_type_group(JobType::kJob1, JobType::kJob1 /*as group*/);
+        q.add_type_group(JobType::kJob2, JobType::kJob1 /*as group*/); // same group
+        q.add_type_group(JobType::kJob3, JobType::kJob3 /*as group*/);
         ASSERT_EQ(q.size(), 0);
 
         // push
@@ -133,10 +133,10 @@ namespace {
 
     TEST_F(JobsQueueTest, Queue_Operations_Vec)
     {
-        small::jobs_queue<JobType, int> q;
-        q.set_job_type_group(JobType::kJob1, JobType::kJob1 /*as group*/);
-        q.set_job_type_group(JobType::kJob2, JobType::kJob1 /*as group*/); // same group
-        q.set_job_type_group(JobType::kJob3, JobType::kJob3 /*as group*/);
+        small::group_queue<JobType, int> q;
+        q.add_type_group(JobType::kJob1, JobType::kJob1 /*as group*/);
+        q.add_type_group(JobType::kJob2, JobType::kJob1 /*as group*/); // same group
+        q.add_type_group(JobType::kJob3, JobType::kJob3 /*as group*/);
 
         ASSERT_EQ(q.size(), 0);
 
@@ -173,10 +173,10 @@ namespace {
 
     TEST_F(JobsQueueTest, Queue_Operations_Clear)
     {
-        small::jobs_queue<JobType, int> q;
-        q.set_job_type_group(JobType::kJob1, JobType::kJob1 /*as group*/);
-        q.set_job_type_group(JobType::kJob2, JobType::kJob1 /*as group*/); // same group
-        q.set_job_type_group(JobType::kJob3, JobType::kJob3 /*as group*/);
+        small::group_queue<JobType, int> q;
+        q.add_type_group(JobType::kJob1, JobType::kJob1 /*as group*/);
+        q.add_type_group(JobType::kJob2, JobType::kJob1 /*as group*/); // same group
+        q.add_type_group(JobType::kJob3, JobType::kJob3 /*as group*/);
 
         ASSERT_EQ(q.size(), 0);
 
@@ -204,10 +204,10 @@ namespace {
 
     TEST_F(JobsQueueTest, Queue_Operations_Timeout)
     {
-        small::jobs_queue<JobType, int> q;
-        q.set_job_type_group(JobType::kJob1, JobType::kJob1 /*as group*/);
-        q.set_job_type_group(JobType::kJob2, JobType::kJob1 /*as group*/); // same group
-        q.set_job_type_group(JobType::kJob3, JobType::kJob3 /*as group*/);
+        small::group_queue<JobType, int> q;
+        q.add_type_group(JobType::kJob1, JobType::kJob1 /*as group*/);
+        q.add_type_group(JobType::kJob2, JobType::kJob1 /*as group*/); // same group
+        q.add_type_group(JobType::kJob3, JobType::kJob3 /*as group*/);
 
         ASSERT_EQ(q.size(), 0);
 
@@ -246,10 +246,10 @@ namespace {
 
     TEST_F(JobsQueueTest, Queue_Operations_Timeout_Vec)
     {
-        small::jobs_queue<JobType, int> q;
-        q.set_job_type_group(JobType::kJob1, JobType::kJob1 /*as group*/);
-        q.set_job_type_group(JobType::kJob2, JobType::kJob1 /*as group*/); // same group
-        q.set_job_type_group(JobType::kJob3, JobType::kJob3 /*as group*/);
+        small::group_queue<JobType, int> q;
+        q.add_type_group(JobType::kJob1, JobType::kJob1 /*as group*/);
+        q.add_type_group(JobType::kJob2, JobType::kJob1 /*as group*/); // same group
+        q.add_type_group(JobType::kJob3, JobType::kJob3 /*as group*/);
 
         ASSERT_EQ(q.size(), 0);
 
@@ -289,17 +289,17 @@ namespace {
 
     TEST_F(JobsQueueTest, Queue_Operations_Thread)
     {
-        small::jobs_queue<JobType, int> q;
-        q.set_job_type_group(JobType::kJob1, JobType::kJob1 /*as group*/);
-        q.set_job_type_group(JobType::kJob2, JobType::kJob1 /*as group*/); // same group
-        q.set_job_type_group(JobType::kJob3, JobType::kJob3 /*as group*/);
+        small::group_queue<JobType, int> q;
+        q.add_type_group(JobType::kJob1, JobType::kJob1 /*as group*/);
+        q.add_type_group(JobType::kJob2, JobType::kJob1 /*as group*/); // same group
+        q.add_type_group(JobType::kJob3, JobType::kJob3 /*as group*/);
 
         ASSERT_EQ(q.size(), 0);
 
         // push inside thread
         auto timeStart = small::timeNow();
 
-        auto thread = std::jthread([](small::jobs_queue<JobType, int> &_q) {
+        auto thread = std::jthread([](small::group_queue<JobType, int> &_q) {
             small::sleep(300);
 
             int value{5};
@@ -322,10 +322,10 @@ namespace {
 
     TEST_F(JobsQueueTest, Queue_Operations_Signal_Exit_Force)
     {
-        small::jobs_queue<JobType, int> q;
-        q.set_job_type_group(JobType::kJob1, JobType::kJob1 /*as group*/);
-        q.set_job_type_group(JobType::kJob2, JobType::kJob1 /*as group*/); // same group
-        q.set_job_type_group(JobType::kJob3, JobType::kJob3 /*as group*/);
+        small::group_queue<JobType, int> q;
+        q.add_type_group(JobType::kJob1, JobType::kJob1 /*as group*/);
+        q.add_type_group(JobType::kJob2, JobType::kJob1 /*as group*/); // same group
+        q.add_type_group(JobType::kJob3, JobType::kJob3 /*as group*/);
 
         ASSERT_EQ(q.size(), 0);
 
@@ -343,7 +343,7 @@ namespace {
 
         // create thread
         auto timeStart = small::timeNow();
-        auto thread    = std::jthread([](small::jobs_queue<JobType, int> &_q) {
+        auto thread    = std::jthread([](small::group_queue<JobType, int> &_q) {
             // signal after some time
             small::sleep(300);
             _q.signal_exit_force();
@@ -366,10 +366,10 @@ namespace {
 
     TEST_F(JobsQueueTest, Queue_Operations_Signal_Exit_When_Done)
     {
-        small::jobs_queue<JobType, int> q;
-        q.set_job_type_group(JobType::kJob1, JobType::kJob1 /*as group*/);
-        q.set_job_type_group(JobType::kJob2, JobType::kJob1 /*as group*/); // same group
-        q.set_job_type_group(JobType::kJob3, JobType::kJob3 /*as group*/);
+        small::group_queue<JobType, int> q;
+        q.add_type_group(JobType::kJob1, JobType::kJob1 /*as group*/);
+        q.add_type_group(JobType::kJob2, JobType::kJob1 /*as group*/); // same group
+        q.add_type_group(JobType::kJob3, JobType::kJob3 /*as group*/);
 
         ASSERT_EQ(q.size(), 0);
 
@@ -387,7 +387,7 @@ namespace {
 
         // create thread
         auto timeStart = small::timeNow();
-        auto thread    = std::jthread([](small::jobs_queue<JobType, int> &_q) {
+        auto thread    = std::jthread([](small::group_queue<JobType, int> &_q) {
             // signal after some time
             small::sleep(300);
             _q.signal_exit_when_done();
