@@ -297,12 +297,14 @@ namespace small {
         //
         inline small::WaitFlags test_and_get(T *elem, TimePoint *time_wait_until)
         {
-            *time_wait_until = TimeClock::now() + std::chrono::minutes(60);
-            auto ret         = m_parent_caller.test_and_get(elem, time_wait_until);
+            *time_wait_until        = TimeClock::now() + std::chrono::minutes(60);
+            bool is_empty_after_get = false;
+
+            auto ret         = m_parent_caller.test_and_get(elem, time_wait_until, &is_empty_after_get);
             auto is_exit_ret = ret == small::WaitFlags::kExit_Force || ret == small::WaitFlags::kExit_When_Done;
 
             // notify condition if q is empty or exit force
-            if (is_exit_ret || is_empty_queue()) {
+            if (is_exit_ret || is_empty_after_get) {
                 m_queues_exit_condition.notify_all();
             }
 

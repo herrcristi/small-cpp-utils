@@ -426,8 +426,10 @@ namespace small {
         }
 
         // extract from queue
-        inline small::WaitFlags test_and_get(T *elem, typename BaseQueueWait::TimePoint * /* time_wait_until */)
+        inline small::WaitFlags test_and_get(T *elem, typename BaseQueueWait::TimePoint * /* time_wait_until */, bool *is_empty_after_get)
         {
+            *is_empty_after_get = true;
+
             if (is_exit_force()) {
                 return small::WaitFlags::kExit_Force;
             }
@@ -470,7 +472,9 @@ namespace small {
                 }
 
                 // get elem
-                return pop_front(*queue, elem);
+                auto ret            = pop_front(*queue, elem);
+                *is_empty_after_get = empty();
+                return ret;
             }
 
             // reset all stats
@@ -482,7 +486,9 @@ namespace small {
                 ++prev_stats.m_count_executed;
 
                 // get elem
-                return pop_front(queue, elem);
+                auto ret            = pop_front(queue, elem);
+                *is_empty_after_get = empty();
+                return ret;
             }
 
             // here all queues are empty
