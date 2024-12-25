@@ -4,7 +4,7 @@
 #include <deque>
 #include <queue>
 
-#include "base_wait_pop.h"
+#include "base_queue_wait.h"
 
 // a queue with time events so we can wait for items to be available at specific time moments
 //
@@ -37,10 +37,10 @@ namespace small {
     class time_queue
     {
     public:
-        using BaseWaitPop  = small::base_wait_pop<T, small::time_queue<T>>;
-        using TimeClock    = typename BaseWaitPop::TimeClock;
-        using TimeDuration = typename BaseWaitPop::TimeDuration;
-        using TimePoint    = typename BaseWaitPop::TimePoint;
+        using BaseQueueWait = small::base_queue_wait<T, small::time_queue<T>>;
+        using TimeClock     = typename BaseQueueWait::TimeClock;
+        using TimeDuration  = typename BaseQueueWait::TimeDuration;
+        using TimePoint     = typename BaseQueueWait::TimePoint;
 
         //
         // time_queue
@@ -278,6 +278,26 @@ namespace small {
             return m_wait.wait_pop_until(__atime, vec_elems, max_count);
         }
 
+        //
+        // wait for queue to become empty (and signal_exit_when_done)
+        //
+        inline EnumLock wait()
+        {
+            return m_wait.wait();
+        }
+
+        template <typename _Rep, typename _Period>
+        inline EnumLock wait_for(const std::chrono::duration<_Rep, _Period> &__rtime)
+        {
+            return m_wait.wait_for(__rtime);
+        }
+
+        template <typename _Clock, typename _Duration>
+        inline EnumLock wait_until(const std::chrono::time_point<_Clock, _Duration> &__atime)
+        {
+            return m_wait.wait_until(__atime);
+        }
+
     protected:
         //
         // compute if notification is needed
@@ -314,9 +334,9 @@ namespace small {
         //
         // test and get
         //
-        friend BaseWaitPop;
+        friend BaseQueueWait;
 
-        inline small::WaitFlags test_and_get(T *elem, typename BaseWaitPop::TimePoint *time_wait_until)
+        inline small::WaitFlags test_and_get(T *elem, typename BaseQueueWait::TimePoint *time_wait_until)
         {
             if (is_exit_force()) {
                 return small::WaitFlags::kExit_Force;
@@ -353,7 +373,7 @@ namespace small {
         //
         // members
         //
-        mutable BaseWaitPop m_wait{*this}; // implements locks & wait
+        mutable BaseQueueWait m_wait{*this}; // implements locks & wait
 
         using PriorityQueueElemT = std::pair<TimePoint, T>;
         struct CompPriorityQueueElemT

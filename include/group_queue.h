@@ -355,8 +355,6 @@ namespace small {
                 --m_total_count; // decrease total count
             }
 
-            notify_if_empty(q);
-
             return ret;
         }
 
@@ -378,8 +376,6 @@ namespace small {
                     --m_total_count; // decrease total count
                 }
             }
-
-            notify_if_empty(q);
 
             return ret;
         }
@@ -405,8 +401,6 @@ namespace small {
                 --m_total_count; // decrease total count
             }
 
-            notify_if_empty(q);
-
             return ret;
         }
 
@@ -430,8 +424,6 @@ namespace small {
                     --m_total_count; // decrease total count
                 }
             }
-
-            notify_if_empty(q);
 
             return ret;
         }
@@ -457,8 +449,6 @@ namespace small {
                 --m_total_count; // decrease total count
             }
 
-            notify_if_empty(q);
-
             return ret;
         }
 
@@ -483,8 +473,6 @@ namespace small {
                 }
             }
 
-            notify_if_empty(q);
-
             return ret;
         }
 
@@ -494,12 +482,8 @@ namespace small {
         inline EnumLock wait()
         {
             signal_exit_when_done();
-
             for (auto &[group, q] : m_group_queues) {
-                std::unique_lock l(q);
-                m_queues_exit_condition.wait(l, [_q = &q]() -> bool {
-                    return _q->empty() || _q->is_exit_force();
-                });
+                q.wait();
             }
 
             return small::EnumLock::kExit;
@@ -522,12 +506,8 @@ namespace small {
             signal_exit_when_done();
 
             for (auto &[group, q] : m_group_queues) {
-                std::unique_lock l(q);
-
-                auto status = m_queues_exit_condition.wait_until(l, __atime, [_q = &q]() -> bool {
-                    return _q->empty() || _q->is_exit_force();
-                });
-                if (!status) {
+                auto status = q.wait_until(__atime);
+                if (status == small::EnumLock::kTimeout) {
                     return small::EnumLock::kTimeout;
                 }
             }
@@ -552,27 +532,15 @@ namespace small {
             return it_q->second;
         }
 
-        //
-        // notify condition if q is empty
-        //
-        inline void notify_if_empty(TypeQueue &q)
-        {
-            std::unique_lock l(q);
-            if (q.empty() || q.is_exit_force()) {
-                m_queues_exit_condition.notify_all();
-            }
-        }
-
     private:
         //
         // members
         //
-        mutable small::base_lock               m_lock;                  // global locker
-        std::atomic<std::size_t>               m_total_count{};         // count of all items
-        std::unordered_map<TypeT, GroupT>      m_types_groups;          // map to get the group for a type
-        small::config_prio_queue<PrioT>        m_prio_config;           // config for the priority queue
-        std::unordered_map<GroupT, TypeQueue>  m_group_queues;          // map of queues grouped by group
-        std::unordered_map<TypeT, TypeQueue *> m_types_queues;          // optimize from group to type map of queues
-        std::condition_variable_any            m_queues_exit_condition; // condition to wait for queues to be empty when signal_exit_when_done
+        mutable small::base_lock               m_lock;          // global locker
+        std::atomic<std::size_t>               m_total_count{}; // count of all items
+        std::unordered_map<TypeT, GroupT>      m_types_groups;  // map to get the group for a type
+        small::config_prio_queue<PrioT>        m_prio_config;   // config for the priority queue
+        std::unordered_map<GroupT, TypeQueue>  m_group_queues;  // map of queues grouped by group
+        std::unordered_map<TypeT, TypeQueue *> m_types_queues;  // optimize from group to type map of queues
     };
 } // namespace small

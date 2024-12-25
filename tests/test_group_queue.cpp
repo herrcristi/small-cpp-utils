@@ -107,6 +107,10 @@ namespace {
 
         ASSERT_EQ(q.size(), 3);
 
+        // wait to be empty
+        auto ret_wait = q.wait_for(std::chrono::milliseconds(100));
+        ASSERT_EQ(ret_wait, small::EnumLock::kTimeout);
+
         // pop
         std::pair<JobType, int> value{};
 
@@ -129,6 +133,9 @@ namespace {
 
         // check size
         ASSERT_EQ(q.size(), 0);
+
+        ret_wait = q.wait();
+        ASSERT_EQ(ret_wait, small::EnumLock::kExit);
     }
 
     TEST_F(GroupQueueTest, Queue_Operations_Vec)

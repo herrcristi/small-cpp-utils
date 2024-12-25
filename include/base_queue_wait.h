@@ -18,10 +18,10 @@ namespace small {
     };
 
     //
-    // base class for the wait_pop functions (parent caller must implement test_and_get function)
+    // base class for the wait_pop functions (parent caller must implement 'test_and_get' and 'size' functions)
     //
     template <typename T, typename ParentCallerT>
-    class base_wait_pop
+    class base_queue_wait
     {
     public:
         using TimeClock    = std::chrono::system_clock;
@@ -29,21 +29,21 @@ namespace small {
         using TimePoint    = std::chrono::time_point<TimeClock>;
 
         //
-        // base_wait_pop
+        // base_queue_wait
         //
-        explicit base_wait_pop(ParentCallerT &parent_caller)
+        explicit base_queue_wait(ParentCallerT &parent_caller)
             : m_parent_caller(parent_caller)
         {
         }
 
-        base_wait_pop(const base_wait_pop &o) : base_wait_pop() { operator=(o); };
-        base_wait_pop(base_wait_pop &&o) noexcept : base_wait_pop() { operator=(std::move(o)); };
+        base_queue_wait(const base_queue_wait &o) : base_queue_wait() { operator=(o); };
+        base_queue_wait(base_queue_wait &&o) noexcept : base_queue_wait() { operator=(std::move(o)); };
 
-        inline base_wait_pop &operator=(const base_wait_pop &)
+        inline base_queue_wait &operator=(const base_queue_wait &)
         {
             return *this;
         }
-        inline base_wait_pop &operator=(base_wait_pop &&) noexcept
+        inline base_queue_wait &operator=(base_queue_wait &&) noexcept
         {
             return *this;
         }
@@ -248,6 +248,49 @@ namespace small {
             }
         }
 
+        //
+        // wait for queues to become empty
+        //
+        inline EnumLock wait()
+        {
+            signal_exit_when_done();
+
+            std::unique_lock l(m_lock);
+            m_queues_exit_condition.wait(l, [this]() -> bool {
+                return is_empty_queue();
+            });
+
+            return small::EnumLock::kExit;
+        }
+
+        template <typename _Rep, typename _Period>
+        inline EnumLock wait_for(const std::chrono::duration<_Rep, _Period> &__rtime)
+        {
+            using __dur    = typename std::chrono::system_clock::duration;
+            auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
+            if (__reltime < __rtime) {
+                ++__reltime;
+            }
+            return wait_until(std::chrono::system_clock::now() + __reltime);
+        }
+
+        template <typename _Clock, typename _Duration>
+        inline EnumLock wait_until(const std::chrono::time_point<_Clock, _Duration> &__atime)
+        {
+            signal_exit_when_done();
+
+            std::unique_lock l(m_lock);
+
+            auto status = m_queues_exit_condition.wait_until(l, __atime, [this]() -> bool {
+                return is_empty_queue();
+            });
+            if (!status) {
+                return small::EnumLock::kTimeout;
+            }
+
+            return small::EnumLock::kExit;
+        }
+
     protected:
         //
         // call the parent
@@ -255,14 +298,31 @@ namespace small {
         inline small::WaitFlags test_and_get(T *elem, TimePoint *time_wait_until)
         {
             *time_wait_until = TimeClock::now() + std::chrono::minutes(60);
-            return m_parent_caller.test_and_get(elem, time_wait_until);
+            auto ret         = m_parent_caller.test_and_get(elem, time_wait_until);
+            auto is_exit_ret = ret == small::WaitFlags::kExit_Force || ret == small::WaitFlags::kExit_When_Done;
+
+            // notify condition if q is empty or exit force
+            if (is_exit_ret || is_empty_queue()) {
+                m_queues_exit_condition.notify_all();
+            }
+
+            return ret;
+        }
+
+        //
+        // is empty queue
+        //
+        bool is_empty_queue()
+        {
+            return is_exit_force() || m_parent_caller.size() == 0;
         }
 
     private:
         //
         // members
         //
-        mutable small::base_lock m_lock;          // locker
-        ParentCallerT           &m_parent_caller; // parent caller
+        mutable small::base_lock    m_lock;                  // locker
+        std::condition_variable_any m_queues_exit_condition; // condition to wait for queues to be empty when signal_exit_when_done
+        ParentCallerT              &m_parent_caller;         // parent caller
     };
 } // namespace small
