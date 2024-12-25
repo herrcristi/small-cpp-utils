@@ -336,8 +336,10 @@ namespace small {
         //
         friend BaseQueueWait;
 
-        inline small::WaitFlags test_and_get(T *elem, typename BaseQueueWait::TimePoint *time_wait_until)
+        inline small::WaitFlags test_and_get(T *elem, typename BaseQueueWait::TimePoint *time_wait_until, bool *is_empty_after_get)
         {
+            *is_empty_after_get = true;
+
             if (is_exit_force()) {
                 return small::WaitFlags::kExit_Force;
             }
@@ -357,6 +359,7 @@ namespace small {
             // check time
             *time_wait_until = get_next_time();
             if (*time_wait_until > TimeClock::now()) {
+                *is_empty_after_get = false;
                 return small::WaitFlags::kWait;
             }
 
@@ -365,6 +368,8 @@ namespace small {
                 *elem = std::move(m_queue.top().second);
             }
             m_queue.pop();
+
+            *is_empty_after_get = m_queue.empty();
 
             return small::WaitFlags::kElement;
         }

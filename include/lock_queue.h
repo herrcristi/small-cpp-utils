@@ -238,8 +238,10 @@ namespace small {
         //
         // check for front element
         //
-        inline small::WaitFlags test_and_get(T *elem, typename BaseQueueWait::TimePoint * /* time_wait_until */)
+        inline small::WaitFlags test_and_get(T *elem, typename BaseQueueWait::TimePoint * /* time_wait_until */, bool *is_empty_after_get)
         {
+            *is_empty_after_get = true;
+
             if (is_exit_force()) {
                 return small::WaitFlags::kExit_Force;
             }
@@ -259,6 +261,8 @@ namespace small {
                 *elem = std::move(m_queue.front());
             }
             m_queue.pop_front();
+
+            *is_empty_after_get = m_queue.empty();
 
             return small::WaitFlags::kElement;
         }
