@@ -16,10 +16,10 @@ namespace {
         kJob3,
     };
 
-    class JobsQueueTest : public testing::Test
+    class GroupQueueTest : public testing::Test
     {
     protected:
-        JobsQueueTest() = default;
+        GroupQueueTest() = default;
 
         void SetUp() override
         {
@@ -33,7 +33,7 @@ namespace {
     //
     // lock
     //
-    TEST_F(JobsQueueTest, Lock)
+    TEST_F(GroupQueueTest, Lock)
     {
         small::group_queue<JobType, int> q;
 
@@ -79,7 +79,7 @@ namespace {
     //
     // queue
     //
-    TEST_F(JobsQueueTest, Queue_Operations)
+    TEST_F(GroupQueueTest, Queue_Operations)
     {
         small::group_queue<JobType, int, JobType /*as group*/, small::EnumPriorities> q(
             {.priorities{{
@@ -131,7 +131,7 @@ namespace {
         ASSERT_EQ(q.size(), 0);
     }
 
-    TEST_F(JobsQueueTest, Queue_Operations_Vec)
+    TEST_F(GroupQueueTest, Queue_Operations_Vec)
     {
         small::group_queue<JobType, int> q;
         q.add_type_group(JobType::kJob1, JobType::kJob1 /*as group*/);
@@ -171,7 +171,7 @@ namespace {
         q.clear();
     }
 
-    TEST_F(JobsQueueTest, Queue_Operations_Clear)
+    TEST_F(GroupQueueTest, Queue_Operations_Clear)
     {
         small::group_queue<JobType, int> q;
         q.add_type_group(JobType::kJob1, JobType::kJob1 /*as group*/);
@@ -202,7 +202,7 @@ namespace {
         ASSERT_EQ(q.size(), 0);
     }
 
-    TEST_F(JobsQueueTest, Queue_Operations_Timeout)
+    TEST_F(GroupQueueTest, Queue_Operations_Timeout)
     {
         small::group_queue<JobType, int> q;
         q.add_type_group(JobType::kJob1, JobType::kJob1 /*as group*/);
@@ -244,7 +244,7 @@ namespace {
         ASSERT_EQ(ret, small::EnumLock::kTimeout);
     }
 
-    TEST_F(JobsQueueTest, Queue_Operations_Timeout_Vec)
+    TEST_F(GroupQueueTest, Queue_Operations_Timeout_Vec)
     {
         small::group_queue<JobType, int> q;
         q.add_type_group(JobType::kJob1, JobType::kJob1 /*as group*/);
@@ -287,7 +287,7 @@ namespace {
         ASSERT_EQ(ret, small::EnumLock::kTimeout);
     }
 
-    TEST_F(JobsQueueTest, Queue_Operations_Thread)
+    TEST_F(GroupQueueTest, Queue_Operations_Thread)
     {
         small::group_queue<JobType, int> q;
         q.add_type_group(JobType::kJob1, JobType::kJob1 /*as group*/);
@@ -320,7 +320,7 @@ namespace {
         ASSERT_GE(elapsed, 300 - 1); // due conversion
     }
 
-    TEST_F(JobsQueueTest, Queue_Operations_Signal_Exit_Force)
+    TEST_F(GroupQueueTest, Queue_Operations_Signal_Exit_Force)
     {
         small::group_queue<JobType, int> q;
         q.add_type_group(JobType::kJob1, JobType::kJob1 /*as group*/);
@@ -364,7 +364,7 @@ namespace {
         ASSERT_EQ(q.size(), 0);
     }
 
-    TEST_F(JobsQueueTest, Queue_Operations_Signal_Exit_When_Done)
+    TEST_F(GroupQueueTest, Queue_Operations_Signal_Exit_When_Done)
     {
         small::group_queue<JobType, int> q;
         q.add_type_group(JobType::kJob1, JobType::kJob1 /*as group*/);
