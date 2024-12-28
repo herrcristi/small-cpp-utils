@@ -3,47 +3,61 @@
 #include <unordered_map>
 
 #include "jobs_engine_thread_pool.h"
+#include "prio_queue.h"
 
-// // example
-// using qc = std::pair<int, std::string>;
-//
-// enum JobsType
+// enum class JobsType
 // {
-//     job1,
-//     job2
+//     kJobsType1,
+//     kJobsType2
+// };
+// enum class JobsGroupType
+// {
+//     kJobsGroup1
 // };
 //
-// small::jobs_engine<JobsType, qc> jobs(
-//     {.threads_count = 0 /*dont start any thread yet*/},  // job engine config
-//     {.threads_count = 1, .bulk_count = 1},               // default group config
-//     {.group = JobsType::job1},                            // default job type config
-//     [](auto &j /*this*/, const auto jobs_type, const auto &items) {
-//         for (auto &[i, s] : items) {
+// using JobsRequest = std::pair<int, std::string>;
+// using JobsResponse = int;
+// using JobsEng = small::jobs_engine<JobsType, JobsRequest, JobsResponse, JobsGroupType>;
+//
+// JobsEng jobs(
+//     {.threads_count = 0 /*dont start any thread yet*/}, // overall config with default priorities
+//     {.threads_count = 1, .bulk_count = 1},              // default jobs group config
+//     {.group = JobsGroupType::kJobsGroup1},              // default jobs type config
+//     [](auto &j /*this*/, const auto &items) {
+//         for (auto &item : items) {
 //             ...
 //         }
 //     });
 //
-// // add specific function for job1
-// jobs.add_job_group(JobsType::job1, {.threads_count = 2} );
+// jobs.add_jobs_group(JobsGroupType::kJobsGroup1, {.threads_count = 1});
 //
-// jobs.add_jobs_type(JobsType::job1, {.group = JobsType::job1}, [](auto &j /*this*/, const auto jobs_type, const auto &items, auto b /*extra param b*/) {
-//     for(auto &[i, s]:items){
-//         ...
-//     }
+// // add specific function for job1
+// jobs.add_jobs_type(JobsType::kJobsType1, {.group = JobsGroupType::kJobsGroup1}, [](auto &j /*this*/, const auto &items, auto b /*extra param b*/) {
+//    for (auto &item : items) {
+//      ...
+//    }
 // }, 5 /*param b*/);
 //
 // // use default config and default function for job2
-// jobs.add_jobs_type(JobsType::job2);
-// // manual start threads
-// jobs.start_threads(3);
+// jobs.add_jobs_type(JobsType::kJobsType2);
+//
+// JobsEng::JobsID              jobs_id{};
+// std::vector<JobsEng::JobsID> jobs_ids;
 //
 // // push
-// jobs.push_back(small::EnumPriorities::kNormal, JobsType::job1, {1, "a"});
-// jobs.push_back(small::EnumPriorities::kNormal, JobsType::job2, {2, "b"});
+// jobs.push_back(small::EnumPriorities::kNormal, JobsType::kJobsType1, {1, "normal"}, &jobs_id);
+// jobs.push_back(small::EnumPriorities::kHigh, {.type = JobsType::kJobsType1, .request = {4, "high"}}, &jobs_id);
 //
+// std::vector<JobsEng::JobsItem> jobs_items = {{.type = JobsType::kJobsType1, .request = {7, "highest"}}};
+// jobs.push_back(small::EnumPriorities::kHighest, jobs_items, &jobs_ids);
 //
-// auto ret = jobs.wait_for(std::chrono::milliseconds(0)); // wait to finished
-// ... check ret
+// jobs.push_back_delay_for(std::chrono::milliseconds(300), small::EnumPriorities::kNormal, JobsType::kJobsType1, {100, "delay normal"}, &jobs_id);
+//
+// jobs.start_threads(3); // manual start threads
+//
+// // jobs.signal_exit_force();
+// auto ret = jobs.wait_for(std::chrono::milliseconds(100)); // wait to finished
+// ...
 // jobs.wait(); // wait here for jobs to finish due to exit flag
 //
 
@@ -109,6 +123,13 @@ namespace small {
         };
         using ProcessingFunction = std::function<void(const std::vector<JobsItem *> &)>;
 
+        struct JobsTypeConfig
+        {
+            config_jobs_type<JobsGroupT> m_config{};              // config for this job type (to which group it belongs)
+            ProcessingFunction           m_processing_function{}; // processing Function
+        };
+
+    public:
         //
         // jobs_engine
         //
@@ -222,6 +243,7 @@ namespace small {
         inline void add_jobs_group(const JobsGroupT &job_group, const config_jobs_group &config_group)
         {
             m_config.m_groups[job_group] = config_group;
+            m_groups_queues[job_group]   = JobsQueue{m_config.m_engine.config_prio};
             m_thread_pool.add_job_group(job_group, config_group.threads_count);
         }
 
@@ -234,30 +256,50 @@ namespace small {
 
         //
         // config job typpes
+        // m_job_queues will be initialized in the initial setup phase and will be accessed without locking afterwards
         //
-        void add_jobs_type(const JobsTypeT &jobs_type)
+        bool add_jobs_type(const JobsTypeT &jobs_type)
         {
-            // m_job_queues will be initialized in the initial setup phase and will be accessed without locking afterwards
-            m_config.m_types[jobs_type] = {
-                .m_config              = m_config.m_default_jobs_type,
-                .m_processing_function = m_config.m_default_processing_function};
+            return add_jobs_type(jobs_type, {.m_config              = m_config.m_default_jobs_type,
+                                             .m_processing_function = m_config.m_default_processing_function});
         }
 
-        inline void add_jobs_type(const JobsTypeT &jobs_type, const config_jobs_type<JobsGroupT> &config)
+        inline bool add_jobs_type(const JobsTypeT &jobs_type, const config_jobs_type<JobsGroupT> &config)
         {
-            // m_job_queues will be initialized in the initial setup phase and will be accessed without locking afterwards
-            m_config.m_types[jobs_type] = {
-                .m_config              = config,
-                .m_processing_function = m_config.m_processing_function};
+            return add_jobs_type(jobs_type, {.m_config              = config,
+                                             .m_processing_function = m_config.m_default_processing_function});
+        }
+        inline bool add_jobs_type(const JobsTypeT &jobs_type, config_jobs_type<JobsGroupT> &&config)
+        {
+            return add_jobs_type(jobs_type, {.m_config              = std::forward<config_jobs_type<JobsGroupT>>(config),
+                                             .m_processing_function = m_config.m_default_processing_function});
         }
 
         template <typename _Callable, typename... Args>
-        inline void add_jobs_type(const JobsTypeT jobs_type, const config_jobs_type<JobsGroupT> &config, _Callable processing_function, Args... extra_parameters)
+        inline bool add_jobs_type(const JobsTypeT jobs_type, const config_jobs_type<JobsGroupT> &config, _Callable processing_function, Args... extra_parameters)
         {
-            // m_job_queues will be initialized in the initial setup phase and will be accessed without locking afterwards
-            m_config.m_types[jobs_type] = {
-                .m_config              = config,
-                .m_processing_function = std::bind(std::forward<_Callable>(processing_function), std::ref(*this), std::placeholders::_1 /*jobs_items*/, std::forward<Args>(extra_parameters)...)};
+            return add_jobs_type(jobs_type, {.m_config              = config,
+                                             .m_processing_function = std::bind(std::forward<_Callable>(processing_function), std::ref(*this), std::placeholders::_1 /*jobs_items*/, std::forward<Args>(extra_parameters)...)});
+        }
+
+        template <typename _Callable, typename... Args>
+        inline bool add_jobs_type(const JobsTypeT jobs_type, config_jobs_type<JobsGroupT> &&config, _Callable processing_function, Args... extra_parameters)
+        {
+            return add_jobs_type(jobs_type, {.m_config              = std::forward<config_jobs_type<JobsGroupT>>(config),
+                                             .m_processing_function = std::bind(std::forward<_Callable>(processing_function), std::ref(*this), std::placeholders::_1 /*jobs_items*/, std::forward<Args>(extra_parameters)...)});
+        }
+
+        inline bool add_jobs_type(const JobsTypeT &jobs_type, JobsTypeConfig &&jobs_config)
+        {
+            auto job_group = jobs_config.m_config.group;
+            auto it_g      = m_config.m_groups.find(job_group);
+            if (it_g == m_config.m_groups.end()) {
+                return false;
+            }
+
+            m_config.m_types[jobs_type] = std::forward<JobsTypeConfig>(jobs_config);
+            m_types_queues[jobs_type]   = &m_groups_queues[job_group];
+            return true;
         }
 
         //
@@ -612,29 +654,16 @@ namespace small {
         }
 
         // activate the jobs
-        //
-        // get type queue from the group queues
-        //
-        inline JobsQueue *get_type_queue(const JobsTypeT &jobs_type)
-        {
-            // optimization to get the queue from the type
-            // (instead of getting the group from type from m_config.m_types and then getting the queue from the m_groups_queues)
-            auto it_q = m_types_queues.find(jobs_type);
-            if (it_q == m_types_queues.end()) {
-                return nullptr;
-            }
-
-            return it_q->second;
-        }
-
         inline std::size_t jobs_activate(const JobsPrioT &priority, const JobsTypeT &jobs_type, const JobsID &jobs_id)
         {
             std::size_t ret = 0;
 
-            // get queue add add
-            auto *q = get_type_queue(jobs_type);
-            if (q) {
-                ret = q->push_back(priority, jobs_id);
+            // optimization to get the queue from the type
+            // (instead of getting the group from type from m_config.m_types and then getting the queue from the m_groups_queues)
+            auto it_q = m_types_queues.find(jobs_type);
+            if (it_q != m_types_queues.end()) {
+                auto *q = it_q->second;
+                ret     = q->push_back(priority, jobs_id);
             }
 
             if (ret) {
@@ -663,11 +692,6 @@ namespace small {
         //
         // members
         //
-        struct JobsTypeConfig
-        {
-            config_jobs_type<JobsGroupT> m_config{};              // config for this job type (to which group it belongs)
-            ProcessingFunction           m_processing_function{}; // processing Function
-        };
 
         // configs
         struct JobEngineConfig
