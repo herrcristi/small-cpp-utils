@@ -72,8 +72,6 @@ namespace examples::jobs_engine {
         // use default config and default function for job2
         jobs.add_jobs_type(JobsType::kJobsType2);
 
-        jobs.start_threads(3); // manual start threads
-
         JobsEng::JobsID              jobs_id{};
         std::vector<JobsEng::JobsID> jobs_ids;
 
@@ -90,10 +88,13 @@ namespace examples::jobs_engine {
 
         std::vector<JobsEng::JobsItem> jobs_items = {{.type = JobsType::kJobsType1, .request = {7, "g"}}};
         jobs.push_back(small::EnumPriorities::kHighest, jobs_items, &jobs_ids);
+        jobs.push_back(small::EnumPriorities::kHighest, {{.type = JobsType::kJobsType1, .request = {8, "h"}}}, &jobs_ids);
 
         jobs.push_back_delay_for(std::chrono::milliseconds(300), small::EnumPriorities::kNormal, JobsType::kJobsType1, {100, "x"}, &jobs_id);
         jobs.push_back_delay_until(small::timeNow() + std::chrono::milliseconds(350), small::EnumPriorities::kNormal, JobsType::kJobsType1, {101, "y"}, &jobs_id);
         jobs.push_back_delay_for(std::chrono::milliseconds(400), small::EnumPriorities::kNormal, JobsType::kJobsType1, {102, "z"}, &jobs_id);
+
+        jobs.start_threads(3); // manual start threads
 
         small::sleep(50);
         // jobs.signal_exit_force();

@@ -10,18 +10,18 @@ namespace small {
     // helper class for jobs_engine to execute group of jobs (parent caller must implement 'do_action')
     //
     template <typename JobGroupT, typename ParentCallerT>
-    class jobs_engine_scheduler
+    class jobs_engine_thread_pool
     {
     public:
         //
-        // jobs_engine_scheduler
+        // jobs_engine_thread_pool
         //
-        explicit jobs_engine_scheduler(ParentCallerT &parent_caller)
+        explicit jobs_engine_thread_pool(ParentCallerT &parent_caller)
             : m_parent_caller(parent_caller)
         {
         }
 
-        ~jobs_engine_scheduler()
+        ~jobs_engine_thread_pool()
         {
             wait();
         }
@@ -36,7 +36,7 @@ namespace small {
         // clang-format on
 
         // clang-format off
-        // use it as locker (std::unique_lock<small:jobs_engine_scheduler<T>> m...)
+        // use it as locker (std::unique_lock<small:jobs_engine_thread_pool<T>> m...)
         inline void     lock        () { m_workers.lock(); }
         inline void     unlock      () { m_workers.unlock(); }
         inline bool     try_lock    () { return m_workers.try_lock(); }
@@ -54,7 +54,7 @@ namespace small {
         // config processing by job group type
         // this should be done in the initial setup phase once
         //
-        inline void add_job_group(const JobGroupT job_group, const int &threads_count)
+        inline void add_job_group(const JobGroupT &job_group, const int &threads_count)
         {
             m_scheduler[job_group].m_threads_count = threads_count;
         }
@@ -63,7 +63,7 @@ namespace small {
         // when items are added to be processed in parent class the start scheduler should be called
         // to trigger action (if needed for the new job group)
         //
-        inline void job_start(const JobGroupT job_group)
+        inline void job_start(const JobGroupT &job_group)
         {
             auto it = m_scheduler.find(job_group); // map is not changed, so can be access without locking
             if (it == m_scheduler.end()) {
@@ -114,10 +114,10 @@ namespace small {
 
     private:
         // some prevention
-        jobs_engine_scheduler(const jobs_engine_scheduler &)            = delete;
-        jobs_engine_scheduler(jobs_engine_scheduler &&)                 = delete;
-        jobs_engine_scheduler &operator=(const jobs_engine_scheduler &) = delete;
-        jobs_engine_scheduler &operator=(jobs_engine_scheduler &&__t)   = delete;
+        jobs_engine_thread_pool(const jobs_engine_thread_pool &)            = delete;
+        jobs_engine_thread_pool(jobs_engine_thread_pool &&)                 = delete;
+        jobs_engine_thread_pool &operator=(const jobs_engine_thread_pool &) = delete;
+        jobs_engine_thread_pool &operator=(jobs_engine_thread_pool &&__t)   = delete;
 
     private:
         struct JobGroupStats
@@ -129,7 +129,7 @@ namespace small {
         //
         // to trigger action (if needed for the new job group)
         //
-        inline void job_action_start(const JobGroupT job_group, const bool has_items, JobGroupStats &stats)
+        inline void job_action_start(const JobGroupT &job_group, const bool has_items, JobGroupStats &stats)
         {
             if (!has_items) {
                 return;
@@ -148,7 +148,7 @@ namespace small {
         //
         // job action ended
         //
-        inline void job_action_end(const JobGroupT job_group, const bool has_items)
+        inline void job_action_end(const JobGroupT &job_group, const bool has_items)
         {
             auto it = m_scheduler.find(job_group); // map is not changed, so can be access without locking
             if (it == m_scheduler.end()) {
@@ -188,7 +188,7 @@ namespace small {
         //
         struct JobWorkerThreadFunction
         {
-            void operator()(small::worker_thread<JobGroupT> &, const std::vector<JobGroupT> &items, small::jobs_engine_scheduler<JobGroupT, ParentCallerT> *pThis) const
+            void operator()(small::worker_thread<JobGroupT> &, const std::vector<JobGroupT> &items, small::jobs_engine_thread_pool<JobGroupT, ParentCallerT> *pThis) const
             {
                 pThis->thread_function(items);
             }

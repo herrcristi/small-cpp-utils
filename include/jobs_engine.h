@@ -2,7 +2,7 @@
 
 #include <unordered_map>
 
-#include "jobs_engine_scheduler.h"
+#include "jobs_engine_thread_pool.h"
 
 // // example
 // using qc = std::pair<int, std::string>;
@@ -527,7 +527,7 @@ namespace small {
         // inner thread function for executing items (should return if there are more items)
         //
 
-        friend small::jobs_engine_scheduler<JobsGroupT, ThisJobsEngine>;
+        friend small::jobs_engine_thread_pool<JobsGroupT, ThisJobsEngine>;
 
         inline EnumLock do_action(const JobsGroupT &jobs_group, bool *has_items)
         {
@@ -692,6 +692,6 @@ namespace small {
 
         JobQueueDelayedT m_delayed_items{*this}; // queue of delayed items
 
-        small::jobs_engine_scheduler<JobsGroupT, ThisJobsEngine> m_thread_pool{*this}; // scheduler for processing items (by group) using a pool of threads
+        small::jobs_engine_thread_pool<JobsGroupT, ThisJobsEngine> m_thread_pool{*this}; // scheduler for processing items (by group) using a pool of threads
     };
 } // namespace small
