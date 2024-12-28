@@ -376,7 +376,7 @@ namespace small {
         template <typename _Rep, typename _Period>
         inline std::size_t push_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const JobsPrioT &priority, const JobsTypeT &jobs_type, const JobsRequestT &jobs_req, JobsID *jobs_id = nullptr)
         {
-            return push_back_delay_for(__rtime, {.type = jobs_type, .request = jobs_req}, jobs_id);
+            return push_back_delay_for(__rtime, priority, {.type = jobs_type, .request = jobs_req}, jobs_id);
         }
 
         template <typename _Rep, typename _Period>
@@ -392,7 +392,7 @@ namespace small {
         template <typename _Rep, typename _Period>
         inline std::size_t push_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const JobsPrioT &priority, const JobsTypeT &jobs_type, JobsRequestT &&jobs_req, JobsID *jobs_id = nullptr)
         {
-            return push_back_delay_for(__rtime, {.type = jobs_type, .request = std::forward<JobsRequestT>(jobs_req)}, jobs_id);
+            return push_back_delay_for(__rtime, priority, {.type = jobs_type, .request = std::forward<JobsRequestT>(jobs_req)}, jobs_id);
         }
 
         template <typename _Rep, typename _Period>
@@ -408,7 +408,7 @@ namespace small {
         // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
         inline std::size_t push_back_delay_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, const JobsPrioT &priority, const JobsTypeT &jobs_type, const JobsRequestT &jobs_req, JobsID *jobs_id = nullptr)
         {
-            return push_back_delay_until(__atime, {.type = jobs_type, .request = jobs_req}, jobs_id);
+            return push_back_delay_until(__atime, priority, {.type = jobs_type, .request = jobs_req}, jobs_id);
         }
 
         inline std::size_t push_back_delay_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, const JobsPrioT &priority, const JobsItem &jobs_item, JobsID *jobs_id = nullptr)
@@ -422,7 +422,7 @@ namespace small {
 
         inline std::size_t push_back_delay_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, const JobsPrioT &priority, const JobsTypeT &jobs_type, JobsRequestT &&jobs_req, JobsID *jobs_id = nullptr)
         {
-            return push_back_delay_until(__atime, {.type = jobs_type, .request = std::forward<JobsRequestT>(jobs_req)}, jobs_id);
+            return push_back_delay_until(__atime, priority, {.type = jobs_type, .request = std::forward<JobsRequestT>(jobs_req)}, jobs_id);
         }
 
         inline std::size_t push_back_delay_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, const JobsPrioT &priority, JobsItem &&jobs_item, JobsID *jobs_id = nullptr)
@@ -618,7 +618,7 @@ namespace small {
         inline JobsQueue *get_type_queue(const JobsTypeT &jobs_type)
         {
             // optimization to get the queue from the type
-            // (instead of getting the group from type from m_types_groups and then getting the queue from the m_groups_queues)
+            // (instead of getting the group from type from m_config.m_types and then getting the queue from the m_groups_queues)
             auto it_q = m_types_queues.find(jobs_type);
             if (it_q == m_types_queues.end()) {
                 return nullptr;
@@ -638,7 +638,7 @@ namespace small {
             }
 
             if (ret) {
-                m_thread_pool.job_start(jobs_type);
+                m_thread_pool.job_start(m_config.m_types[jobs_type].m_config.group);
             } else {
                 jobs_del(jobs_id);
             }
@@ -686,7 +686,6 @@ namespace small {
         mutable small::base_lock                   m_lock;          // global locker
         std::atomic<JobsID>                        m_jobs_seq_id{}; // to get the next jobs id
         std::unordered_map<JobsID, JobsItem>       m_jobs;          // current jobs
-        std::unordered_map<JobsTypeT, JobsGroupT>  m_types_groups;  // map to get the group for a type
         std::unordered_map<JobsGroupT, JobsQueue>  m_groups_queues; // map of queues by group
         std::unordered_map<JobsTypeT, JobsQueue *> m_types_queues;  // optimize to have queues by type (which reference queues by group)
 
