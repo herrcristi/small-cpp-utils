@@ -375,13 +375,13 @@ namespace small {
             if (is_exit()) {
                 return 0;
             }
-
-            auto id = jobs_add(std::forward<JobsItem>(jobs_item));
+            auto jobs_type = jobs_tjobs_item.type; // save the type because the object will be moved
+            auto id        = jobs_add(std::forward<JobsItem>(jobs_item));
             if (jobs_id) {
                 *jobs_id = id;
             }
 
-            return jobs_activate(priority, jobs_item.type, id);
+            return jobs_activate(priority, jobs_type, id);
         }
 
         inline std::size_t push_back(const JobsPrioT &priority, std::vector<JobsItem> &&jobs_items, std::vector<JobsID> *jobs_ids)
@@ -440,11 +440,12 @@ namespace small {
         template <typename _Rep, typename _Period>
         inline std::size_t push_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const JobsPrioT &priority, JobsItem &&jobs_item, JobsID *jobs_id = nullptr)
         {
-            auto id = jobs_add(std::forward<JobsItem>(jobs_item));
+            auto jobs_type = jobs_tjobs_item.type; // save the type because the object will be moved
+            auto id        = jobs_add(std::forward<JobsItem>(jobs_item));
             if (jobs_id) {
                 *jobs_id = id;
             }
-            return m_delayed_items.queue().push_delay_for(__rtime, {priority, jobs_item.type, id});
+            return m_delayed_items.queue().push_delay_for(__rtime, {priority, jobs_type, id});
         }
 
         // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
@@ -469,11 +470,12 @@ namespace small {
 
         inline std::size_t push_back_delay_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, const JobsPrioT &priority, JobsItem &&jobs_item, JobsID *jobs_id = nullptr)
         {
-            auto id = jobs_add(std::forward<JobsItem>(jobs_item));
+            auto jobs_type = jobs_tjobs_item.type; // save the type because the object will be moved
+            auto id        = jobs_add(std::forward<JobsItem>(jobs_item));
             if (jobs_id) {
                 *jobs_id = id;
             }
-            return m_delayed_items.queue().push_delay_until(__atime, {priority, jobs_item.type, id});
+            return m_delayed_items.queue().push_delay_until(__atime, {priority, jobs_type, id});
         }
 
         // clang-format off
