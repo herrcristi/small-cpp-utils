@@ -9,6 +9,9 @@ AlignConsecutiveDeclarations: true
 AlignConsecutiveAssignments:
     Enabled: true
     AlignCompound: true
+    AlignFunctionDeclarations: true
+AlignConsecutiveBitFields: true
+AlignConsecutiveMacros: true
 BraceWrapping:
     AfterEnum: true
     AfterStruct: true
