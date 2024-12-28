@@ -11,7 +11,6 @@ This can be used in following ways:
 -   lock_queue (thread safe queue with waiting mechanism to be used in concurrent environment)
 -   time_queue (thread safe queue for delay requests)
 -   prio_queue (thread safe queue for requests with priority like high, normal, low, etc)
--   group_queue (thread safe queue to group items that have a type, priority and info, more types will be grouped to use same queue)
 
 -   worker_thread (creates workers on separate threads that do task when requested, based on lock_queue and time_queue)
 
