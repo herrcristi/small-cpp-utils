@@ -616,6 +616,10 @@ namespace small {
                     // process specific jobs by type
                     it_cfg_type->second.m_processing_function(std::move(jobs_items));
                 }
+
+                for (auto &jobs_id : vec_ids) {
+                    jobs_del(jobs_id);
+                }
             }
 
             return ret;
