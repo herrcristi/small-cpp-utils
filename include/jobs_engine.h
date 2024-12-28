@@ -375,7 +375,7 @@ namespace small {
             if (is_exit()) {
                 return 0;
             }
-            auto jobs_type = jobs_tjobs_item.type; // save the type because the object will be moved
+            auto jobs_type = jobs_item.type; // save the type because the object will be moved
             auto id        = jobs_add(std::forward<JobsItem>(jobs_item));
             if (jobs_id) {
                 *jobs_id = id;
@@ -440,7 +440,7 @@ namespace small {
         template <typename _Rep, typename _Period>
         inline std::size_t push_back_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const JobsPrioT &priority, JobsItem &&jobs_item, JobsID *jobs_id = nullptr)
         {
-            auto jobs_type = jobs_tjobs_item.type; // save the type because the object will be moved
+            auto jobs_type = jobs_item.type; // save the type because the object will be moved
             auto id        = jobs_add(std::forward<JobsItem>(jobs_item));
             if (jobs_id) {
                 *jobs_id = id;
@@ -470,7 +470,7 @@ namespace small {
 
         inline std::size_t push_back_delay_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, const JobsPrioT &priority, JobsItem &&jobs_item, JobsID *jobs_id = nullptr)
         {
-            auto jobs_type = jobs_tjobs_item.type; // save the type because the object will be moved
+            auto jobs_type = jobs_item.type; // save the type because the object will be moved
             auto id        = jobs_add(std::forward<JobsItem>(jobs_item));
             if (jobs_id) {
                 *jobs_id = id;
