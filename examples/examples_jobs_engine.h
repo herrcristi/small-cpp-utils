@@ -31,7 +31,7 @@ namespace examples::jobs_engine {
 
         auto jobs_processing_function = [](const std::vector<JobsEng::JobsItem *> &items) {
             // this functions is defined without the engine params (it is here just for the example)
-            std::cout << "this function is defined without the engine params\n";
+            std::cout << "this function is defined without the engine params, called for " << (int)items[0]->type << "\n";
         };
 
         JobsEng::JobsConfig config{

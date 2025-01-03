@@ -8,9 +8,9 @@
 
 namespace small {
     //
-    // small queue helper class for jobs
+    // small queue helper class for jobs (parent caller must implement 'jobs_activate')
     //
-    template <typename JobsTypeT, typename JobsRequestT, typename JobsResponseT, typename JobsGroupT = JobsTypeT, typename JobsPrioT = EnumPriorities>
+    template <typename JobsTypeT, typename JobsRequestT, typename JobsResponseT, typename JobsGroupT, typename JobsPrioT, typename ParentCallerT>
     class jobs_queue
     {
     public:
@@ -18,7 +18,7 @@ namespace small {
         using JobsID    = typename JobsItem::JobsID;
         using JobsQueue = small::prio_queue<JobsID, JobsPrioT>;
 
-        using ThisJobsQueue = small::jobs_queue<JobsTypeT, JobsRequestT, JobsResponseT, JobsGroupT, JobsPrioT>;
+        using ThisJobsQueue = small::jobs_queue<JobsTypeT, JobsRequestT, JobsResponseT, JobsGroupT, JobsPrioT, ParentCallerT>;
 
         using JobDelayedItems  = std::tuple<JobsPrioT, JobsTypeT, JobsID>;
         using JobQueueDelayedT = small::time_queue_thread<JobDelayedItems, ThisJobsQueue>;
@@ -30,7 +30,9 @@ namespace small {
         //
         // jobs_queue
         //
-        explicit jobs_queue() = default;
+        explicit jobs_queue(ParentCallerT &parent_caller)
+            : m_parent_caller(parent_caller) {}
+
         ~jobs_queue()
         {
             wait();
@@ -430,8 +432,7 @@ namespace small {
             }
 
             if (ret) {
-                // TODO
-                // m_thread_pool.job_start(m_config.m_types[jobs_type].m_config.group);
+                m_parent_caller.jobs_activate(jobs_type, jobs_id);
             } else {
                 jobs_del(jobs_id);
             }
@@ -463,5 +464,7 @@ namespace small {
         std::unordered_map<JobsTypeT, JobsQueue *> m_types_queues;  // optimize to have queues by type (which reference queues by group)
 
         JobQueueDelayedT m_delayed_items{*this}; // queue of delayed items
+
+        ParentCallerT &m_parent_caller; // jobs engine
     };
 } // namespace small

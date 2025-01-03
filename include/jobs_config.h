@@ -28,8 +28,9 @@ namespace small {
         // config an individual job type
         struct ConfigJobsType
         {
-            JobsGroupT         m_group{};               // job type group (multiple job types can be configured to same group)
-            ProcessingFunction m_processing_function{}; // processing Function
+            JobsGroupT         m_group{};                        // job type group (multiple job types can be configured to same group)
+            bool               m_has_processing_function{false}; // use default processing function
+            ProcessingFunction m_processing_function{};          // processing Function
         };
 
         // config the job group (where job types can be grouped)
@@ -47,9 +48,8 @@ namespace small {
         // processing function
         inline void add_default_processing_function(ProcessingFunction processing_function)
         {
-            ProcessingFunction previous_processing_function = m_default_processing_function;
-            m_default_processing_function                   = processing_function;
-            apply_default_processing_function(previous_processing_function);
+            m_default_processing_function = processing_function;
+            apply_default_processing_function();
         }
 
         inline void add_job_processing_function(const JobsTypeT &jobs_type, ProcessingFunction processing_function)
@@ -58,13 +58,14 @@ namespace small {
             if (it_f == m_types.end()) {
                 return;
             }
-            it_f->second.m_processing_function = processing_function;
+            it_f->second.m_has_processing_function = true;
+            it_f->second.m_processing_function     = processing_function;
         }
 
-        inline void apply_default_processing_function(ProcessingFunction previous_processing_function = nullptr)
+        inline void apply_default_processing_function()
         {
             for (auto &[type, jobs_type_config] : m_types) {
-                if (jobs_type_config.m_processing_function == previous_processing_function) {
+                if (jobs_type_config.m_has_processing_function == false) {
                     jobs_type_config.m_processing_function = m_default_processing_function;
                 }
             }

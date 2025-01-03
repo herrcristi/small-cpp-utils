@@ -72,9 +72,10 @@ namespace small {
     class jobs_engine
     {
     public:
+        using ThisJobsEngine     = small::jobs_engine<JobsTypeT, JobsRequestT, JobsResponseT, JobsGroupT, JobsPrioT>;
         using JobsConfig         = small::jobs_config<JobsTypeT, JobsRequestT, JobsResponseT, JobsGroupT, JobsPrioT>;
         using JobsItem           = small::jobs_item<JobsTypeT, JobsRequestT, JobsResponseT>;
-        using JobsQueue          = small::jobs_queue<JobsTypeT, JobsRequestT, JobsResponseT, JobsGroupT, JobsPrioT>;
+        using JobsQueue          = small::jobs_queue<JobsTypeT, JobsRequestT, JobsResponseT, JobsGroupT, JobsPrioT, ThisJobsEngine>;
         using JobsID             = typename JobsItem::JobsID;
         using TimeClock          = typename JobsQueue::TimeClock;
         using TimeDuration       = typename JobsQueue::TimeDuration;
@@ -267,7 +268,6 @@ namespace small {
         //
         // inner thread function for executing items (should return if there are more items)
         //
-        using ThisJobsEngine = small::jobs_engine<JobsTypeT, JobsRequestT, JobsResponseT, JobsGroupT, JobsPrioT>;
         friend small::jobs_engine_thread_pool<JobsGroupT, ThisJobsEngine>;
 
         inline EnumLock do_action(const JobsGroupT &jobs_group, bool *has_items)
@@ -290,71 +290,58 @@ namespace small {
 
             std::vector<JobsID> vec_ids;
             auto                ret = q->wait_pop_front_for(std::chrono::nanoseconds(0), vec_ids, bulk_count);
-            if (ret == small::EnumLock::kElement) {
-                *has_items = true;
+            if (ret != small::EnumLock::kElement) {
+                return ret;
+            }
 
-                // get jobs
-                std::vector<JobsItem *> jobs_items = m_queue.jobs_get(vec_ids);
+            *has_items = true;
 
-                // split by type
-                std::unordered_map<JobsTypeT, std::vector<JobsItem *>> elems_by_type;
-                for (auto &jobs_item : jobs_items) {
-                    elems_by_type[jobs_item->type].reserve(jobs_items.size());
-                    elems_by_type[jobs_item->type].push_back(jobs_item);
+            // get jobs
+            std::vector<JobsItem *> jobs_items = m_queue.jobs_get(vec_ids);
+
+            // split by type
+            std::unordered_map<JobsTypeT, std::vector<JobsItem *>> elems_by_type;
+            for (auto &jobs_item : jobs_items) {
+                elems_by_type[jobs_item->type].reserve(jobs_items.size());
+                elems_by_type[jobs_item->type].push_back(jobs_item);
+            }
+
+            // process specific job by type
+            for (auto &[jobs_type, jobs] : elems_by_type) {
+                auto it_cfg_type = m_config.m_types.find(jobs_type);
+                if (it_cfg_type == m_config.m_types.end()) {
+                    continue;
                 }
 
-                // process specific job by type
-                for (auto &[jobs_type, jobs] : elems_by_type) {
-                    auto it_cfg_type = m_config.m_types.find(jobs_type);
-                    if (it_cfg_type == m_config.m_types.end()) {
-                        continue;
-                    }
-
-                    // process specific jobs by type
-                    if (it_cfg_type->second.m_processing_function) {
-                        it_cfg_type->second.m_processing_function(std::move(jobs));
-                    }
+                // process specific jobs by type
+                if (it_cfg_type->second.m_processing_function) {
+                    it_cfg_type->second.m_processing_function(std::move(jobs));
                 }
+            }
 
-                for (auto &jobs_id : vec_ids) {
-                    m_queue.jobs_del(jobs_id);
-                }
+            for (auto &jobs_id : vec_ids) {
+                m_queue.jobs_del(jobs_id);
             }
 
             return ret;
         }
 
-        // activate the jobs
-        // inline std::size_t jobs_activate(const JobsPrioT &priority, const JobsTypeT &jobs_type, const JobsID &jobs_id)
-        // {
-        //     std::size_t ret = 0;
-
-        //     // optimization to get the queue from the type
-        //     // (instead of getting the group from type from m_config.m_types and then getting the queue from the m_groups_queues)
-        //     auto it_q = m_types_queues.find(jobs_type);
-        //     if (it_q != m_types_queues.end()) {
-        //         auto *q = it_q->second;
-        //         ret     = q->push_back(priority, jobs_id);
-        //     }
-
-        //     if (ret) {
-        //         m_thread_pool.job_start(m_config.m_types[jobs_type].m_config.group);
-        //     } else {
-        //         jobs_del(jobs_id);
-        //     }
-        //     return ret;
-        // }
-
         //
-        // inner thread function for delayed items
+        // inner function for activate the jobs from queue
         //
+        friend JobsQueue;
+
+        inline void jobs_activate(const JobsTypeT &jobs_type, const JobsID & /* jobs_id */)
+        {
+            m_thread_pool.job_start(m_config.m_types[jobs_type].m_group);
+        }
 
     private:
         //
         // members
         //
-        small::jobs_config<JobsTypeT, JobsRequestT, JobsResponseT, JobsGroupT, JobsPrioT> m_config;
-        small::jobs_queue<JobsTypeT, JobsRequestT, JobsResponseT, JobsGroupT, JobsPrioT>  m_queue;
-        small::jobs_engine_thread_pool<JobsGroupT, ThisJobsEngine>                        m_thread_pool{*this}; // for processing items (by group) using a pool of threads
+        JobsConfig                                                 m_config;
+        JobsQueue                                                  m_queue{*this};
+        small::jobs_engine_thread_pool<JobsGroupT, ThisJobsEngine> m_thread_pool{*this}; // for processing items (by group) using a pool of threads
     };
 } // namespace small
