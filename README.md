@@ -399,7 +399,7 @@ Signal exit when we no longer want to use it,
 
 `signal_exit_when_done`
 
-Use it like this (for a more complete example see the [example](examples/examples_jobs_engine.h)
+Use it like this (for a more complete example see the [example](examples/examples_jobs_engine.h) )
 
 ```
 enum class JobsType
