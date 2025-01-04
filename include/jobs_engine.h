@@ -293,14 +293,15 @@ namespace small {
 
             *has_items = true;
 
-            // get jobs
-            std::vector<std::shared_ptr<JobsItem>> jobs_items = m_queue.jobs_get(vec_ids);
-
             // split by type
             std::unordered_map<JobsTypeT, std::vector<std::shared_ptr<JobsItem>>> elems_by_type;
-            for (auto &jobs_item : jobs_items) {
-                elems_by_type[jobs_item->type].reserve(jobs_items.size());
-                elems_by_type[jobs_item->type].push_back(jobs_item);
+            {
+                // get jobs
+                std::vector<std::shared_ptr<JobsItem>> jobs_items = m_queue.jobs_get(vec_ids);
+                for (auto &jobs_item : jobs_items) {
+                    elems_by_type[jobs_item->type].reserve(jobs_items.size());
+                    elems_by_type[jobs_item->type].push_back(jobs_item);
+                }
             }
 
             // process specific job by type
@@ -311,9 +312,7 @@ namespace small {
                 }
 
                 // process specific jobs by type
-                if (it_cfg_type->second.m_processing_function) {
-                    it_cfg_type->second.m_processing_function(std::move(jobs));
-                }
+                it_cfg_type->second.m_processing_function(jobs);
             }
 
             for (auto &jobs_id : vec_ids) {
