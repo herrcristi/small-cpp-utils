@@ -53,7 +53,7 @@ namespace small {
     //
     // class for representing a buffer
     //
-    class buffer : public base_buffer
+    class buffer : public small::bufferimpl::base_buffer
     {
     public:
         // buffer (allocates in chunks)
