@@ -344,6 +344,9 @@ namespace small::jobsimpl {
             return small::EnumLock::kExit;
         }
 
+    private:
+        friend ParentCallerT;
+
         //
         // get group queue
         //
