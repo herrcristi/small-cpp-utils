@@ -17,7 +17,7 @@ namespace small {
     struct jobs_config
     {
         using JobsItem           = typename small::jobsimpl::jobs_item<JobsTypeT, JobsRequestT, JobsResponseT>;
-        using ProcessingFunction = std::function<void(const std::vector<JobsItem *> &)>;
+        using ProcessingFunction = std::function<void(const std::vector<std::shared_ptr<JobsItem>> &)>;
 
         // config for the entire jobs engine
         struct ConfigJobsEngine

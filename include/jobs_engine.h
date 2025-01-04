@@ -294,10 +294,10 @@ namespace small {
             *has_items = true;
 
             // get jobs
-            std::vector<JobsItem *> jobs_items = m_queue.jobs_get(vec_ids);
+            std::vector<std::shared_ptr<JobsItem>> jobs_items = m_queue.jobs_get(vec_ids);
 
             // split by type
-            std::unordered_map<JobsTypeT, std::vector<JobsItem *>> elems_by_type;
+            std::unordered_map<JobsTypeT, std::vector<std::shared_ptr<JobsItem>>> elems_by_type;
             for (auto &jobs_item : jobs_items) {
                 elems_by_type[jobs_item->type].reserve(jobs_items.size());
                 elems_by_type[jobs_item->type].push_back(jobs_item);

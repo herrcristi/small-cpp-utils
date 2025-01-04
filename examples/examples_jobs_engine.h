@@ -29,7 +29,7 @@ namespace examples::jobs_engine {
         using Request = std::pair<int, std::string>;
         using JobsEng = small::jobs_engine<JobsType, Request, int /*response*/, JobsGroupType>;
 
-        auto jobs_processing_function = [](const std::vector<JobsEng::JobsItem *> &items) {
+        auto jobs_processing_function = [](const std::vector<std::shared_ptr<JobsEng::JobsItem>> &items) {
             // this functions is defined without the engine params (it is here just for the example)
             std::cout << "this function is defined without the engine params, called for " << (int)items[0]->type << "\n";
         };
@@ -60,6 +60,7 @@ namespace examples::jobs_engine {
                           << " req.int=" << item->request.first << ","
                           << " req.str=\"" << item->request.second << "\""
                           << "}"
+                          << " ref count " << item.use_count()
                           << " time " << small::toISOString(small::timeNow())
                           << "\n";
             }
@@ -76,6 +77,7 @@ namespace examples::jobs_engine {
                           << " req.int=" << item->request.first << ","
                           << " req.str=\"" << item->request.second << "\""
                           << "}"
+                          << " ref count " << item.use_count()
                           << " time " << small::toISOString(small::timeNow())
                           << "\n";
             }
@@ -89,15 +91,18 @@ namespace examples::jobs_engine {
         jobs.queue().push_back(small::EnumPriorities::kHigh, JobsType::kJobsType2, {2, "high"}, &jobs_id);
 
         jobs.queue().push_back(small::EnumPriorities::kNormal, JobsType::kJobsType1, std::make_pair(3, "normal"), &jobs_id);
-        jobs.queue().push_back(small::EnumPriorities::kHigh, {.type = JobsType::kJobsType1, .request = {4, "high"}}, &jobs_id);
+        jobs.queue().push_back(small::EnumPriorities::kHigh, JobsType::kJobsType1, {4, "high"}, &jobs_id);
         jobs.queue().push_back(small::EnumPriorities::kLow, JobsType::kJobsType1, {5, "low"}, &jobs_id);
 
         Request req = {6, "normal"};
-        jobs.queue().push_back(small::EnumPriorities::kNormal, {.type = JobsType::kJobsType1, .request = req}, nullptr);
+        jobs.queue().push_back(small::EnumPriorities::kNormal, JobsType::kJobsType1, req, nullptr);
 
-        std::vector<JobsEng::JobsItem> jobs_items = {{.type = JobsType::kJobsType1, .request = {7, "highest"}}};
+        std::vector<std::shared_ptr<JobsEng::JobsItem>> jobs_items = {
+            std::make_shared<JobsEng::JobsItem>(JobsType::kJobsType1, Request{7, "highest"}),
+            std::make_shared<JobsEng::JobsItem>(JobsType::kJobsType1, Request{8, "highest"}),
+        };
         jobs.queue().push_back(small::EnumPriorities::kHighest, jobs_items, &jobs_ids);
-        jobs.queue().push_back(small::EnumPriorities::kHighest, {{.type = JobsType::kJobsType1, .request = {8, "highest"}}}, &jobs_ids);
+        jobs.queue().push_back(small::EnumPriorities::kHighest, {std::make_shared<JobsEng::JobsItem>(JobsType::kJobsType1, Request{9, "highest"})}, &jobs_ids);
 
         jobs.queue().push_back_delay_for(std::chrono::milliseconds(300), small::EnumPriorities::kNormal, JobsType::kJobsType1, {100, "delay normal"}, &jobs_id);
         jobs.queue().push_back_delay_until(small::timeNow() + std::chrono::milliseconds(350), small::EnumPriorities::kNormal, JobsType::kJobsType1, {101, "delay normal"}, &jobs_id);
