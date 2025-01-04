@@ -9,7 +9,7 @@
 #include <type_traits>
 #include <vector>
 
-namespace small {
+namespace small::bufferimpl {
     // class for representing a base_buffer that implements
     // all the needed functions and operators
     // it must be supplied with derived class with proper functions
@@ -457,4 +457,4 @@ namespace small {
         std::size_t m_buffer_length{0};
     };
 
-} // namespace small
+} // namespace small::bufferimpl

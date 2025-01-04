@@ -2,10 +2,10 @@
 
 #include <unordered_map>
 
+#include "impl/jobs_engine_thread_pool_impl.h"
+#include "impl/jobs_item_impl.h"
+#include "impl/jobs_queue_impl.h"
 #include "jobs_config.h"
-#include "jobs_engine_thread_pool.h"
-#include "jobs_item.h"
-#include "jobs_queue.h"
 
 // enum class JobsType
 // {
@@ -17,51 +17,48 @@
 //     kJobsGroup1
 // };
 //
-// using JobsRequest = std::pair<int, std::string>;
-// using JobsResponse = int;
-// using JobsEng = small::jobs_engine<JobsType, JobsRequest, JobsResponse, JobsGroupType>;
+// using Request = std::pair<int, std::string>;
+// using JobsEng = small::jobs_engine<JobsType, Request, int /*response*/, JobsGroupType>;
 //
-// JobsEng jobs(
-//     {.threads_count = 0 /*dont start any thread yet*/}, // overall config with default priorities
-//     {.threads_count = 1, .bulk_count = 1},              // default jobs group config
-//     {.group = JobsGroupType::kJobsGroup1},              // default jobs type config
-//     [](auto &j /*this*/, const auto &items) {
-//         for (auto &item : items) {
-//             ...
-//         }
-//     });
 //
-// jobs.add_jobs_group(JobsGroupType::kJobsGroup1, {.threads_count = 1});
+// JobsEng::JobsConfig config{
+//     .m_engine                      = {.m_threads_count = 0 /*dont start any thread yet*/},   // overall config with default priorities
+//     .m_groups                      = {
+//          {JobsGroupType::kJobsGroup1, {.m_threads_count = 1}}},                              // config by jobs group
+//     .m_types                       = {
+//         {JobsType::kJobsType1, {.m_group = JobsGroupType::kJobsGroup1}},
+//         {JobsType::kJobsType2, {.m_group = JobsGroupType::kJobsGroup1}},
+//     }};
+//
+// // create jobs engine
+// JobsEng jobs(config);
+//
+// jobs.add_default_processing_function([](auto &j /*this jobs engine*/, const auto &jobs_items) {
+//     for (auto &item : jobs_items) {
+//         ...
+//     }
+// });
 //
 // // add specific function for job1
-// jobs.add_jobs_type(JobsType::kJobsType1, {.group = JobsGroupType::kJobsGroup1}, [](auto &j /*this*/, const auto &items, auto b /*extra param b*/) {
-//    for (auto &item : items) {
-//      ...
-//    }
+// jobs.add_job_processing_function(JobsType::kJobsType1, [](auto &j /*this jobs engine*/, const auto &jobs_items, auto b /*extra param b*/) {
+//     for (auto &item : jobs_items) {
+//         ...
+//     }
 // }, 5 /*param b*/);
-//
-// // use default config and default function for job2
-// jobs.add_jobs_type(JobsType::kJobsType2);
 //
 // JobsEng::JobsID              jobs_id{};
 // std::vector<JobsEng::JobsID> jobs_ids;
 //
 // // push
-// jobs.push_back(small::EnumPriorities::kNormal, JobsType::kJobsType1, {1, "normal"}, &jobs_id);
-// jobs.push_back(small::EnumPriorities::kHigh, {.type = JobsType::kJobsType1, .request = {4, "high"}}, &jobs_id);
-//
-// std::vector<JobsEng::JobsItem> jobs_items = {{.type = JobsType::kJobsType1, .request = {7, "highest"}}};
-// jobs.push_back(small::EnumPriorities::kHighest, jobs_items, &jobs_ids);
-//
-// jobs.push_back_delay_for(std::chrono::milliseconds(300), small::EnumPriorities::kNormal, JobsType::kJobsType1, {100, "delay normal"}, &jobs_id);
+// jobs.queue().push_back(small::EnumPriorities::kNormal, JobsType::kJobsType1, {1, "normal"}, &jobs_id);
+// jobs.queue().push_back_delay_for(std::chrono::milliseconds(300), small::EnumPriorities::kNormal, JobsType::kJobsType1, {100, "delay normal"}, &jobs_id);
 //
 // jobs.start_threads(3); // manual start threads
 //
 // // jobs.signal_exit_force();
-// auto ret = jobs.wait_for(std::chrono::milliseconds(100)); // wait to finished
-// ...
 // jobs.wait(); // wait here for jobs to finish due to exit flag
 //
+// for a more complex example see examples/examples_jobs_engine.h
 
 namespace small {
 
@@ -74,8 +71,8 @@ namespace small {
     public:
         using ThisJobsEngine     = small::jobs_engine<JobsTypeT, JobsRequestT, JobsResponseT, JobsGroupT, JobsPrioT>;
         using JobsConfig         = small::jobs_config<JobsTypeT, JobsRequestT, JobsResponseT, JobsGroupT, JobsPrioT>;
-        using JobsItem           = small::jobs_item<JobsTypeT, JobsRequestT, JobsResponseT>;
-        using JobsQueue          = small::jobs_queue<JobsTypeT, JobsRequestT, JobsResponseT, JobsGroupT, JobsPrioT, ThisJobsEngine>;
+        using JobsItem           = small::jobsimpl::jobs_item<JobsTypeT, JobsRequestT, JobsResponseT>;
+        using JobsQueue          = small::jobsimpl::jobs_queue<JobsTypeT, JobsRequestT, JobsResponseT, JobsGroupT, JobsPrioT, ThisJobsEngine>;
         using JobsID             = typename JobsItem::JobsID;
         using TimeClock          = typename JobsQueue::TimeClock;
         using TimeDuration       = typename JobsQueue::TimeDuration;
@@ -268,7 +265,7 @@ namespace small {
         //
         // inner thread function for executing items (should return if there are more items)
         //
-        friend small::jobs_engine_thread_pool<JobsGroupT, ThisJobsEngine>;
+        friend small::jobsimpl::jobs_engine_thread_pool<JobsGroupT, ThisJobsEngine>;
 
         inline EnumLock do_action(const JobsGroupT &jobs_group, bool *has_items)
         {
@@ -340,8 +337,8 @@ namespace small {
         //
         // members
         //
-        JobsConfig                                                 m_config;
-        JobsQueue                                                  m_queue{*this};
-        small::jobs_engine_thread_pool<JobsGroupT, ThisJobsEngine> m_thread_pool{*this}; // for processing items (by group) using a pool of threads
+        JobsConfig                                                           m_config;
+        JobsQueue                                                            m_queue{*this};
+        small::jobsimpl::jobs_engine_thread_pool<JobsGroupT, ThisJobsEngine> m_thread_pool{*this}; // for processing items (by group) using a pool of threads
     };
 } // namespace small

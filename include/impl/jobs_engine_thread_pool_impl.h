@@ -2,9 +2,9 @@
 
 #include <unordered_map>
 
-#include "worker_thread.h"
+#include "../worker_thread.h"
 
-namespace small {
+namespace small::jobsimpl {
 
     //
     // helper class for jobs_engine to execute group of jobs (parent caller must implement 'do_action')
@@ -188,7 +188,7 @@ namespace small {
         //
         struct JobWorkerThreadFunction
         {
-            void operator()(small::worker_thread<JobGroupT> &, const std::vector<JobGroupT> &items, small::jobs_engine_thread_pool<JobGroupT, ParentCallerT> *pThis) const
+            void operator()(small::worker_thread<JobGroupT> &, const std::vector<JobGroupT> &items, jobs_engine_thread_pool<JobGroupT, ParentCallerT> *pThis) const
             {
                 pThis->thread_function(items);
             }
@@ -198,4 +198,4 @@ namespace small {
         small::worker_thread<JobGroupT>              m_workers{{.threads_count = 0}, JobWorkerThreadFunction(), this};
         ParentCallerT                               &m_parent_caller; // parent jobs engine
     };
-} // namespace small
+} // namespace small::jobsimpl

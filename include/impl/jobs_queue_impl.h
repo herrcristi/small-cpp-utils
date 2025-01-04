@@ -2,11 +2,12 @@
 
 #include <unordered_map>
 
-#include "jobs_item.h"
-#include "prio_queue.h"
-#include "time_queue_thread.h"
+#include "../prio_queue.h"
+#include "../time_queue_thread.h"
 
-namespace small {
+#include "jobs_item_impl.h"
+
+namespace small::jobsimpl {
     //
     // small queue helper class for jobs (parent caller must implement 'jobs_activate')
     //
@@ -14,11 +15,11 @@ namespace small {
     class jobs_queue
     {
     public:
-        using JobsItem  = typename small::jobs_item<JobsTypeT, JobsRequestT, JobsResponseT>;
+        using JobsItem  = typename small::jobsimpl::jobs_item<JobsTypeT, JobsRequestT, JobsResponseT>;
         using JobsID    = typename JobsItem::JobsID;
         using JobsQueue = small::prio_queue<JobsID, JobsPrioT>;
 
-        using ThisJobsQueue = small::jobs_queue<JobsTypeT, JobsRequestT, JobsResponseT, JobsGroupT, JobsPrioT, ParentCallerT>;
+        using ThisJobsQueue = jobs_queue<JobsTypeT, JobsRequestT, JobsResponseT, JobsGroupT, JobsPrioT, ParentCallerT>;
 
         using JobDelayedItems  = std::tuple<JobsPrioT, JobsTypeT, JobsID>;
         using JobQueueDelayedT = small::time_queue_thread<JobDelayedItems, ThisJobsQueue>;
@@ -32,11 +33,6 @@ namespace small {
         //
         explicit jobs_queue(ParentCallerT &parent_caller)
             : m_parent_caller(parent_caller) {}
-
-        ~jobs_queue()
-        {
-            wait();
-        }
 
         // size of active items
         inline size_t size()
@@ -467,4 +463,4 @@ namespace small {
 
         ParentCallerT &m_parent_caller; // jobs engine
     };
-} // namespace small
+} // namespace small::jobsimpl

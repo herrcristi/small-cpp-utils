@@ -41,8 +41,9 @@ namespace examples::jobs_engine {
                                                                                  {small::EnumPriorities::kNormal, 2},
                                                                                  {small::EnumPriorities::kLow, 1}}}}, // overall config with default priorities
             .m_default_processing_function = jobs_processing_function,                                              // default processing function, better use jobs.add_default_processing_function to set it
-            .m_groups                      = {{JobsGroupType::kJobsGroup1, {.m_threads_count = 1}}},                // config by jobs group
-            .m_types                       = {
+            .m_groups                      = {
+                {JobsGroupType::kJobsGroup1, {.m_threads_count = 1}}}, // config by jobs group
+            .m_types = {
                 {JobsType::kJobsType1, {.m_group = JobsGroupType::kJobsGroup1}},
                 {JobsType::kJobsType2, {.m_group = JobsGroupType::kJobsGroup1}},
             }};
