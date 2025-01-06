@@ -33,6 +33,7 @@ namespace small::jobsimpl {
         std::atomic<int>           progress{};                  // progress 0-100 for state kInProgress
         JobsRequestT               request{};                   // request needed for processing function
         JobsResponseT              response{};                  // where the results are saved (for the finished callback if exists)
+        // TODO add parents and children ids
 
         explicit jobs_item() = default;
         explicit jobs_item(const JobsID &jobs_id, const JobsTypeT &jobs_type, const JobsRequestT &jobs_request)

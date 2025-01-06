@@ -18,6 +18,8 @@ namespace small {
     {
         using JobsItem           = typename small::jobsimpl::jobs_item<JobsTypeT, JobsRequestT, JobsResponseT>;
         using ProcessingFunction = std::function<void(const std::vector<std::shared_ptr<JobsItem>> &)>;
+        // TODO add WaitChildrenFunction
+        // TODO add FinishedFunction
 
         // config for the entire jobs engine
         struct ConfigJobsEngine
@@ -32,6 +34,8 @@ namespace small {
             JobsGroupT         m_group{};                        // job type group (multiple job types can be configured to same group)
             bool               m_has_processing_function{false}; // use default processing function
             ProcessingFunction m_processing_function{};          // processing Function
+            // TODO add WaitChildrenFunction
+            // TODO add FinishedFunction
         };
 
         // config for the job group (where job types can be grouped)
@@ -62,6 +66,8 @@ namespace small {
             it_f->second.m_has_processing_function = true;
             it_f->second.m_processing_function     = processing_function;
         }
+        // TODO add job WaitChildrenFunction
+        // TODO add job FinishedFunction
 
         inline void apply_default_processing_function()
         {
@@ -71,5 +77,8 @@ namespace small {
                 }
             }
         }
+
+        // TODO apply WaitChildrenFunction - the function must be passed as parameter from engine
+        // TODO apply FinishedFunction - the function must be passed as parameter from engine
     };
 } // namespace small

@@ -252,6 +252,8 @@ namespace small {
 
             // setup jobs types
             m_config.apply_default_processing_function();
+            // TODO apply default WaitChildrenFunction - pass the function as parameter using std::bind(this)
+            // TODO apply default FinishedFunction - pass the function as parameter using std::bind(this)
             for (auto &[jobs_type, jobs_type_config] : m_config.m_types) {
                 m_queue.add_jobs_type(jobs_type, jobs_type_config.m_group);
             }
@@ -301,6 +303,7 @@ namespace small {
                 for (auto &jobs_item : jobs_items) {
                     elems_by_type[jobs_item->type].reserve(jobs_items.size());
                     elems_by_type[jobs_item->type].push_back(jobs_item);
+                    // TODO mark the items as in progress
                 }
             }
 
@@ -311,16 +314,27 @@ namespace small {
                     continue;
                 }
 
+                // TODO pass the config parameter
                 // process specific jobs by type
                 it_cfg_type->second.m_processing_function(jobs);
+
+                // TODO marks the items as either wait for children (if it has children) or finished
+                // TODO put in proper thread for processing children and finished work (1/2 thread(s) for each - better to have a config for it?)
+                // TODO the worker thread is configured for jobgroup, children and finished are not part of those - a solution is to add a pair or internal_group
             }
 
+            // TODO move this delete on the finished thread
             for (auto &jobs_id : vec_ids) {
                 m_queue.jobs_del(jobs_id);
             }
 
+            // TODO for sleep after requests use worker_thread delay item -> check if has_items should be set properly
+            // TODO if sleep is set set has_items to true to force the sleep, but also a last time sleep so if there too much time and are no items dont continue
+
             return ret;
         }
+
+        // TODO external set state for a job moves it to proper wait for children or finished
 
         //
         // inner function for activate the jobs from queue
