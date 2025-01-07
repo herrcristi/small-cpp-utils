@@ -33,14 +33,14 @@
 // // create jobs engine
 // JobsEng jobs(config);
 //
-// jobs.add_default_processing_function([](auto &j /*this jobs engine*/, const auto &jobs_items) {
+// jobs.add_default_function_processing([](auto &j /*this jobs engine*/, const auto &jobs_items) {
 //     for (auto &item : jobs_items) {
 //         ...
 //     }
 // });
 //
 // // add specific function for job1
-// jobs.add_job_processing_function(JobsType::kJobsType1, [](auto &j /*this jobs engine*/, const auto &jobs_items, auto b /*extra param b*/) {
+// jobs.add_job_function_processing(JobsType::kJobsType1, [](auto &j /*this jobs engine*/, const auto &jobs_items, auto b /*extra param b*/) {
 //     for (auto &item : jobs_items) {
 //         ...
 //     }
@@ -69,14 +69,16 @@ namespace small {
     class jobs_engine
     {
     public:
-        using ThisJobsEngine     = small::jobs_engine<JobsTypeT, JobsRequestT, JobsResponseT, JobsGroupT, JobsPrioT>;
-        using JobsConfig         = small::jobs_config<JobsTypeT, JobsRequestT, JobsResponseT, JobsGroupT, JobsPrioT>;
-        using JobsItem           = small::jobsimpl::jobs_item<JobsTypeT, JobsRequestT, JobsResponseT>;
-        using JobsQueue          = small::jobsimpl::jobs_queue<JobsTypeT, JobsRequestT, JobsResponseT, JobsGroupT, JobsPrioT, ThisJobsEngine>;
-        using JobsID             = typename JobsItem::JobsID;
-        using TimeClock          = typename JobsQueue::TimeClock;
-        using TimeDuration       = typename JobsQueue::TimeDuration;
-        using ProcessingFunction = typename JobsConfig::ProcessingFunction;
+        using ThisJobsEngine             = typename small::jobs_engine<JobsTypeT, JobsRequestT, JobsResponseT, JobsGroupT, JobsPrioT>;
+        using JobsConfig                 = typename small::jobs_config<JobsTypeT, JobsRequestT, JobsResponseT, JobsGroupT, JobsPrioT>;
+        using JobsItem                   = typename small::jobsimpl::jobs_item<JobsTypeT, JobsRequestT, JobsResponseT>;
+        using JobsQueue                  = typename small::jobsimpl::jobs_queue<JobsTypeT, JobsRequestT, JobsResponseT, JobsGroupT, JobsPrioT, ThisJobsEngine>;
+        using JobsID                     = typename JobsItem::JobsID;
+        using TimeClock                  = typename JobsQueue::TimeClock;
+        using TimeDuration               = typename JobsQueue::TimeDuration;
+        using FunctionProcessing         = typename JobsConfig::FunctionProcessing;
+        using FunctionOnChildrenFinished = typename JobsConfig::FunctionOnChildrenFinished;
+        using FunctionFinished           = typename JobsConfig::FunctionFinished;
 
     public:
         //
@@ -160,17 +162,42 @@ namespace small {
             apply_config();
         }
 
-        // processing function
+        // override default jobs function
         template <typename _Callable, typename... Args>
-        inline void add_default_processing_function(_Callable processing_function, Args... extra_parameters)
+        inline void add_default_function_processing(_Callable function_processing, Args... extra_parameters)
         {
-            m_config.add_default_processing_function(std::bind(std::forward<_Callable>(processing_function), std::ref(*this), std::placeholders::_1 /*jobs_items*/, std::forward<Args>(extra_parameters)...));
+            m_config.add_default_function_processing(std::bind(std::forward<_Callable>(function_processing), std::ref(*this), std::placeholders::_1 /*jobs_items*/, std::placeholders::_2 /*config*/, std::forward<Args>(extra_parameters)...));
         }
 
         template <typename _Callable, typename... Args>
-        inline void add_job_processing_function(const JobsTypeT &jobs_type, _Callable processing_function, Args... extra_parameters)
+        inline void add_default_function_on_children_finished(_Callable function_on_children_finished, Args... extra_parameters)
         {
-            m_config.add_job_processing_function(jobs_type, std::bind(std::forward<_Callable>(processing_function), std::ref(*this), std::placeholders::_1 /*jobs_items*/, std::forward<Args>(extra_parameters)...));
+            m_config.add_default_function_on_children_finished(std::bind(std::forward<_Callable>(function_on_children_finished), std::ref(*this), std::placeholders::_1 /*jobs_items*/, std::placeholders::_2 /*config*/, std::forward<Args>(extra_parameters)...));
+        }
+
+        template <typename _Callable, typename... Args>
+        inline void add_default_function_finished(_Callable function_finished, Args... extra_parameters)
+        {
+            m_config.add_default_function_finished(std::bind(std::forward<_Callable>(function_finished), std::ref(*this), std::placeholders::_1 /*jobs_items*/, std::placeholders::_2 /*config*/, std::forward<Args>(extra_parameters)...));
+        }
+
+        // specific jobs functions
+        template <typename _Callable, typename... Args>
+        inline void add_job_function_processing(const JobsTypeT &jobs_type, _Callable function_processing, Args... extra_parameters)
+        {
+            m_config.add_job_function_processing(jobs_type, std::bind(std::forward<_Callable>(function_processing), std::ref(*this), std::placeholders::_1 /*jobs_items*/, std::placeholders::_2 /*config*/, std::forward<Args>(extra_parameters)...));
+        }
+
+        template <typename _Callable, typename... Args>
+        inline void add_job_function_on_children_finished(const JobsTypeT &jobs_type, _Callable function_on_children_finished, Args... extra_parameters)
+        {
+            m_config.add_job_function_on_children_finished(jobs_type, std::bind(std::forward<_Callable>(function_on_children_finished), std::ref(*this), std::placeholders::_1 /*jobs_items*/, std::forward<Args>(extra_parameters)...));
+        }
+
+        template <typename _Callable, typename... Args>
+        inline void add_job_function_finished(const JobsTypeT &jobs_type, _Callable function_finished, Args... extra_parameters)
+        {
+            m_config.add_job_function_finished(jobs_type, std::bind(std::forward<_Callable>(function_finished), std::ref(*this), std::placeholders::_1 /*jobs_items*/, std::forward<Args>(extra_parameters)...));
         }
 
         //
@@ -251,11 +278,19 @@ namespace small {
             }
 
             // setup jobs types
-            m_config.apply_default_processing_function();
-            // TODO apply default WaitChildrenFunction - pass the function as parameter using std::bind(this)
-            // TODO apply default FinishedFunction - pass the function as parameter using std::bind(this)
+            if (!m_config.m_default_function_on_children_finished) {
+                m_config.m_default_function_on_children_finished = std::bind(&jobs_engine::jobs_on_children_finished, this, std::placeholders::_1 /*jobs_items*/);
+            }
+            if (!m_config.m_default_function_finished) {
+                m_config.m_default_function_finished = std::bind(&jobs_engine::jobs_finished, this, std::placeholders::_1 /*jobs_items*/);
+            }
+
+            m_config.apply_default_function_processing();
+            m_config.apply_default_function_on_children_finished();
+            m_config.apply_default_function_finished();
+
             for (auto &[jobs_type, jobs_type_config] : m_config.m_types) {
-                m_queue.add_jobs_type(jobs_type, jobs_type_config.m_group);
+                m_queue.add_jobs_type(jobs_type, jobs_type_config.m_group, jobs_type_config.m_timeout);
             }
 
             // auto start threads if count > 0 otherwise threads should be manually started
@@ -281,6 +316,10 @@ namespace small {
 
             int bulk_count = std::max(it_cfg_grp->second.m_bulk_count, 1);
 
+            // delay request
+            typename JobsConfig::ConfigProcessing group_config{};
+            group_config.m_delay_next_request = it_cfg_grp->second.m_delay_next_request;
+
             // get items to process
             auto *q = m_queue.get_group_queue(jobs_group);
             if (!q) {
@@ -301,9 +340,14 @@ namespace small {
                 // get jobs
                 std::vector<std::shared_ptr<JobsItem>> jobs_items = m_queue.jobs_get(vec_ids);
                 for (auto &jobs_item : jobs_items) {
-                    elems_by_type[jobs_item->type].reserve(jobs_items.size());
-                    elems_by_type[jobs_item->type].push_back(jobs_item);
-                    // TODO mark the items as in progress
+                    elems_by_type[jobs_item->m_type].reserve(jobs_items.size());
+
+                    // mark the item as in progress
+                    jobs_item->set_state_inprogress();
+                    // execute if it is still in progress (may be moved to higher states due to external factors like cancel, timeout, finish early due to other job, etc)
+                    if (jobs_item->is_state_inprogress()) {
+                        elems_by_type[jobs_item->m_type].push_back(jobs_item);
+                    }
                 }
             }
 
@@ -314,11 +358,26 @@ namespace small {
                     continue;
                 }
 
-                // TODO pass the config parameter
+                // TODO if an item has timeout add it to a time queue with callback that marks that item as timeout
+                // TODO timeout should be set only if it is not finished/failed/cancelled
+
                 // process specific jobs by type
-                it_cfg_type->second.m_processing_function(jobs);
+                typename JobsConfig::ConfigProcessing type_config;
+                it_cfg_type->second.m_function_processing(jobs, type_config);
+
+                // get the max for config
+                if (!group_config.m_delay_next_request) {
+                    group_config.m_delay_next_request = type_config.m_delay_next_request;
+                } else {
+                    if (type_config.m_delay_next_request) {
+                        group_config.m_delay_next_request = std::max(group_config.m_delay_next_request, type_config.m_delay_next_request);
+                    }
+                }
 
                 // TODO marks the items as either wait for children (if it has children) or finished
+                // mark the item as in wait for children of finished
+                // if in callback the state is set to failed, cancelled or timeout setting to finish wont succeed because if less value than those
+                // jobs_item->set_state(small::EnumJobsState::kInProgress);
                 // TODO put in proper thread for processing children and finished work (1/2 thread(s) for each - better to have a config for it?)
                 // TODO the worker thread is configured for jobgroup, children and finished are not part of those - a solution is to add a pair or internal_group
             }
@@ -328,8 +387,9 @@ namespace small {
                 m_queue.jobs_del(jobs_id);
             }
 
-            // TODO for sleep after requests use worker_thread delay item -> check if has_items should be set properly
-            // TODO if sleep is set set has_items to true to force the sleep, but also a last time sleep so if there too much time and are no items dont continue
+            // TODO  group_config.m_delay_next_request
+            // TODO for delay after requests use worker_thread delay item -> check if has_items should be set properly
+            // TODO if delay is set set has_items to true to force the sleep, but also a last time sleep so if there too much time and are no items dont continue
 
             return ret;
         }
@@ -344,6 +404,22 @@ namespace small {
         inline void jobs_activate(const JobsTypeT &jobs_type, const JobsID & /* jobs_id */)
         {
             m_thread_pool.job_start(m_config.m_types[jobs_type].m_group);
+        }
+
+        inline void jobs_finished(const std::vector<std::shared_ptr<JobsItem>> &jobs_items)
+        {
+            // TODO call the custom function from config if exists
+
+            for (auto &jobs_item : jobs_items) {
+                m_queue.jobs_del(jobs_item->id);
+            }
+        }
+
+        inline void jobs_on_children_finished(const std::vector<std::shared_ptr<JobsItem>> &jobs_children)
+        {
+            // TODO update parent state and progress
+            // for (auto &jobs_child : jobs_children) {
+            // }
         }
 
     private:
