@@ -427,7 +427,7 @@ JobsEng::JobsConfig config{
 // create jobs engine
 JobsEng jobs(config);
 ...
-jobs.add_default_processing_function([](auto &j /*this jobs engine*/, const auto &jobs_items) {
+jobs.add_default_function_processing([](auto &j /*this jobs engine*/, const auto &jobs_items) {
     for (auto &item : jobs_items) {
         ...
     }
@@ -435,7 +435,7 @@ jobs.add_default_processing_function([](auto &j /*this jobs engine*/, const auto
 });
 ...
 // add specific function for job1 (calling the function from jobs intead of config allows to pass the engine and extra param)
-jobs.add_job_processing_function(JobsType::kJobsType1, [](auto &j /*this jobs engine*/, const auto &jobs_items, auto b /*extra param b*/) {
+jobs.add_job_function_processing(JobsType::kJobsType1, [](auto &j /*this jobs engine*/, const auto &jobs_items, auto b /*extra param b*/) {
     for (auto &item : jobs_items) {
         ...
     }
