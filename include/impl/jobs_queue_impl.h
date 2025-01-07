@@ -9,7 +9,7 @@
 
 namespace small::jobsimpl {
     //
-    // small queue helper class for jobs (parent caller must implement 'jobs_activate')
+    // small queue helper class for jobs (parent caller must implement 'jobs_activate', 'jobs_finished')
     //
     template <typename JobsTypeT, typename JobsRequestT, typename JobsResponseT, typename JobsGroupT, typename JobsPrioT, typename ParentCallerT>
     class jobs_queue
@@ -92,7 +92,7 @@ namespace small::jobsimpl {
         // config job types
         // m_types_queues will be initialized in the initial setup phase and will be accessed without locking afterwards
         //
-        inline bool add_jobs_type(const JobsTypeT &jobs_type, const JobsGroupT &jobs_group)
+        inline bool add_jobs_type(const JobsTypeT &jobs_type, const JobsGroupT &jobs_group, const std::optional<std::chrono::milliseconds> &jobs_timeout)
         {
             auto it_g = m_groups_queues.find(jobs_group);
             if (it_g == m_groups_queues.end()) {
@@ -100,6 +100,9 @@ namespace small::jobsimpl {
             }
 
             m_types_queues[jobs_type] = &it_g->second;
+            if (jobs_timeout) {
+                m_types_timeouts[jobs_type] = *jobs_timeout;
+            }
             return true;
         }
 
@@ -123,7 +126,7 @@ namespace small::jobsimpl {
                 *jobs_id = id;
             }
 
-            return jobs_activate(priority, jobs_item->type, id);
+            return jobs_activate(priority, jobs_item->m_type, id);
         }
 
         inline std::size_t push_back(const JobsPrioT &priority, const std::vector<std::shared_ptr<JobsItem>> &jobs_items, std::vector<JobsID> *jobs_ids)
@@ -176,7 +179,7 @@ namespace small::jobsimpl {
             if (jobs_id) {
                 *jobs_id = id;
             }
-            return m_delayed_items.queue().push_delay_for(__rtime, {priority, jobs_item->type, id});
+            return m_delayed_items.queue().push_delay_for(__rtime, {priority, jobs_item->m_type, id});
         }
 
         template <typename _Rep, typename _Period>
@@ -197,7 +200,7 @@ namespace small::jobsimpl {
             if (jobs_id) {
                 *jobs_id = id;
             }
-            return m_delayed_items.queue().push_delay_until(__atime, {priority, jobs_item->type, id});
+            return m_delayed_items.queue().push_delay_until(__atime, {priority, jobs_item->m_type, id});
         }
 
         inline std::size_t push_back_delay_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, const JobsPrioT &priority, const JobsTypeT &jobs_type, JobsRequestT &&jobs_req, JobsID *jobs_id = nullptr)
@@ -319,6 +322,26 @@ namespace small::jobsimpl {
             m_jobs.erase(jobs_id);
         }
 
+        // set the jobs as timeout if it is not finished until now
+        inline std::vector<std::shared_ptr<JobsItem>> jobs_timeout(std::vector<JobsID> &&jobs_ids)
+        {
+            std::vector<std::shared_ptr<JobsItem>> jobs_items = jobs_get(jobs_ids);
+            std::vector<std::shared_ptr<JobsItem>> timeout_items;
+            timeout_items.reserve(jobs_items.size());
+
+            for (auto &jobs_item : jobs_items) {
+                // set the jobs as timeout if it is not finished until now
+                if (!jobs_item->state.is_state_finished()) {
+                    jobs_item->set_state_timeout();
+                    if (jobs_item->is_state_timeout()) {
+                        timeout_items.push_back(jobs_item);
+                    }
+                }
+            }
+
+            return timeout_items;
+        }
+
     private:
         // some prevention
         jobs_queue(const jobs_queue &)            = delete;
@@ -336,9 +359,15 @@ namespace small::jobsimpl {
 
             ++m_jobs_seq_id;
 
-            JobsID id     = m_jobs_seq_id;
-            jobs_item->id = id;
+            JobsID id       = m_jobs_seq_id;
+            jobs_item->m_id = id;
             m_jobs.emplace(id, jobs_item);
+
+            // add it to the timeout queue
+            auto it_timeout = m_types_timeouts.find(jobs_item->m_type);
+            if (it_timeout != m_types_timeouts.end()) {
+                m_timeout_queue.queue().push_delay_for(it_timeout->second, id);
+            }
 
             return id;
         }
@@ -378,17 +407,33 @@ namespace small::jobsimpl {
             return count;
         }
 
+        //
+        // inner thread function for timeout items
+        //
+        using JobsQueueTimeout = small::time_queue_thread<JobsID, ThisJobsQueue>;
+        friend JobsQueueTimeout;
+
+        inline std::size_t push_back(std::vector<JobsID> &&items)
+        {
+            auto jobs_finished = jobs_timeout(items);
+            m_parent_caller.jobs_finished(jobs_finished);
+            return items.size();
+        }
+
     private:
         //
         // members
         //
-        mutable small::base_lock                              m_lock;          // global locker
-        std::atomic<JobsID>                                   m_jobs_seq_id{}; // to get the next jobs id
-        std::unordered_map<JobsID, std::shared_ptr<JobsItem>> m_jobs;          // current jobs
-        std::unordered_map<JobsGroupT, JobsQueue>             m_groups_queues; // map of queues by group
-        std::unordered_map<JobsTypeT, JobsQueue *>            m_types_queues;  // optimize to have queues by type (which reference queues by group)
+        mutable small::base_lock                                 m_lock;           // global locker
+        std::atomic<JobsID>                                      m_jobs_seq_id{};  // to get the next jobs id
+        std::unordered_map<JobsID, std::shared_ptr<JobsItem>>    m_jobs;           // current jobs
+        std::unordered_map<JobsGroupT, JobsQueue>                m_groups_queues;  // map of queues by group
+        std::unordered_map<JobsTypeT, JobsQueue *>               m_types_queues;   // optimize to have queues by type (which reference queues by group)
+        std::unordered_map<JobsTypeT, std::chrono::milliseconds> m_types_timeouts; // timeouts for types
 
         JobQueueDelayedT m_delayed_items{*this}; // queue of delayed items
+
+        JobsQueueTimeout m_timeout_queue{*this}; // for timeout elements
 
         ParentCallerT &m_parent_caller; // jobs engine
     };
