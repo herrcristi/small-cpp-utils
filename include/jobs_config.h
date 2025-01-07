@@ -22,8 +22,7 @@ namespace small {
         // config for the entire jobs engine
         struct ConfigJobsEngine
         {
-            int                                 m_threads_count{8};          // how many total threads for processing
-            int                                 m_threads_count_finished{2}; // how many threads (out of total m_threads_count) to use for processing finished states
+            int                                 m_threads_count{8}; // how many total threads for processing
             small::config_prio_queue<JobsPrioT> m_config_prio{};
         };
 

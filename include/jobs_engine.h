@@ -281,9 +281,6 @@ namespace small {
             if (!m_config.m_default_function_on_children_finished) {
                 m_config.m_default_function_on_children_finished = std::bind(&jobs_engine::jobs_on_children_finished, this, std::placeholders::_1 /*jobs_items*/);
             }
-            if (!m_config.m_default_function_finished) {
-                m_config.m_default_function_finished = std::bind(&jobs_engine::jobs_finished, this, std::placeholders::_1 /*jobs_items*/);
-            }
 
             m_config.apply_default_function_processing();
             m_config.apply_default_function_on_children_finished();
@@ -358,9 +355,6 @@ namespace small {
                     continue;
                 }
 
-                // TODO if an item has timeout add it to a time queue with callback that marks that item as timeout
-                // TODO timeout should be set only if it is not finished/failed/cancelled
-
                 // process specific jobs by type
                 typename JobsConfig::ConfigProcessing type_config;
                 it_cfg_type->second.m_function_processing(jobs, type_config);
@@ -395,6 +389,7 @@ namespace small {
         }
 
         // TODO external set state for a job moves it to proper wait for children or finished
+        // TODO add functions jobs_cancel, jobs_finish(response), jobs_failed(response)
 
         //
         // inner function for activate the jobs from queue
@@ -409,9 +404,10 @@ namespace small {
         inline void jobs_finished(const std::vector<std::shared_ptr<JobsItem>> &jobs_items)
         {
             // TODO call the custom function from config if exists
+            // (this may be called from multiple places - queue timeout, do_action finished, above set state cancel, finish, )
 
             for (auto &jobs_item : jobs_items) {
-                m_queue.jobs_del(jobs_item->id);
+                m_queue.jobs_del(jobs_item->m_id);
             }
         }
 

@@ -60,12 +60,11 @@ namespace examples::jobs_engine {
         // config object for priorities, groups, types, threads, timeouts, sleeps, etc
         //
         JobsEng::JobsConfig config{
-            .m_engine = {.m_threads_count          = 0, // dont start any thread yet
-                         .m_threads_count_finished = 1, // override how many threads to use for internal processing of finished states
-                         .m_config_prio            = {.priorities = {{small::EnumPriorities::kHighest, 2},
-                                                                     {small::EnumPriorities::kHigh, 2},
-                                                                     {small::EnumPriorities::kNormal, 2},
-                                                                     {small::EnumPriorities::kLow, 1}}}}, // overall config with default priorities
+            .m_engine = {.m_threads_count = 0, // dont start any thread yet
+                         .m_config_prio   = {.priorities = {{small::EnumPriorities::kHighest, 2},
+                                                            {small::EnumPriorities::kHigh, 2},
+                                                            {small::EnumPriorities::kNormal, 2},
+                                                            {small::EnumPriorities::kLow, 1}}}}, // overall config with default priorities
 
             .m_default_function_processing = jobs_function_processing, // default processing function, better use jobs.add_default_function_processing to set it
 
