@@ -66,7 +66,7 @@ namespace examples::jobs_engine {
                                                             {small::EnumPriorities::kNormal, 2},
                                                             {small::EnumPriorities::kLow, 1}}}}, // overall config with default priorities
 
-            .m_default_function_processing = jobs_function_processing, // default processing function, better use jobs.add_default_function_processing to set it
+            .m_default_function_processing = jobs_function_processing, // default processing function, better use jobs.config_default_function_processing to set it
 
             .m_groups = {{JobsGroupType::kJobsGroup12, {.m_threads_count = 1}}, // config by jobs group
                          {JobsGroupType::kJobsGroup3, {.m_threads_count = 1, .m_delay_next_request = std::chrono::milliseconds(30)}},
@@ -101,7 +101,7 @@ namespace examples::jobs_engine {
 
         // default processing used for job type 3 with custom delay in between requests
         // one request will succeed and one request will timeout for demo purposes
-        jobs.add_default_function_processing([](auto &j /*this jobs engine*/, const auto &jobs_items, auto &jobs_config) {
+        jobs.config_default_function_processing([](auto &j /*this jobs engine*/, const auto &jobs_items, auto &jobs_config) {
             for (auto &item : jobs_items) {
                 std::cout << "thread " << std::this_thread::get_id()
                           << " DEFAULT processing "
@@ -120,7 +120,7 @@ namespace examples::jobs_engine {
         });
 
         // add specific function for job1 (calling the function from jobs intead of config allows to pass the engine and extra param)
-        jobs.add_job_function_processing(JobsType::kJobsType1, [](auto &j /*this jobs engine*/, const auto &jobs_items, auto & /* config */, auto b /*extra param b*/) {
+        jobs.config_jobs_function_processing(JobsType::kJobsType1, [](auto &j /*this jobs engine*/, const auto &jobs_items, auto & /* config */, auto b /*extra param b*/) {
             for (auto &item : jobs_items) {
                 std::cout << "thread " << std::this_thread::get_id()
                           << " JOB1 processing "
@@ -144,7 +144,7 @@ namespace examples::jobs_engine {
         // TODO set state merge daca e doar o dependinta, daca sunt mai multe atunci ar tb o functie custom - childProcessing (desi are sau nu are children - sau cum fac un dummy children - poate cu thread_count 0?)
 
         // add specific function for job2
-        jobs.add_job_function_processing(JobsType::kJobsType2, [](auto &j /*this jobs engine*/, const auto &jobs_items, auto & /* config */) {
+        jobs.config_jobs_function_processing(JobsType::kJobsType2, [](auto &j /*this jobs engine*/, const auto &jobs_items, auto & /* config */) {
             for (auto &item : jobs_items) {
                 std::cout << "thread " << std::this_thread::get_id()
                           << " JOB2 processing "

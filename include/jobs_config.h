@@ -68,19 +68,19 @@ namespace small {
         //
         // add default processing function
         //
-        inline void add_default_function_processing(FunctionProcessing function_processing)
+        inline void config_default_function_processing(FunctionProcessing function_processing)
         {
             m_default_function_processing = function_processing;
             apply_default_function_processing();
         }
 
-        inline void add_default_function_on_children_finished(FunctionOnChildrenFinished function_on_children_finished)
+        inline void config_default_function_on_children_finished(FunctionOnChildrenFinished function_on_children_finished)
         {
             m_default_function_on_children_finished = function_on_children_finished;
             apply_default_function_on_children_finished();
         }
 
-        inline void add_default_function_finished(FunctionFinished function_finished)
+        inline void config_default_function_finished(FunctionFinished function_finished)
         {
             m_default_function_finished = function_finished;
             apply_default_function_finished();
@@ -89,7 +89,7 @@ namespace small {
         //
         // add job functions
         //
-        inline void add_job_function_processing(const JobsTypeT &jobs_type, FunctionProcessing function_processing)
+        inline void config_jobs_function_processing(const JobsTypeT &jobs_type, FunctionProcessing function_processing)
         {
             auto it_f = m_types.find(jobs_type);
             if (it_f == m_types.end()) {
@@ -99,7 +99,7 @@ namespace small {
             it_f->second.m_function_processing     = function_processing;
         }
 
-        inline void add_job_function_on_children_finished(const JobsTypeT &jobs_type, FunctionOnChildrenFinished function_on_children_finished)
+        inline void config_jobs_function_on_children_finished(const JobsTypeT &jobs_type, FunctionOnChildrenFinished function_on_children_finished)
         {
             auto it_f = m_types.find(jobs_type);
             if (it_f == m_types.end()) {
@@ -109,7 +109,7 @@ namespace small {
             it_f->second.m_function_on_children_finished     = function_on_children_finished;
         }
 
-        inline void add_job_function_finished(const JobsTypeT &jobs_type, FunctionFinished function_finished)
+        inline void config_jobs_function_finished(const JobsTypeT &jobs_type, FunctionFinished function_finished)
         {
             auto it_f = m_types.find(jobs_type);
             if (it_f == m_types.end()) {

@@ -54,7 +54,7 @@ namespace small::jobsimpl {
         // config processing by job group type
         // this should be done in the initial setup phase once
         //
-        inline void add_job_group(const JobGroupT &job_group, const int &threads_count)
+        inline void config_jobs_group(const JobGroupT &job_group, const int &threads_count)
         {
             m_scheduler[job_group].m_threads_count = threads_count;
         }

@@ -83,7 +83,7 @@ namespace small::jobsimpl {
         // config groups
         // m_groups_queues will be initialized in the initial setup phase and will be accessed without locking afterwards
         //
-        inline void add_jobs_group(const JobsGroupT &job_group, const small::config_prio_queue<JobsPrioT> &config_prio)
+        inline void config_jobs_group(const JobsGroupT &job_group, const small::config_prio_queue<JobsPrioT> &config_prio)
         {
             m_groups_queues[job_group] = JobsQueue{config_prio};
         }
@@ -92,7 +92,7 @@ namespace small::jobsimpl {
         // config job types
         // m_types_queues will be initialized in the initial setup phase and will be accessed without locking afterwards
         //
-        inline bool add_jobs_type(const JobsTypeT &jobs_type, const JobsGroupT &jobs_group, const std::optional<std::chrono::milliseconds> &jobs_timeout)
+        inline bool config_jobs_type(const JobsTypeT &jobs_type, const JobsGroupT &jobs_group, const std::optional<std::chrono::milliseconds> &jobs_timeout)
         {
             auto it_g = m_groups_queues.find(jobs_group);
             if (it_g == m_groups_queues.end()) {
@@ -161,6 +161,8 @@ namespace small::jobsimpl {
             return push_back(priority, std::make_shared<JobsItem>(jobs_type, std::forward<JobsRequestT>(jobs_req)), jobs_id);
         }
 
+        // TODO add push_back_child()
+
         // no emplace_back do to returning the jobs_id
 
         //
@@ -207,6 +209,8 @@ namespace small::jobsimpl {
         {
             return push_back_delay_until(__atime, priority, std::make_shared<JobsItem>(jobs_type, std::forward<JobsRequestT>(jobs_req)), jobs_id);
         }
+
+        // TODO add push_back_child_....()
 
         // clang-format off
         //
@@ -291,6 +295,7 @@ namespace small::jobsimpl {
 
         //
         // get group queue
+        // called from parent jobs engine
         //
         inline JobsQueue *get_group_queue(const JobsGroupT &jobs_group)
         {
@@ -298,6 +303,10 @@ namespace small::jobsimpl {
             return it != m_groups_queues.end() ? &it->second : nullptr;
         }
 
+        //
+        // get job items
+        // called from parent jobs engine
+        //
         inline std::vector<std::shared_ptr<JobsItem>> jobs_get(const std::vector<JobsID> &jobs_ids)
         {
             std::vector<std::shared_ptr<JobsItem>> jobs_items;
@@ -316,42 +325,8 @@ namespace small::jobsimpl {
             return jobs_items; // will be moved
         }
 
-        inline void jobs_del(const JobsID &jobs_id)
-        {
-            std::unique_lock l(m_lock);
-            m_jobs.erase(jobs_id);
-        }
-
-        // set the jobs as timeout if it is not finished until now
-        inline std::vector<std::shared_ptr<JobsItem>> jobs_timeout(std::vector<JobsID> &&jobs_ids)
-        {
-            std::vector<std::shared_ptr<JobsItem>> jobs_items = jobs_get(jobs_ids);
-            std::vector<std::shared_ptr<JobsItem>> timeout_items;
-            timeout_items.reserve(jobs_items.size());
-
-            for (auto &jobs_item : jobs_items) {
-                // set the jobs as timeout if it is not finished until now
-                if (!jobs_item->state.is_state_finished()) {
-                    jobs_item->set_state_timeout();
-                    if (jobs_item->is_state_timeout()) {
-                        timeout_items.push_back(jobs_item);
-                    }
-                }
-            }
-
-            return timeout_items;
-        }
-
-    private:
-        // some prevention
-        jobs_queue(const jobs_queue &)            = delete;
-        jobs_queue(jobs_queue &&)                 = delete;
-        jobs_queue &operator=(const jobs_queue &) = delete;
-        jobs_queue &operator=(jobs_queue &&__t)   = delete;
-
-    private:
         //
-        // add job items
+        // add jobs item
         //
         inline JobsID jobs_add(std::shared_ptr<JobsItem> jobs_item)
         {
@@ -372,7 +347,9 @@ namespace small::jobsimpl {
             return id;
         }
 
+        //
         // activate the jobs
+        //
         inline std::size_t jobs_activate(const JobsPrioT &priority, const JobsTypeT &jobs_type, const JobsID &jobs_id)
         {
             std::size_t ret = 0;
@@ -394,7 +371,25 @@ namespace small::jobsimpl {
         }
 
         //
+        // delete jobs item
+        //
+        inline void jobs_del(const JobsID &jobs_id)
+        {
+            std::unique_lock l(m_lock);
+            m_jobs.erase(jobs_id);
+        }
+
+    private:
+        // some prevention
+        jobs_queue(const jobs_queue &)            = delete;
+        jobs_queue(jobs_queue &&)                 = delete;
+        jobs_queue &operator=(const jobs_queue &) = delete;
+        jobs_queue &operator=(jobs_queue &&__t)   = delete;
+
+    private:
+        //
         // inner thread function for delayed items
+        // called from m_delayed_items
         //
         friend JobQueueDelayedT;
 
@@ -409,15 +404,15 @@ namespace small::jobsimpl {
 
         //
         // inner thread function for timeout items
+        // called from m_timeout_queue
         //
         using JobsQueueTimeout = small::time_queue_thread<JobsID, ThisJobsQueue>;
         friend JobsQueueTimeout;
 
-        inline std::size_t push_back(std::vector<JobsID> &&items)
+        inline std::size_t push_back(std::vector<JobsID> &&jobs_ids)
         {
-            auto jobs_finished = jobs_timeout(items);
-            m_parent_caller.jobs_finished(jobs_finished);
-            return items.size();
+            m_parent_caller.jobs_timeout(jobs_ids);
+            return jobs_ids.size();
         }
 
     private:
