@@ -177,26 +177,26 @@ namespace examples::jobs_engine {
 
         // TODO type3 one request will succeed and one request will timeout for demo purposes
         // push
-        jobs.queue().push_back(small::EnumPriorities::kNormal, JobsType::kJobsType1, {1, "normal"}, &jobs_id);
-        jobs.queue().push_back(small::EnumPriorities::kHigh, JobsType::kJobsType2, {2, "high"}, &jobs_id);
+        jobs.queue().push_back_and_start(small::EnumPriorities::kNormal, JobsType::kJobsType1, {1, "normal"}, &jobs_id);
+        jobs.queue().push_back_and_start(small::EnumPriorities::kHigh, JobsType::kJobsType2, {2, "high"}, &jobs_id);
 
-        jobs.queue().push_back(small::EnumPriorities::kNormal, JobsType::kJobsType1, std::make_pair(3, "normal"), &jobs_id);
-        jobs.queue().push_back(small::EnumPriorities::kHigh, JobsType::kJobsType1, {4, "high"}, &jobs_id);
-        jobs.queue().push_back(small::EnumPriorities::kLow, JobsType::kJobsType1, {5, "low"}, &jobs_id);
+        jobs.queue().push_back_and_start(small::EnumPriorities::kNormal, JobsType::kJobsType1, std::make_pair(3, "normal"), &jobs_id);
+        jobs.queue().push_back_and_start(small::EnumPriorities::kHigh, JobsType::kJobsType1, {4, "high"}, &jobs_id);
+        jobs.queue().push_back_and_start(small::EnumPriorities::kLow, JobsType::kJobsType1, {5, "low"}, &jobs_id);
 
         Request req = {6, "normal"};
-        jobs.queue().push_back(small::EnumPriorities::kNormal, JobsType::kJobsType1, req, nullptr);
+        jobs.queue().push_back_and_start(small::EnumPriorities::kNormal, JobsType::kJobsType1, req, nullptr);
 
         std::vector<std::shared_ptr<JobsEng::JobsItem>> jobs_items = {
             std::make_shared<JobsEng::JobsItem>(JobsType::kJobsType1, Request{7, "highest"}),
             std::make_shared<JobsEng::JobsItem>(JobsType::kJobsType1, Request{8, "highest"}),
         };
-        jobs.queue().push_back(small::EnumPriorities::kHighest, jobs_items, &jobs_ids);
-        jobs.queue().push_back(small::EnumPriorities::kHighest, {std::make_shared<JobsEng::JobsItem>(JobsType::kJobsType1, Request{9, "highest"})}, &jobs_ids);
+        jobs.queue().push_back_and_start(small::EnumPriorities::kHighest, jobs_items, &jobs_ids);
+        jobs.queue().push_back_and_start(small::EnumPriorities::kHighest, {std::make_shared<JobsEng::JobsItem>(JobsType::kJobsType1, Request{9, "highest"})}, &jobs_ids);
 
-        jobs.queue().push_back_delay_for(std::chrono::milliseconds(300), small::EnumPriorities::kNormal, JobsType::kJobsType1, {100, "delay normal"}, &jobs_id);
-        jobs.queue().push_back_delay_until(small::timeNow() + std::chrono::milliseconds(350), small::EnumPriorities::kNormal, JobsType::kJobsType1, {101, "delay normal"}, &jobs_id);
-        jobs.queue().push_back_delay_for(std::chrono::milliseconds(400), small::EnumPriorities::kNormal, JobsType::kJobsType1, {102, "delay normal"}, &jobs_id);
+        jobs.queue().push_back_and_start_delay_for(std::chrono::milliseconds(300), small::EnumPriorities::kNormal, JobsType::kJobsType1, {100, "delay normal"}, &jobs_id);
+        jobs.queue().push_back_and_start_delay_until(small::timeNow() + std::chrono::milliseconds(350), small::EnumPriorities::kNormal, JobsType::kJobsType1, {101, "delay normal"}, &jobs_id);
+        jobs.queue().push_back_and_start_delay_for(std::chrono::milliseconds(400), small::EnumPriorities::kNormal, JobsType::kJobsType1, {102, "delay normal"}, &jobs_id);
 
         jobs.start_threads(3); // manual start threads
 

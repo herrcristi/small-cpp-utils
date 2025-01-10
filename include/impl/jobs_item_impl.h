@@ -38,12 +38,14 @@ namespace small::jobsimpl {
         JobsResponseT              m_response{};                  // where the results are saved (for the finished callback if exists)
 
         explicit jobs_item() = default;
+
         explicit jobs_item(const JobsID &jobs_id, const JobsTypeT &jobs_type, const JobsRequestT &jobs_request)
             : m_id(jobs_id), m_type(jobs_type), m_request(jobs_request) {}
-        explicit jobs_item(const JobsTypeT &jobs_type, const JobsRequestT &jobs_request)
-            : m_type(jobs_type), m_request(jobs_request) {}
         explicit jobs_item(const JobsID &jobs_id, const JobsTypeT &jobs_type, JobsRequestT &&jobs_request)
             : m_id(jobs_id), m_type(jobs_type), m_request(std::forward<JobsRequestT>(jobs_request)) {}
+
+        explicit jobs_item(const JobsTypeT &jobs_type, const JobsRequestT &jobs_request)
+            : m_type(jobs_type), m_request(jobs_request) {}
         explicit jobs_item(const JobsTypeT &jobs_type, JobsRequestT &&jobs_request)
             : m_type(jobs_type), m_request(std::forward<JobsRequestT>(jobs_request)) {}
 

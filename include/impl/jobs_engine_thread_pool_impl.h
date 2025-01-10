@@ -63,7 +63,7 @@ namespace small::jobsimpl {
         // when items are added to be processed in parent class the start scheduler should be called
         // to trigger action (if needed for the new job group)
         //
-        inline void job_start(const JobGroupT &job_group)
+        inline void jobs_start(const JobGroupT &job_group)
         {
             auto it = m_scheduler.find(job_group); // map is not changed, so can be access without locking
             if (it == m_scheduler.end()) {
@@ -73,7 +73,7 @@ namespace small::jobsimpl {
             // even if here it is considered that there are items and something will be scheduled,
             // the actual check if work will still exists will be done in do_action of parent
             auto &stats = it->second;
-            job_action_start(job_group, true, stats);
+            jobs_action_start(job_group, true, stats);
         }
 
         // clang-format off
@@ -129,7 +129,7 @@ namespace small::jobsimpl {
         //
         // to trigger action (if needed for the new job group)
         //
-        inline void job_action_start(const JobGroupT &job_group, const bool has_items, JobGroupStats &stats)
+        inline void jobs_action_start(const JobGroupT &job_group, const bool has_items, JobGroupStats &stats)
         {
             if (!has_items) {
                 return;
@@ -148,7 +148,7 @@ namespace small::jobsimpl {
         //
         // job action ended
         //
-        inline void job_action_end(const JobGroupT &job_group, const bool has_items)
+        inline void jobs_action_end(const JobGroupT &job_group, const bool has_items)
         {
             auto it = m_scheduler.find(job_group); // map is not changed, so can be access without locking
             if (it == m_scheduler.end()) {
@@ -160,7 +160,7 @@ namespace small::jobsimpl {
             auto &stats = it->second;
             --stats.m_running;
 
-            job_action_start(job_group, has_items, stats);
+            jobs_action_start(job_group, has_items, stats);
         }
 
         //
@@ -174,7 +174,7 @@ namespace small::jobsimpl {
                 m_parent_caller.do_action(job_group, &has_items);
 
                 // start another action
-                job_action_end(job_group, has_items);
+                jobs_action_end(job_group, has_items);
             }
         }
 

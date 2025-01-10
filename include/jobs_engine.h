@@ -395,9 +395,9 @@ namespace small {
         //
         friend JobsQueue;
 
-        inline void jobs_activate(const JobsTypeT &jobs_type, const JobsID & /* jobs_id */)
+        inline void jobs_start(const JobsTypeT &jobs_type, const JobsID & /* jobs_id */)
         {
-            m_thread_pool.job_start(m_config.m_types[jobs_type].m_group);
+            m_thread_pool.jobs_start(m_config.m_types[jobs_type].m_group);
         }
 
         //
