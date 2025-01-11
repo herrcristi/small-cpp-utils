@@ -100,9 +100,14 @@ namespace small::jobsimpl {
         inline void set_state_failed        () { set_state(EnumJobsState::kFailed); }
         inline void set_state_cancelled     () { set_state(EnumJobsState::kCancelled); }
         
-        inline bool is_state_inprogress     () { return m_state.load() == EnumJobsState::kInProgress; }
-        inline bool is_state_finished       () { return m_state.load() == EnumJobsState::kFinished; }
-        inline bool is_state_timeout        () { return m_state.load() == EnumJobsState::kTimeout; }
+        inline bool is_state                (const EnumJobsState &state) { return m_state.load() == state; }
+
+        inline bool is_state_inprogress     () { return is_state(EnumJobsState::kInProgress); }
+        inline void is_state_waitchildren   () { return is_state(EnumJobsState::kWaitChildren); }
+        inline bool is_state_finished       () { return is_state(EnumJobsState::kFinished); }
+        inline bool is_state_timeout        () { return is_state(EnumJobsState::kTimeout); }
+        inline void is_state_failed         () { return is_state(EnumJobsState::kFailed); }
+        inline void is_state_cancelled      () { return is_state(EnumJobsState::kCancelled); }
         // clang-format on
 
         //

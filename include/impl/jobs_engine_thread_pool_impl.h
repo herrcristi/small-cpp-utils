@@ -63,7 +63,7 @@ namespace small::jobsimpl {
         // when items are added to be processed in parent class the start scheduler should be called
         // to trigger action (if needed for the new job group)
         //
-        inline void jobs_start(const JobGroupT &job_group)
+        inline void jobs_schedule(const JobGroupT &job_group)
         {
             auto it = m_scheduler.find(job_group); // map is not changed, so can be access without locking
             if (it == m_scheduler.end()) {
