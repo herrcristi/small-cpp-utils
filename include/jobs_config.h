@@ -48,22 +48,22 @@ namespace small {
         // config for an individual job type
         struct ConfigJobsType
         {
-            JobsGroupT                               m_group{};                                  // job type group (multiple job types can be configured to same group)
-            std::optional<std::chrono::milliseconds> m_timeout{};                                // if need to delay the next request processing to have some throtelling
-            bool                                     m_has_function_processing{false};           // use default processing function
-            bool                                     m_has_function_on_children_finished{false}; // use default function for children finished
-            bool                                     m_has_function_finished{false};             // use default finished function
-            FunctionProcessing                       m_function_processing{};                    // processing Function for jobs items
-            FunctionOnChildrenFinished               m_function_on_children_finished{};          // function called for a parent when a child is finished
-            FunctionFinished                         m_function_finished{};                      // function called when jobs items are finished
+            JobsGroupT                               m_group{};                               // job type group (multiple job types can be configured to same group)
+            std::optional<std::chrono::milliseconds> m_timeout{};                             // if need to delay the next request processing to have some throtelling
+            bool                                     m_has_function_processing{false};        // use default processing function
+            bool                                     m_has_function_children_finished{false}; // use default function for children finished
+            bool                                     m_has_function_finished{false};          // use default finished function
+            FunctionProcessing                       m_function_processing{};                 // processing Function for jobs items
+            FunctionOnChildrenFinished               m_function_children_finished{};          // function called for a parent when a child is finished
+            FunctionFinished                         m_function_finished{};                   // function called when jobs items are finished
         };
 
-        ConfigJobsEngine                                m_engine{};                                // config for entire engine (threads, priorities, etc)
-        FunctionProcessing                              m_default_function_processing{};           // default processing function
-        FunctionOnChildrenFinished                      m_default_function_on_children_finished{}; // default function to call for a parent when children are finished
-        FunctionFinished                                m_default_function_finished{};             // default function to call when jobs items are finished
-        std::unordered_map<JobsGroupT, ConfigJobsGroup> m_groups;                                  // config by jobs group
-        std::unordered_map<JobsTypeT, ConfigJobsType>   m_types;                                   // config by jobs type
+        ConfigJobsEngine                                m_engine{};                             // config for entire engine (threads, priorities, etc)
+        FunctionProcessing                              m_default_function_processing{};        // default processing function
+        FunctionOnChildrenFinished                      m_default_function_children_finished{}; // default function to call for a parent when children are finished
+        FunctionFinished                                m_default_function_finished{};          // default function to call when jobs items are finished
+        std::unordered_map<JobsGroupT, ConfigJobsGroup> m_groups;                               // config by jobs group
+        std::unordered_map<JobsTypeT, ConfigJobsType>   m_types;                                // config by jobs type
 
         //
         // add default processing function
@@ -74,10 +74,10 @@ namespace small {
             apply_default_function_processing();
         }
 
-        inline void config_default_function_on_children_finished(FunctionOnChildrenFinished function_on_children_finished)
+        inline void config_default_function_children_finished(FunctionOnChildrenFinished function_children_finished)
         {
-            m_default_function_on_children_finished = function_on_children_finished;
-            apply_default_function_on_children_finished();
+            m_default_function_children_finished = function_children_finished;
+            apply_default_function_children_finished();
         }
 
         inline void config_default_function_finished(FunctionFinished function_finished)
@@ -99,14 +99,14 @@ namespace small {
             it_f->second.m_function_processing     = function_processing;
         }
 
-        inline void config_jobs_function_on_children_finished(const JobsTypeT &jobs_type, FunctionOnChildrenFinished function_on_children_finished)
+        inline void config_jobs_function_children_finished(const JobsTypeT &jobs_type, FunctionOnChildrenFinished function_children_finished)
         {
             auto it_f = m_types.find(jobs_type);
             if (it_f == m_types.end()) {
                 return;
             }
-            it_f->second.m_has_function_on_children_finished = true;
-            it_f->second.m_function_on_children_finished     = function_on_children_finished;
+            it_f->second.m_has_function_children_finished = true;
+            it_f->second.m_function_children_finished     = function_children_finished;
         }
 
         inline void config_jobs_function_finished(const JobsTypeT &jobs_type, FunctionFinished function_finished)
@@ -131,11 +131,11 @@ namespace small {
             }
         }
 
-        inline void apply_default_function_on_children_finished()
+        inline void apply_default_function_children_finished()
         {
             for (auto &[type, jobs_type_config] : m_types) {
-                if (jobs_type_config.m_has_function_on_children_finished == false) {
-                    jobs_type_config.m_function_on_children_finished = m_default_function_on_children_finished;
+                if (jobs_type_config.m_has_function_children_finished == false) {
+                    jobs_type_config.m_function_children_finished = m_default_function_children_finished;
                 }
             }
         }

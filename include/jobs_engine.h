@@ -171,9 +171,9 @@ namespace small {
         }
 
         template <typename _Callable, typename... Args>
-        inline void config_default_function_on_children_finished(_Callable function_on_children_finished, Args... extra_parameters)
+        inline void config_default_function_children_finished(_Callable function_children_finished, Args... extra_parameters)
         {
-            m_config.config_default_function_on_children_finished(std::bind(std::forward<_Callable>(function_on_children_finished), std::ref(*this), std::placeholders::_1 /*jobs_items*/, std::placeholders::_2 /*config*/, std::forward<Args>(extra_parameters)...));
+            m_config.config_default_function_children_finished(std::bind(std::forward<_Callable>(function_children_finished), std::ref(*this), std::placeholders::_1 /*jobs_items*/, std::placeholders::_2 /*config*/, std::forward<Args>(extra_parameters)...));
         }
 
         template <typename _Callable, typename... Args>
@@ -190,9 +190,9 @@ namespace small {
         }
 
         template <typename _Callable, typename... Args>
-        inline void config_jobs_function_on_children_finished(const JobsTypeT &jobs_type, _Callable function_on_children_finished, Args... extra_parameters)
+        inline void config_jobs_function_children_finished(const JobsTypeT &jobs_type, _Callable function_children_finished, Args... extra_parameters)
         {
-            m_config.config_jobs_function_on_children_finished(jobs_type, std::bind(std::forward<_Callable>(function_on_children_finished), std::ref(*this), std::placeholders::_1 /*jobs_items*/, std::forward<Args>(extra_parameters)...));
+            m_config.config_jobs_function_children_finished(jobs_type, std::bind(std::forward<_Callable>(function_children_finished), std::ref(*this), std::placeholders::_1 /*jobs_items*/, std::forward<Args>(extra_parameters)...));
         }
 
         template <typename _Callable, typename... Args>
@@ -338,6 +338,8 @@ namespace small {
             // first wait for queue items to finish
             m_queue.wait();
 
+            // TODO wait for not finished items to be finished (some are finished by external)
+
             // only now can signal exit when done for workers (when no more items exists)
             m_thread_pool.wait();
 
@@ -372,6 +374,8 @@ namespace small {
                 return small::EnumLock::kTimeout;
             }
 
+            // TODO wait for not finished items to be finished (some are finished by external)
+
             // only now can signal exit when done for workers  (when no more items exists)
             delayed_status = m_thread_pool.wait_until(__atime);
             if (delayed_status == small::EnumLock::kTimeout) {
@@ -405,12 +409,15 @@ namespace small {
             }
 
             // setup jobs types
-            if (!m_config.m_default_function_on_children_finished) {
-                m_config.m_default_function_on_children_finished = std::bind(&jobs_engine::jobs_on_children_finished, this, std::placeholders::_1 /*jobs_items*/);
+            if (!m_config.m_default_function_finished) {
+                m_config.m_default_function_finished = std::bind(&jobs_engine::jobs_on_finished, this, std::placeholders::_1 /*jobs_items*/);
+            }
+            if (!m_config.m_default_function_children_finished) {
+                m_config.m_default_function_children_finished = std::bind(&jobs_engine::jobs_on_children_finished, this, std::placeholders::_1 /*jobs_items*/);
             }
 
             m_config.apply_default_function_processing();
-            m_config.apply_default_function_on_children_finished();
+            m_config.apply_default_function_children_finished();
             m_config.apply_default_function_finished();
 
             for (auto &[jobs_type, jobs_type_config] : m_config.m_types) {
@@ -616,7 +623,7 @@ namespace small {
         {
             jobs_item->set_progress(progress);
             if (progress == 100) {
-                jobs_finished(jobs_item->m_id);
+                jobs_set_state(jobs_item, small::jobsimpl::EnumJobsState::kFinished);
             }
             return true;
         }
@@ -695,8 +702,7 @@ namespace small {
 
             // set the jobs as waitforchildren only if there are children otherwise advance to finish
             if (*jobs_set_state == small::jobsimpl::EnumJobsState::kWaitChildren) {
-                std::unique_lock l(*this);
-                if (jobs_item->m_childrenIDs.size() == 0) {
+                if (!jobs_item->has_children()) {
                     *jobs_set_state = small::jobsimpl::EnumJobsState::kFinished;
                 }
             }
@@ -710,15 +716,29 @@ namespace small {
         //
         inline void jobs_completed(const std::vector<std::shared_ptr<JobsItem>> &jobs_items)
         {
-            // TODO call the custom function from config if exists
             // (this may be called from multiple places - queue timeout, do_action finished, above set state cancel, finish, )
 
-            // TODO delete only if there are no parents (delete all the finished children now)
+            // call the custom function from config (if exists, otherwise the default will be called)
             for (auto &jobs_item : jobs_items) {
-                m_queue.jobs_erase(jobs_item->m_id);
-            }
+                m_config.m_types[jobs_item->m_type].m_function_finished({jobs_item});
 
-            // TODO if it has parents call jobs_on_children_finished
+                // if it has parents call jobs_on_children_finished (or custom function)
+                if (jobs_item->has_parents()) {
+                    jobs_set_progress(jobs_item, 100); // TODO update parents too
+                    m_config.m_types[jobs_item->m_type].m_function_children_finished({jobs_item});
+                } else {
+                    // delete only if there are no parents (+delete all children)
+                    m_queue.jobs_erase(jobs_item->m_id);
+                }
+            }
+        }
+
+        //
+        // when is finished
+        //
+        inline void jobs_on_finished(const std::vector<std::shared_ptr<JobsItem>> &/* jobs_items */)
+        {
+            // by default nothing to here, but it can be setup for each jobs type
         }
 
         //
@@ -726,9 +746,56 @@ namespace small {
         //
         inline void jobs_on_children_finished(const std::vector<std::shared_ptr<JobsItem>> &jobs_children)
         {
-            // TODO update parent state and progress
-            // for (auto &jobs_child : jobs_children) {
-            // }
+            for (auto &jobs_item : jobs_children) {
+                //
+                // compute parent state and progress based on children
+                // if a children has failed/timeout/cancelled then parent is set to failed
+                // if all children are finished then the parent is finished
+                //
+                std::unordered_map<JobsID /*parent*/, std::pair<std::shared_ptr<JobsItem>, std::vector<std::shared_ptr<JobsItem>>>> unfinished_parents;
+                {
+                    std::unique_lock l(*this);
+
+                    auto parent_jobs_items = jobs_get(jobs_item->m_parentIDs);
+                    for (auto &parent_jobs_item : parent_jobs_items) {
+                        if (parent_jobs_item->is_complete()) {
+                            continue;
+                        }
+                        // add to the unfinished parents map (with all children)
+                        unfinished_parents[parent_jobs_item->m_id] = {parent_jobs_item, jobs_get(parent_jobs_item->m_childrenIDs)};
+                    }
+                } // lock finished
+
+                for (auto &[parent_jobs_id, parent_info] : unfinished_parents) {
+                    // compute progress from all finished children
+                    std::size_t count_failed_children    = 0;
+                    std::size_t count_completed_children = 0;
+                    std::size_t count_total_children     = parent_info.second.size();
+                    for (auto &child_jobs_item : parent_info.second) {
+                        if (!child_jobs_item->is_complete()) {
+                            continue;
+                        }
+
+                        ++count_completed_children;
+                        if (!child_jobs_item->is_state_finished()) {
+                            ++count_failed_children;
+                        }
+                    }
+
+                    if (count_failed_children) {
+                        jobs_failed(parent_jobs_id);
+                    } else {
+
+                        std::size_t progress = count_total_children ? (count_completed_children * 100 / count_total_children) : 100;
+                        jobs_progress(parent_jobs_id, progress); // TODO this should be recursive child->parent->parent (taking into account state)
+
+                        // set finished state
+                        if (count_total_children == count_completed_children) {
+                            jobs_finished(parent_jobs_id);
+                        }
+                    }
+                }
+            }
         }
 
     private:

@@ -32,6 +32,8 @@ namespace small::jobsimpl {
         JobsTypeT                  m_type{};                      // job type
         std::atomic<EnumJobsState> m_state{EnumJobsState::kNone}; // job state
         std::atomic<int>           m_progress{};                  // progress 0-100 for state kInProgress
+        std::atomic_bool           m_has_parents{};               // for dependencies relationships parent-child
+        std::atomic_bool           m_has_children{};              // for dependencies relationships parent-child
         std::vector<JobsID>        m_parentIDs{};                 // for dependencies relationships parent-child
         std::vector<JobsID>        m_childrenIDs{};               // for dependencies relationships parent-child
         JobsRequestT               m_request{};                   // request needed for processing function
@@ -53,26 +55,30 @@ namespace small::jobsimpl {
         jobs_item(jobs_item &&other) noexcept { operator=(other); };
         jobs_item &operator=(const jobs_item &other)
         {
-            m_id          = other.m_id;
-            m_type        = other.m_type;
-            m_state       = other.m_state.load();
-            m_progress    = other.m_progress.load();
-            m_parentIDs   = other.m_parentIDs;
-            m_childrenIDs = other.m_childrenIDs;
-            m_request     = other.m_request;
-            m_response    = other.m_response;
+            m_id           = other.m_id;
+            m_type         = other.m_type;
+            m_state        = other.m_state.load();
+            m_progress     = other.m_progress.load();
+            m_has_parents  = other.m_has_parents.load();
+            m_has_children = other.m_has_children.load();
+            m_parentIDs    = other.m_parentIDs;
+            m_childrenIDs  = other.m_childrenIDs;
+            m_request      = other.m_request;
+            m_response     = other.m_response;
             return *this;
         }
         jobs_item &operator=(jobs_item &&other) noexcept
         {
-            m_id          = std::move(other.m_id);
-            m_type        = std::move(other.m_type);
-            m_state       = other.m_state.load();
-            m_progress    = other.m_progress.load();
-            m_parentIDs   = std::move(other.m_parentIDs);
-            m_childrenIDs = std::move(other.m_childrenIDs);
-            m_request     = std::move(other.m_request);
-            m_response    = std::move(other.m_response);
+            m_id           = std::move(other.m_id);
+            m_type         = std::move(other.m_type);
+            m_state        = other.m_state.load();
+            m_progress     = other.m_progress.load();
+            m_has_parents  = other.m_has_parents.load();
+            m_has_children = other.m_has_children.load();
+            m_parentIDs    = std::move(other.m_parentIDs);
+            m_childrenIDs  = std::move(other.m_childrenIDs);
+            m_request      = std::move(other.m_request);
+            m_response     = std::move(other.m_response);
             return *this;
         }
 
@@ -100,21 +106,23 @@ namespace small::jobsimpl {
         inline void set_state_failed        () { set_state(EnumJobsState::kFailed); }
         inline void set_state_cancelled     () { set_state(EnumJobsState::kCancelled); }
         
-        inline bool is_state                (const EnumJobsState &state) { return m_state.load() == state; }
         static bool is_state_complete       (const EnumJobsState &state) { return state >= EnumJobsState::kFinished; }
 
-        inline bool is_state_inprogress     () { return is_state(EnumJobsState::kInProgress); }
-        inline void is_state_waitchildren   () { return is_state(EnumJobsState::kWaitChildren); }
-        inline bool is_state_finished       () { return is_state(EnumJobsState::kFinished); }
-        inline bool is_state_timeout        () { return is_state(EnumJobsState::kTimeout); }
-        inline void is_state_failed         () { return is_state(EnumJobsState::kFailed); }
-        inline void is_state_cancelled      () { return is_state(EnumJobsState::kCancelled); }
+        inline EnumJobsState get_state      () const { return m_state.load(); }
+        inline bool is_state                (const EnumJobsState &state) const { return get_state() == state; }
+        inline bool is_complete             () const { return is_state_complete(get_state()); }
+
+        inline bool is_state_inprogress     () const { return is_state(EnumJobsState::kInProgress); }
+        inline void is_state_waitchildren   () const { return is_state(EnumJobsState::kWaitChildren); }
+        inline bool is_state_finished       () const { return is_state(EnumJobsState::kFinished); }
+        inline bool is_state_timeout        () const { return is_state(EnumJobsState::kTimeout); }
+        inline void is_state_failed         () const { return is_state(EnumJobsState::kFailed); }
+        inline void is_state_cancelled      () const { return is_state(EnumJobsState::kCancelled); }
         // clang-format on
 
         //
         // set job progress (can only increase)
         //
-
         inline void set_progress(const int &new_progress)
         {
             for (;;) {
@@ -126,6 +134,34 @@ namespace small::jobsimpl {
                     return;
                 }
             }
+        }
+
+        //
+        // add child
+        //
+        inline void add_child(const JobsID &child_jobs_id)
+        {
+            m_childrenIDs.push_back(child_jobs_id); // this should be set under locked area
+            m_has_children = true;
+        }
+
+        inline bool has_children() const
+        {
+            return m_has_children.load();
+        }
+
+        //
+        // add parent
+        //
+        inline void add_parent(const JobsID &parent_jobs_id)
+        {
+            m_parentIDs.push_back(parent_jobs_id); // this should be set under locked area
+            m_has_parents = true;
+        }
+
+        inline bool has_parents() const
+        {
+            return m_has_parents.load();
         }
     };
 

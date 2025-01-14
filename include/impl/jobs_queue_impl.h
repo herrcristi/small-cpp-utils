@@ -602,7 +602,7 @@ namespace small::jobsimpl {
             if (ret) {
                 m_parent_caller.jobs_schedule(jobs_type, jobs_id);
             } else {
-                // TODO maybe call m_parent.jobs_failed(jobs_id)?
+                // TODO call m_parent.jobs_failed(jobs_id)? // jobs_start should not be under lock then
                 jobs_erase(jobs_id);
             }
             return ret;
@@ -614,7 +614,23 @@ namespace small::jobsimpl {
         inline void jobs_erase(const JobsID &jobs_id)
         {
             std::unique_lock l(m_lock);
+
+            auto jobs_item = jobs_get(jobs_id);
+            if (!jobs_item) {
+                // already deleted
+                return;
+            }
+            // if not a final state, set it to cancelled (in case it is executing at this point)
+            if (!JobsItem::is_state_complete((*jobs_item)->get_state())) {
+                (*jobs_item)->set_state_cancelled();
+            }
+
             m_jobs.erase(jobs_id);
+
+            // delete all children
+            for (auto &child_jobs_id : (*jobs_item)->m_childrenIDs) {
+                jobs_erase(child_jobs_id);
+            }
         }
 
         //
@@ -640,9 +656,8 @@ namespace small::jobsimpl {
         inline void jobs_parent_child(std::shared_ptr<JobsItem> parent_jobs_item, std::shared_ptr<JobsItem> child_jobs_item)
         {
             std::unique_lock l(m_lock);
-
-            parent_jobs_item->m_childrenIDs.push_back(child_jobs_item->m_id);
-            child_jobs_item->m_parentIDs.push_back(parent_jobs_item->m_id);
+            parent_jobs_item->add_child(child_jobs_item->m_id);
+            child_jobs_item->add_parent(parent_jobs_item->m_id);
         }
 
     private:
