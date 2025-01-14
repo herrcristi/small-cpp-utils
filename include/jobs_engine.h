@@ -143,6 +143,7 @@ namespace small {
         {
             m_config.m_engine.m_threads_count = threads_count;
             m_queue.start_threads(threads_count);
+            m_timeout_queue.start_threads();
             m_thread_pool.start_threads(threads_count);
         }
 
@@ -320,7 +321,7 @@ namespace small {
         //
         // signal exit
         //
-        inline void signal_exit_force       ()  { m_thread_pool.signal_exit_force(); m_queue.signal_exit_force(); }
+        inline void signal_exit_force       ()  { m_thread_pool.signal_exit_force(); m_timeout_queue.queue().signal_exit_force(); m_queue.signal_exit_force(); }
         inline void signal_exit_when_done   ()  { m_queue.signal_exit_when_done(); /*when the delayed will be finished will signal the active queue items to exit when done, then the processing pool */ }
         
         // to be used in processing function
@@ -338,7 +339,13 @@ namespace small {
             m_queue.wait();
 
             // only now can signal exit when done for workers (when no more items exists)
-            return m_thread_pool.wait();
+            m_thread_pool.wait();
+
+            // the timeouts are no longer necessay, force exit
+            m_timeout_queue.queue().signal_exit_force();
+            m_timeout_queue.wait();
+
+            return small::EnumLock::kExit;
         }
 
         // wait some time then signal exit
@@ -366,7 +373,16 @@ namespace small {
             }
 
             // only now can signal exit when done for workers  (when no more items exists)
-            return m_thread_pool.wait_until(__atime);
+            delayed_status = m_thread_pool.wait_until(__atime);
+            if (delayed_status == small::EnumLock::kTimeout) {
+                return small::EnumLock::kTimeout;
+            }
+
+            // the timeouts are no longer necessay, force exit
+            m_timeout_queue.queue().signal_exit_force();
+            m_timeout_queue.wait();
+
+            return small::EnumLock::kExit;
         }
 
     private:
@@ -398,7 +414,7 @@ namespace small {
             m_config.apply_default_function_finished();
 
             for (auto &[jobs_type, jobs_type_config] : m_config.m_types) {
-                m_queue.config_jobs_type(jobs_type, jobs_type_config.m_group, jobs_type_config.m_timeout);
+                m_queue.config_jobs_type(jobs_type, jobs_type_config.m_group);
             }
 
             // auto start threads if count > 0 otherwise threads should be manually started
@@ -492,13 +508,38 @@ namespace small {
         }
 
         //
-        // inner function for activate the jobs from queue (called from queue)
+        // inner function for extra processing after addding the jobs into queue (called from queue)
         //
         friend JobsQueue;
 
+        inline void jobs_add(std::shared_ptr<JobsItem> jobs_item)
+        {
+            // add it to the timeout queue
+            // only if job type has config a timeout
+            auto timeout = m_config.m_types[jobs_item->m_type].m_timeout;
+            if (timeout) {
+                m_timeout_queue.queue().push_delay_for(*timeout, jobs_item->m_id);
+            }
+        }
+
+        //
+        // inner function for activate the jobs from queue (called from queue)
+        //
         inline void jobs_schedule(const JobsTypeT &jobs_type, const JobsID & /* jobs_id */)
         {
             m_thread_pool.jobs_schedule(m_config.m_types[jobs_type].m_group);
+        }
+
+        //
+        // inner thread function for timeout items (called from m_timeout_queue)
+        //
+        using JobsQueueTimeout = small::time_queue_thread<JobsID, ThisJobsEngine>;
+        friend JobsQueueTimeout;
+
+        inline std::size_t push_back(std::vector<JobsID> &&jobs_ids)
+        {
+            jobs_timeout(jobs_ids);
+            return jobs_ids.size();
         }
 
         //
@@ -601,7 +642,7 @@ namespace small {
         inline std::size_t jobs_waitforchildren(const std::vector<std::shared_ptr<JobsItem>> &jobs_items)
         {
             // set the jobs as waitforchildren only if there are children otherwise advance to finish
-            return jobs_set_state(jobs_items, small::jobsimpl::EnumJobsState::kTimeout);
+            return jobs_set_state(jobs_items, small::jobsimpl::EnumJobsState::kWaitChildren);
         }
 
         //
@@ -609,8 +650,10 @@ namespace small {
         //
         inline bool jobs_set_state(const std::shared_ptr<JobsItem> &jobs_item, const small::jobsimpl::EnumJobsState &jobs_state)
         {
-            auto ret = jobs_apply_state(jobs_item, jobs_state);
-            if (ret) {
+            small::jobsimpl::EnumJobsState set_state = jobs_state;
+
+            auto ret = jobs_apply_state(jobs_item, jobs_state, &set_state);
+            if (ret && JobsItem::is_state_complete(set_state)) {
                 jobs_completed({jobs_item});
             }
             return ret;
@@ -618,42 +661,48 @@ namespace small {
 
         inline std::size_t jobs_set_state(const std::vector<std::shared_ptr<JobsItem>> &jobs_items, const small::jobsimpl::EnumJobsState &jobs_state)
         {
-            std::vector<std::shared_ptr<JobsItem>> changed_items;
-            changed_items.reserve(jobs_items.size());
+            small::jobsimpl::EnumJobsState         set_state = jobs_state;
+            std::vector<std::shared_ptr<JobsItem>> completed_items;
+            completed_items.reserve(jobs_items.size());
 
+            std::size_t changed_count{};
             for (auto &jobs_item : jobs_items) {
-                auto ret = jobs_apply_state(jobs_item, jobs_state);
+                auto ret = jobs_apply_state(jobs_item, jobs_state, &set_state);
                 if (ret) {
-                    changed_items.push_back(jobs_item);
+                    ++changed_count;
+                    if (JobsItem::is_state_complete(set_state)) {
+                        completed_items.push_back(jobs_item);
+                    }
                 }
             }
 
-            jobs_completed(changed_items);
-            return changed_items.size();
+            jobs_completed(completed_items);
+            return changed_count;
         }
 
-        inline bool jobs_apply_state(std::shared_ptr<JobsItem> jobs_item, small::jobsimpl::EnumJobsState jobs_state)
+        inline bool jobs_apply_state(std::shared_ptr<JobsItem> jobs_item, const small::jobsimpl::EnumJobsState &jobs_state, small::jobsimpl::EnumJobsState *jobs_set_state)
         {
+            *jobs_set_state = jobs_state;
             // state is already the same
-            if (jobs_item->is_state(jobs_state)) {
+            if (jobs_item->is_state(*jobs_set_state)) {
                 return false;
             }
 
             // set the jobs as timeout if it is not finished until now
-            if (jobs_state == small::jobsimpl::EnumJobsState::kTimeout && jobs_item->is_state_finished()) {
+            if (*jobs_set_state == small::jobsimpl::EnumJobsState::kTimeout && jobs_item->is_state_finished()) {
                 return false;
             }
 
             // set the jobs as waitforchildren only if there are children otherwise advance to finish
-            if (jobs_state == small::jobsimpl::EnumJobsState::kWaitChildren) {
+            if (*jobs_set_state == small::jobsimpl::EnumJobsState::kWaitChildren) {
                 std::unique_lock l(*this);
                 if (jobs_item->m_childrenIDs.size() == 0) {
-                    jobs_state = small::jobsimpl::EnumJobsState::kFinished;
+                    *jobs_set_state = small::jobsimpl::EnumJobsState::kFinished;
                 }
             }
 
-            jobs_item->set_state(jobs_state);
-            return jobs_item->is_state(jobs_state);
+            jobs_item->set_state(*jobs_set_state);
+            return jobs_item->is_state(*jobs_set_state);
         }
 
         //
@@ -688,6 +737,7 @@ namespace small {
         //
         JobsConfig                                                           m_config;
         JobsQueue                                                            m_queue{*this};
-        small::jobsimpl::jobs_engine_thread_pool<JobsGroupT, ThisJobsEngine> m_thread_pool{*this}; // for processing items (by group) using a pool of threads
+        JobsQueueTimeout                                                     m_timeout_queue{*this}; // for timeout elements
+        small::jobsimpl::jobs_engine_thread_pool<JobsGroupT, ThisJobsEngine> m_thread_pool{*this};   // for processing items (by group) using a pool of threads
     };
 } // namespace small

@@ -77,7 +77,7 @@ namespace examples::jobs_engine {
 
             .m_types = {{JobsType::kJobsType1, {.m_group = JobsGroupType::kJobsGroup12}},
                         {JobsType::kJobsType2, {.m_group = JobsGroupType::kJobsGroup12}},
-                        {JobsType::kJobsType3, {.m_group = JobsGroupType::kJobsGroup3, .m_timeout = std::chrono::milliseconds(500)}},
+                        {JobsType::kJobsType3, {.m_group = JobsGroupType::kJobsGroup3, .m_timeout = std::chrono::milliseconds(700)}},
                         {JobsType::kJobsDatabase, {.m_group = JobsGroupType::kJobsGroupDatabase}},
                         {JobsType::kJobsCache, {.m_group = JobsGroupType::kJobsGroupCache}}}};
 
@@ -88,53 +88,52 @@ namespace examples::jobs_engine {
 
         // create a cache server (with workers to simulate access to it)
         // (as an external engine outside the jobs engine for demo purposes)
-        small::worker_thread<JobsEng::JobsID> cache_server({.threads_count = 1}, [&](auto &w /*this*/, const auto &items) {
-            for (auto &i : items) {
-                std::cout << "thread " << std::this_thread::get_id()
-                          << " CACHE   processing"
-                          << " {" << i << "}" << "\n";
+        small::worker_thread<std::pair<JobsEng::JobsID, Request>> cache_server({.threads_count = 1}, [&](auto &w /*this*/, const auto &items) {
+            for (auto &[job_id, req] : items) {
+                std::cout << "worker thread " << std::this_thread::get_id()
+                          << " CACHE processing"
+                          << " {" << req.first << ", " << req.second << ", jobid=" << job_id << "}"
+                          << " time " << small::toISOString(small::timeNow())
+                          << "\n";
 
                 // mark the jobs id associated as succeeded (for demo purposes to avoid creating other structures)
-                jobs.jobs_finished(i, (Response)i);
+                jobs.jobs_finished(job_id, (Response)job_id);
             }
             // sleep long enough
             // no coalesce for demo purposes (sleep 500) so 3rd parent items is finished due to database and not cache server
             small::sleep(500);
         });
 
+        auto fn_print_item = [](auto item, std::string fn_type) {
+            std::cout << "thread " << std::this_thread::get_id()
+                      << std::setw(10) << fn_type
+                      << " processing "
+                      << "{"
+                      << " jobid=" << std::setw(2) << item->m_id
+                      << " type=" << std::setw(1) << (int)item->m_type
+                      << " req.int=" << std::setw(2) << item->m_request.first << ","
+                      << " req.str=\"" << item->m_request.second << "\""
+                      << "}"
+                      << " time " << small::toISOString(small::timeNow())
+                      << "\n";
+        };
+
         // default processing used for job type 3 with custom delay in between requests
         // one request will succeed and one request will timeout for demo purposes
-        jobs.config_default_function_processing([](auto &j /*this jobs engine*/, const auto &jobs_items, auto &jobs_config) {
+        jobs.config_default_function_processing([&](auto &j /*this jobs engine*/, const auto &jobs_items, auto &jobs_config) {
             for (auto &item : jobs_items) {
-                std::cout << "thread " << std::this_thread::get_id()
-                          << " DEFAULT processing "
-                          << "{"
-                          << " type=" << (int)item->m_type
-                          << " req.int=" << item->m_request.first << ","
-                          << " req.str=\"" << item->m_request.second << "\""
-                          << "}"
-                          << " ref count " << item.use_count()
-                          << " time " << small::toISOString(small::timeNow())
-                          << "\n";
+                fn_print_item(item, "DEFAULT");
             }
 
             // set a custom delay (timeout for job3 is 500 ms)
-            jobs_config.m_delay_next_request = std::chrono::milliseconds(1000);
+            jobs_config.m_delay_next_request = std::chrono::milliseconds(500);
+            small::sleep(500); // TODO remove this after delay works
         });
 
         // add specific function for job1 (calling the function from jobs intead of config allows to pass the engine and extra param)
         jobs.config_jobs_function_processing(JobsType::kJobsType1, [&](auto &j /*this jobs engine*/, const auto &jobs_items, auto & /* config */, auto b /*extra param b*/) {
             for (auto &item : jobs_items) {
-                std::cout << "thread " << std::this_thread::get_id()
-                          << " JOB1    processing "
-                          << "{"
-                          << " type=" << (int)item->m_type
-                          << " req.int=" << item->m_request.first << ","
-                          << " req.str=\"" << item->m_request.second << "\""
-                          << "}"
-                          << " ref count " << item.use_count()
-                          << " time " << small::toISOString(small::timeNow())
-                          << "\n";
+                fn_print_item(item, "JOB1");
 
                 // add 2 more children jobs for current one for database and server cache
                 JobsEng::JobsID jobs_child_db_id{};
@@ -152,7 +151,7 @@ namespace examples::jobs_engine {
 
                 j.jobs_start(small::EnumPriorities::kNormal, jobs_child_db_id);
                 // jobs_child_cache_id has no threads to execute, it has external executors
-                cache_server.push_back(jobs_child_cache_id);
+                cache_server.push_back({jobs_child_cache_id, item->m_request});
             }
             small::sleep(30); }, 5 /*param b*/);
 
@@ -165,25 +164,16 @@ namespace examples::jobs_engine {
         // TODO set state merge daca e doar o dependinta, daca sunt mai multe atunci ar tb o functie custom - childProcessing (desi are sau nu are children - sau cum fac un dummy children - poate cu thread_count 0?)
 
         // add specific function for job2
-        jobs.config_jobs_function_processing(JobsType::kJobsType2, [](auto &j /*this jobs engine*/, const auto &jobs_items, auto & /* config */) {
-            bool first_job = true;
+        jobs.config_jobs_function_processing(JobsType::kJobsType2, [&](auto &j /*this jobs engine*/, const auto &jobs_items, auto &jobs_config) {
+            static bool first_job = true;
             for (auto &item : jobs_items) {
-                std::cout << "thread " << std::this_thread::get_id()
-                          << " JOB2    processing "
-                          << "{"
-                          << " type=" << (int)item->m_type
-                          << " req.int=" << item->m_request.first << ","
-                          << " req.str=\"" << item->m_request.second << "\""
-                          << "}"
-                          << " ref count " << item.use_count()
-                          << " time " << small::toISOString(small::timeNow())
-                          << "\n";
+                fn_print_item(item, "JOB2");
 
                 if (first_job) {
                     // for type 2 only database children (for demo purposes no result will be used from database)
                     auto ret = j.queue().push_back_and_start_child(item->m_id /*parent*/,
-                                                                   small::EnumPriorities::kNormal, 
-                                                                   JobsType::kJobsDatabase, 
+                                                                   small::EnumPriorities::kNormal,
+                                                                   JobsType::kJobsDatabase,
                                                                    item->m_request);
                     if (!ret) {
                         j.jobs_failed(item->m_id);
@@ -195,7 +185,21 @@ namespace examples::jobs_engine {
                 first_job = false;
             }
             // TODO config to wait after request (even if it is not specified in the global config - so custom throttle)
-            small::sleep(30); });
+            small::sleep(30);
+            jobs_config.m_delay_next_request = std::chrono::milliseconds(30);
+        });
+
+        // add specific function for job2
+        jobs.config_jobs_function_processing(JobsType::kJobsDatabase, [&](auto &j /*this jobs engine*/, const auto &jobs_items, auto & /* config */) {
+            for (auto &item : jobs_items) {
+                // simulate long db call
+                small::sleep(200);
+
+                fn_print_item(item, "DATABASE");
+
+                // this job will be auto-finished
+            }
+        });
 
         // TODO add function for database where demonstrate coalesce of 3 items (sleep 1000)
         // TODO add function for cache server - no coalesce for demo purposes (sleep 500) so 3rd parent items is finished due to database and not cache server
@@ -207,8 +211,8 @@ namespace examples::jobs_engine {
         std::vector<JobsEng::JobsID> jobs_ids;
 
         // type3 one request will succeed and one request will timeout for demo purposes
-        jobs.queue().push_back_and_start(small::EnumPriorities::kNormal, JobsType::kJobsType3, {3, "normal3"}, &jobs_id);
-        jobs.queue().push_back_and_start(small::EnumPriorities::kHigh, JobsType::kJobsType3, {3, "high3"}, &jobs_id);
+        jobs.queue().push_back_and_start_delay_for(std::chrono::milliseconds(100), small::EnumPriorities::kNormal, JobsType::kJobsType3, {3, "normal3"}, &jobs_id);
+        jobs.queue().push_back_and_start_delay_for(std::chrono::milliseconds(100), small::EnumPriorities::kHigh, JobsType::kJobsType3, {3, "high3"}, &jobs_id);
 
         // type2 only the first request succeeds and waits for child the other fails from the start
         jobs.queue().push_back_and_start(small::EnumPriorities::kNormal, JobsType::kJobsType2, {2, "normal2"}, &jobs_id);
@@ -242,6 +246,8 @@ namespace examples::jobs_engine {
         auto ret = jobs.wait_for(std::chrono::milliseconds(100)); // wait to finished
         std::cout << "wait for with timeout, ret = " << static_cast<int>(ret) << " as timeout\n";
         jobs.wait(); // wait here for jobs to finish due to exit flag
+        cache_server.signal_exit_force();
+        cache_server.wait();
 
         std::cout << "size = " << jobs.size() << "\n";
 

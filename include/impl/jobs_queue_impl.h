@@ -9,7 +9,7 @@
 
 namespace small::jobsimpl {
     //
-    // small queue helper class for jobs (parent caller must implement 'jobs_schedule', 'jobs_finished')
+    // small queue helper class for jobs (parent caller must implement 'jobs_add', 'jobs_schedule', 'jobs_finished')
     //
     template <typename JobsTypeT, typename JobsRequestT, typename JobsResponseT, typename JobsGroupT, typename JobsPrioT, typename ParentCallerT>
     class jobs_queue
@@ -94,7 +94,7 @@ namespace small::jobsimpl {
         // config job types
         // m_types_queues will be initialized in the initial setup phase and will be accessed without locking afterwards
         //
-        inline bool config_jobs_type(const JobsTypeT &jobs_type, const JobsGroupT &jobs_group, const std::optional<std::chrono::milliseconds> &jobs_timeout)
+        inline bool config_jobs_type(const JobsTypeT &jobs_type, const JobsGroupT &jobs_group)
         {
             auto it_g = m_groups_queues.find(jobs_group);
             if (it_g == m_groups_queues.end()) {
@@ -102,9 +102,6 @@ namespace small::jobsimpl {
             }
 
             m_types_queues[jobs_type] = &it_g->second;
-            if (jobs_timeout) {
-                m_types_timeouts[jobs_type] = *jobs_timeout;
-            }
             return true;
         }
 
@@ -562,8 +559,9 @@ namespace small::jobsimpl {
             jobs_item->m_id = id;
             m_jobs.emplace(id, jobs_item);
 
-            // add it to the timeout queue
-            jobs_start_timeout(jobs_item);
+            // call parent for extra processing
+            m_parent_caller.jobs_add(jobs_item);
+
             return id;
         }
 
@@ -608,21 +606,6 @@ namespace small::jobsimpl {
                 jobs_erase(jobs_id);
             }
             return ret;
-        }
-
-        //
-        // add it to the timeout queue
-        //
-        inline std::size_t jobs_start_timeout(std::shared_ptr<JobsItem> jobs_item)
-        {
-            std::unique_lock l(m_lock);
-
-            // only if job type has config a timeout
-            auto it_timeout = m_types_timeouts.find(jobs_item->m_type);
-            if (it_timeout == m_types_timeouts.end()) {
-                return 0;
-            }
-            return m_timeout_queue.queue().push_delay_for(it_timeout->second, jobs_item->m_id);
         }
 
         //
@@ -685,33 +668,17 @@ namespace small::jobsimpl {
             return count;
         }
 
-        //
-        // inner thread function for timeout items
-        // called from m_timeout_queue
-        //
-        using JobsQueueTimeout = small::time_queue_thread<JobsID, ThisJobsQueue>;
-        friend JobsQueueTimeout;
-
-        inline std::size_t push_back(std::vector<JobsID> &&jobs_ids)
-        {
-            m_parent_caller.jobs_timeout(jobs_ids);
-            return jobs_ids.size();
-        }
-
     private:
         //
         // members
         //
-        mutable small::base_lock                                 m_lock;           // global locker
-        std::atomic<JobsID>                                      m_jobs_seq_id{};  // to get the next jobs id
-        std::unordered_map<JobsID, std::shared_ptr<JobsItem>>    m_jobs;           // current jobs
-        std::unordered_map<JobsGroupT, JobsQueue>                m_groups_queues;  // map of queues by group
-        std::unordered_map<JobsTypeT, JobsQueue *>               m_types_queues;   // optimize to have queues by type (which reference queues by group)
-        std::unordered_map<JobsTypeT, std::chrono::milliseconds> m_types_timeouts; // timeouts for types
+        mutable small::base_lock                              m_lock;          // global locker
+        std::atomic<JobsID>                                   m_jobs_seq_id{}; // to get the next jobs id
+        std::unordered_map<JobsID, std::shared_ptr<JobsItem>> m_jobs;          // current jobs
+        std::unordered_map<JobsGroupT, JobsQueue>             m_groups_queues; // map of queues by group
+        std::unordered_map<JobsTypeT, JobsQueue *>            m_types_queues;  // optimize to have queues by type (which reference queues by group)
 
         JobQueueDelayedT m_delayed_items{*this}; // queue of delayed items
-
-        JobsQueueTimeout m_timeout_queue{*this}; // for timeout elements
 
         ParentCallerT &m_parent_caller; // jobs engine
     };
