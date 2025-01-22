@@ -517,24 +517,6 @@ namespace small::jobsimpl {
         //
         // get job items
         //
-        inline std::vector<std::shared_ptr<JobsItem>> jobs_get(const std::vector<JobsID> &jobs_ids)
-        {
-            std::vector<std::shared_ptr<JobsItem>> jobs_items;
-            jobs_items.reserve(jobs_ids.size());
-
-            std::unique_lock l(m_lock);
-
-            for (auto &jobs_id : jobs_ids) {
-                auto it_j = m_jobs.find(jobs_id);
-                if (it_j == m_jobs.end()) {
-                    continue;
-                }
-                jobs_items.push_back(it_j->second);
-            }
-
-            return jobs_items; // will be moved
-        }
-
         inline std::shared_ptr<JobsItem> *jobs_get(const JobsID &jobs_id)
         {
             std::unique_lock l(m_lock);
@@ -544,6 +526,23 @@ namespace small::jobsimpl {
                 return nullptr;
             }
             return &it_j->second;
+        }
+
+        inline std::vector<std::shared_ptr<JobsItem>> jobs_get(const std::vector<JobsID> &jobs_ids)
+        {
+            std::vector<std::shared_ptr<JobsItem>> jobs_items;
+            jobs_items.reserve(jobs_ids.size());
+
+            std::unique_lock l(m_lock);
+
+            for (auto &jobs_id : jobs_ids) {
+                auto *jobs_item = jobs_get(jobs_id);
+                if (jobs_item) {
+                    jobs_items.push_back(*jobs_item);
+                }
+            }
+
+            return jobs_items; // will be moved
         }
 
         //

@@ -127,7 +127,6 @@ namespace examples::jobs_engine {
 
             // set a custom delay (timeout for job3 is 500 ms)
             jobs_config.m_delay_next_request = std::chrono::milliseconds(500);
-            small::sleep(500); // TODO remove this after delay works
         });
 
         // add specific function for job1 (calling the function from jobs intead of config allows to pass the engine and extra param)
@@ -184,8 +183,7 @@ namespace examples::jobs_engine {
 
                 first_job = false;
             }
-            // TODO config to wait after request (even if it is not specified in the global config - so custom throttle)
-            small::sleep(30);
+            // config to wait after request (even if it is not specified in the global config - so custom throttle)
             jobs_config.m_delay_next_request = std::chrono::milliseconds(30);
         });
 

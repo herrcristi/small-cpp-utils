@@ -431,15 +431,11 @@ namespace small {
         }
 
         //
-        // inner thread function for executing items (should return if there are more items) (called from thread_pool)
+        // get jobs to execute based on the group
         //
-        friend small::jobsimpl::jobs_engine_thread_pool<JobsGroupT, ThisJobsEngine>;
-
-        inline EnumLock do_action(const JobsGroupT &jobs_group, bool *has_items)
+        inline EnumLock get_group_jobs(const JobsGroupT &jobs_group, std::vector<JobsID> &vec_ids, typename JobsConfig::ConfigProcessing &group_config)
         {
-            *has_items = false;
-
-            // get bulk_count
+            // get bulk_count property
             auto it_cfg_grp = m_config.m_groups.find(jobs_group);
             if (it_cfg_grp == m_config.m_groups.end()) {
                 return small::EnumLock::kExit;
@@ -448,7 +444,6 @@ namespace small {
             int bulk_count = std::max(it_cfg_grp->second.m_bulk_count, 1);
 
             // delay request
-            typename JobsConfig::ConfigProcessing group_config{};
             group_config.m_delay_next_request = it_cfg_grp->second.m_delay_next_request;
 
             // get items to process
@@ -457,40 +452,53 @@ namespace small {
                 return small::EnumLock::kExit;
             }
 
-            std::vector<JobsID> vec_ids;
-            auto                ret = q->wait_pop_front_for(std::chrono::nanoseconds(0), vec_ids, bulk_count);
+            auto ret = q->wait_pop_front_for(std::chrono::nanoseconds(0), vec_ids, bulk_count);
+            return ret;
+        }
+
+        //
+        // inner thread function for executing items (should return if there are more items) (called from thread_pool)
+        //
+        friend small::jobsimpl::jobs_engine_thread_pool<JobsGroupT, ThisJobsEngine>;
+
+        inline EnumLock do_action(const JobsGroupT &jobs_group, std::chrono::milliseconds &delay_next_request)
+        {
+            // get jobs for the group
+            typename JobsConfig::ConfigProcessing group_config{}; // for delay request
+            std::vector<JobsID>                   vec_ids;
+
+            auto ret = get_group_jobs(jobs_group, vec_ids, group_config);
             if (ret != small::EnumLock::kElement) {
                 return ret;
             }
 
-            *has_items = true;
-
             // split by type
-            std::unordered_map<JobsTypeT, std::vector<std::shared_ptr<JobsItem>>> elems_by_type;
+            std::unordered_map<JobsTypeT, std::vector<std::shared_ptr<JobsItem>>> jobs_in_progress_by_type;
             {
                 // get jobs
-                std::vector<std::shared_ptr<JobsItem>> jobs_items = m_queue.jobs_get(vec_ids);
+                std::vector<std::shared_ptr<JobsItem>> jobs_items = queue().jobs_get(vec_ids);
                 for (auto &jobs_item : jobs_items) {
-                    elems_by_type[jobs_item->m_type].reserve(jobs_items.size());
+                    jobs_in_progress_by_type[jobs_item->m_type].reserve(jobs_items.size());
 
                     // mark the item as in progress
                     jobs_item->set_state_inprogress();
-                    // execute if it is still in progress (may be moved to higher states due to external factors like cancel, timeout, finish early due to other job, etc)
+                    // execute if it is still in progress
+                    // (may be moved to higher states due to external factors like cancel, timeout, finish early due to other job, etc)
                     if (jobs_item->is_state_inprogress()) {
-                        elems_by_type[jobs_item->m_type].push_back(jobs_item);
+                        jobs_in_progress_by_type[jobs_item->m_type].push_back(jobs_item);
                     }
                 }
             }
 
             // process specific job by type
-            for (auto &[jobs_type, jobs] : elems_by_type) {
+            for (auto &[jobs_type, jobs] : jobs_in_progress_by_type) {
                 auto it_cfg_type = m_config.m_types.find(jobs_type);
                 if (it_cfg_type == m_config.m_types.end()) {
                     continue;
                 }
 
                 // process specific jobs by type
-                typename JobsConfig::ConfigProcessing type_config;
+                typename JobsConfig::ConfigProcessing type_config{};
                 it_cfg_type->second.m_function_processing(jobs, type_config);
 
                 // get the max for config
@@ -503,13 +511,13 @@ namespace small {
                 }
 
                 // mark the item as in wait for children of finished
-                // if in callback the state is set to failed, cancelled or timeout setting to finish wont succeed because if less value than those
+                // if in callback the state is set to failed, cancelled or timeout
+                // setting to finish wont succeed because is less value than those
                 jobs_waitforchildren(jobs);
             }
 
-            // TODO  group_config.m_delay_next_request
-            // TODO for delay after requests use worker_thread delay item -> check if has_items should be set properly
-            // TODO if delay is set set has_items to true to force the sleep, but also a last time sleep so if there too much time and are no items dont continue
+            // delay request
+            delay_next_request = group_config.m_delay_next_request.value_or(std::chrono::milliseconds(0));
 
             return ret;
         }
