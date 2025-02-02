@@ -333,8 +333,11 @@ namespace examples::jobs_engine {
         // and setup specific finish function for kJobsSettings
         // to setup the promises/futures for the requests and complete them on finish
         std::unordered_map<impl::JobsEng::JobsID, std::promise<bool>> settings_promises;
-        jobs.config_jobs_function_finished(impl::JobsType::kJobsSettings, [&settings_promises](auto &j /*this jobs engine*/, const auto &jobs_items) {
+        jobs.config_jobs_function_finished(impl::JobsType::kJobsSettings, [&fn_print_item, &settings_promises](auto &j /*this jobs engine*/, const auto &jobs_items) {
             for (auto &item : jobs_items) {
+                fn_print_item(item, "FINISHED");
+
+                // set promises
                 auto it_promise = settings_promises.find(item->m_id);
                 if (it_promise != settings_promises.end()) {
                     it_promise->second.set_value(item->is_state_finished() /*success finish or not (not is like timeout)*/);
@@ -577,10 +580,11 @@ namespace examples::jobs_engine {
         // kJobsSettings one request will succeed and one request will timeout for demo purposes
         jobs.queue().push_back(impl::JobsType::kJobsSettings, {1, "normal1"}, &jobs_id);
         settings_promises[jobs_id] = std::promise<bool>();
-        // TODO jobs.queue().start_delay_for(std::chrono::milliseconds(100), small::EnumPriorities::kNormal, jobs_id);
+        jobs.queue().jobs_start_delay_for(std::chrono::milliseconds(100), small::EnumPriorities::kNormal, jobs_id);
+
         jobs.queue().push_back(impl::JobsType::kJobsSettings, {2, "high2"}, &jobs_id);
         settings_promises[jobs_id] = std::promise<bool>();
-        // TODO jobs.queue().start_delay_for(std::chrono::milliseconds(100), small::EnumPriorities::kHigh, jobs_id);
+        jobs.queue().jobs_start_delay_for(std::chrono::milliseconds(100), small::EnumPriorities::kHigh, jobs_id);
 
         // type2 only the first request succeeds and waits for child the other fails from the start
         // jobs.queue().push_back_and_start(small::EnumPriorities::kNormal, impl::JobsType::kJobsType2, {2, "normal2"}, &jobs_id);

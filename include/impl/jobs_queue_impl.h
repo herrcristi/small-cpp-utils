@@ -412,8 +412,36 @@ namespace small::jobsimpl {
             return push_back_and_start_delay_until(__atime, priority, std::make_shared<JobsItem>(jobs_type, std::forward<JobsRequestT>(jobs_req)), jobs_id);
         }
 
-        // TODO add push_back_child_....()
-        // TODO add start_delay_for_....()
+        //
+        // jobs start with specific timeings
+        //
+        template <typename _Rep, typename _Period>
+        inline std::size_t jobs_start_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const JobsPrioT &priority, const JobsID &jobs_id)
+        {
+            if (is_exit()) {
+                return 0;
+            }
+
+            auto jobs_item = jobs_get(jobs_id);
+            if (!jobs_item) {
+                return 0;
+            }
+            return m_delayed_items.queue().push_delay_for(__rtime, {priority, jobs_item->m_type, jobs_id});
+        }
+
+        // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
+        inline std::size_t jobs_start_delay_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, const JobsPrioT &priority, const JobsID &jobs_id)
+        {
+            if (is_exit()) {
+                return 0;
+            }
+
+            auto jobs_item = jobs_get(jobs_id);
+            if (!jobs_item) {
+                return 0;
+            }
+            return m_delayed_items.queue().push_delay_until(__atime, {priority, jobs_item->m_type, jobs_id});
+        }
 
     private:
         // clang-format off
