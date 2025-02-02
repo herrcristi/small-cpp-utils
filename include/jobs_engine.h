@@ -258,7 +258,7 @@ namespace small {
         //
         // get job items
         //
-        inline std::shared_ptr<JobsItem> *jobs_get(const JobsID &jobs_id)
+        inline std::shared_ptr<JobsItem> jobs_get(const JobsID &jobs_id)
         {
             return queue().jobs_get(jobs_id);
         }
@@ -353,6 +353,40 @@ namespace small {
         {
             // set the jobs as timeout if it is not finished until now (called from queue)
             return jobs_set_state(jobs_ids, small::jobsimpl::EnumJobsState::kTimeout);
+        }
+
+        inline bool jobs_set_state(const JobsID &jobs_id, const small::jobsimpl::EnumJobsState &jobs_state)
+        {
+            auto jobs_item = jobs_get(jobs_id);
+            if (!jobs_item) {
+                return false;
+            }
+            return jobs_set_state(jobs_item, jobs_state);
+        }
+
+        inline std::size_t jobs_set_state(const std::vector<JobsID> &jobs_ids, const small::jobsimpl::EnumJobsState &jobs_state)
+        {
+            return jobs_set_state(jobs_get(jobs_ids), jobs_state);
+        }
+
+        inline bool jobs_set_state(const JobsID &jobs_id, const small::jobsimpl::EnumJobsState &jobs_state, const JobsResponseT &jobs_response)
+        {
+            auto jobs_item = jobs_get(jobs_id);
+            if (!jobs_item) {
+                return false;
+            }
+            jobs_set_response(jobs_item, jobs_response);
+            return jobs_set_state(jobs_item, jobs_state);
+        }
+
+        inline bool jobs_set_state(const JobsID &jobs_id, const small::jobsimpl::EnumJobsState &jobs_state, JobsResponseT &&jobs_response)
+        {
+            auto jobs_item = jobs_get(jobs_id);
+            if (!jobs_item) {
+                return false;
+            }
+            jobs_set_response(jobs_item, std::forward<JobsResponseT>(jobs_response));
+            return jobs_set_state(jobs_item, jobs_state);
         }
 
         // clang-format off
@@ -514,7 +548,7 @@ namespace small {
             std::unordered_map<JobsTypeT, std::vector<std::shared_ptr<JobsItem>>> jobs_in_progress_by_type;
             {
                 // get jobs
-                std::vector<std::shared_ptr<JobsItem>> jobs_items = queue().jobs_get(vec_ids);
+                std::vector<std::shared_ptr<JobsItem>> jobs_items = jobs_get(vec_ids);
                 for (auto &jobs_item : jobs_items) {
                     jobs_in_progress_by_type[jobs_item->m_type].reserve(jobs_items.size());
 
@@ -601,65 +635,31 @@ namespace small {
         //
         inline bool jobs_set_progress(const JobsID &jobs_id, const int &progress)
         {
-            auto *jobs_item = jobs_get(jobs_id);
+            auto jobs_item = jobs_get(jobs_id);
             if (!jobs_item) {
                 return false;
             }
-            return jobs_set_progress(*jobs_item, progress);
+            return jobs_set_progress(jobs_item, progress);
         }
 
         inline bool jobs_set_response(const JobsID &jobs_id, const JobsResponseT &jobs_response)
         {
             std::unique_lock l(*this);
-            auto            *jobs_item = jobs_get(jobs_id);
+            auto             jobs_item = jobs_get(jobs_id);
             if (!jobs_item) {
                 return false;
             }
-            return jobs_set_response(*jobs_item, jobs_response);
+            return jobs_set_response(jobs_item, jobs_response);
         }
 
         inline bool jobs_set_response(const JobsID &jobs_id, JobsResponseT &&jobs_response)
         {
             std::unique_lock l(*this);
-            auto            *jobs_item = jobs_get(jobs_id);
+            auto             jobs_item = jobs_get(jobs_id);
             if (!jobs_item) {
                 return false;
             }
-            return jobs_set_response(*jobs_item, std::forward<JobsResponseT>(jobs_response));
-        }
-
-        inline bool jobs_set_state(const JobsID &jobs_id, const small::jobsimpl::EnumJobsState &jobs_state)
-        {
-            auto *jobs_item = jobs_get(jobs_id);
-            if (!jobs_item) {
-                return false;
-            }
-            return jobs_set_state(*jobs_item, jobs_state);
-        }
-
-        inline std::size_t jobs_set_state(const std::vector<JobsID> &jobs_ids, const small::jobsimpl::EnumJobsState &jobs_state)
-        {
-            return jobs_set_state(jobs_get(jobs_ids), jobs_state);
-        }
-
-        inline bool jobs_set_state(const JobsID &jobs_id, const small::jobsimpl::EnumJobsState &jobs_state, const JobsResponseT &jobs_response)
-        {
-            auto *jobs_item = jobs_get(jobs_id);
-            if (!jobs_item) {
-                return false;
-            }
-            jobs_set_response(*jobs_item, jobs_response);
-            return jobs_set_state(*jobs_item, jobs_state);
-        }
-
-        inline bool jobs_set_state(const JobsID &jobs_id, const small::jobsimpl::EnumJobsState &jobs_state, JobsResponseT &&jobs_response)
-        {
-            auto *jobs_item = jobs_get(jobs_id);
-            if (!jobs_item) {
-                return false;
-            }
-            jobs_set_response(*jobs_item, std::forward<JobsResponseT>(jobs_response));
-            return jobs_set_state(*jobs_item, jobs_state);
+            return jobs_set_response(jobs_item, std::forward<JobsResponseT>(jobs_response));
         }
 
         //

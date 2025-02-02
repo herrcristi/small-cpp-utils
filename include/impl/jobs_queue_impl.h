@@ -242,7 +242,7 @@ namespace small::jobsimpl {
 
             std::unique_lock l(m_lock);
 
-            auto *parent_jobs_item = jobs_get(parent_jobs_id);
+            auto parent_jobs_item = jobs_get(parent_jobs_id);
             if (!parent_jobs_item) {
                 return 0;
             }
@@ -258,7 +258,7 @@ namespace small::jobsimpl {
                 *child_jobs_id = id;
             }
 
-            jobs_parent_child(*parent_jobs_item, child_jobs_item);
+            jobs_parent_child(parent_jobs_item, child_jobs_item);
             return 1;
         }
 
@@ -518,7 +518,7 @@ namespace small::jobsimpl {
         //
         // get job items
         //
-        inline std::shared_ptr<JobsItem> *jobs_get(const JobsID &jobs_id)
+        inline std::shared_ptr<JobsItem> jobs_get(const JobsID &jobs_id)
         {
             std::unique_lock l(m_lock);
 
@@ -526,7 +526,7 @@ namespace small::jobsimpl {
             if (it_j == m_jobs.end()) {
                 return nullptr;
             }
-            return &it_j->second;
+            return it_j->second;
         }
 
         inline std::vector<std::shared_ptr<JobsItem>> jobs_get(const std::vector<JobsID> &jobs_ids)
@@ -537,9 +537,9 @@ namespace small::jobsimpl {
             std::unique_lock l(m_lock);
 
             for (auto &jobs_id : jobs_ids) {
-                auto *jobs_item = jobs_get(jobs_id);
+                auto jobs_item = jobs_get(jobs_id);
                 if (jobs_item) {
-                    jobs_items.push_back(*jobs_item);
+                    jobs_items.push_back(jobs_item);
                 }
             }
 
@@ -583,11 +583,11 @@ namespace small::jobsimpl {
 
         inline std::size_t jobs_start(const JobsPrioT &priority, const JobsID &jobs_id)
         {
-            auto *jobs_item = jobs_get(jobs_id);
+            auto jobs_item = jobs_get(jobs_id);
             if (!jobs_item) {
                 return 0;
             }
-            return jobs_start(priority, (*jobs_item)->m_type, (*jobs_item)->m_id);
+            return jobs_start(priority, jobs_item->m_type, jobs_item->m_id);
         }
 
         inline std::size_t jobs_start(const JobsPrioT &priority, const JobsTypeT &jobs_type, const JobsID &jobs_id)
@@ -621,14 +621,14 @@ namespace small::jobsimpl {
                 return;
             }
             // if not a final state, set it to cancelled (in case it is executing at this point)
-            if (!JobsItem::is_state_complete((*jobs_item)->get_state())) {
-                (*jobs_item)->set_state_cancelled();
+            if (!JobsItem::is_state_complete(jobs_item->get_state())) {
+                jobs_item->set_state_cancelled();
             }
 
             m_jobs.erase(jobs_id);
 
             // delete all children
-            for (auto &child_jobs_id : (*jobs_item)->m_childrenIDs) {
+            for (auto &child_jobs_id : jobs_item->m_childrenIDs) {
                 jobs_erase(child_jobs_id);
             }
         }
@@ -640,16 +640,16 @@ namespace small::jobsimpl {
         {
             std::unique_lock l(m_lock);
 
-            auto *parent_jobs_item = jobs_get(parent_jobs_id);
+            auto parent_jobs_item = jobs_get(parent_jobs_id);
             if (!parent_jobs_item) {
                 return 0;
             }
-            auto *child_jobs_item = jobs_get(child_jobs_id);
+            auto child_jobs_item = jobs_get(child_jobs_id);
             if (!child_jobs_item) {
                 return 0;
             }
 
-            jobs_parent_child(*parent_jobs_item, *child_jobs_item);
+            jobs_parent_child(parent_jobs_item, child_jobs_item);
             return 1;
         }
 

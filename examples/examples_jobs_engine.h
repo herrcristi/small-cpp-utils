@@ -22,7 +22,7 @@ namespace examples::jobs_engine {
         // POST     will create 2 children (DB+CACHE) and will be finished when ALL will be finished
         //          also CACHE will depend on DB and will start only after DB is finished
         //              (this will demonstrate the default case AND and default children function)
-        // GET      will create 2 children (DB+CACHE) and will be finished when at least 1 is finished
+        // GET      will create 2 children (CACHE+DB) and will be finished when at least 1 is finished
         //              (this will demonstrate OR and custom children function)
         // DELETE   will create 2 children (DB+CACHE) and will be finished when DB is finished
         //              (this will demonstrate the default case AND and custom children function)
@@ -217,7 +217,7 @@ namespace examples::jobs_engine {
             return data_processing(jobs, "DATABASE", jobs_item);
         }
 
-        inline void db_process(JobsEng &jobs, DbRequests &db_requests, const std::vector<std::shared_ptr<impl::JobsEng::JobsItem>> &jobs_items)
+        inline DbRequests db_call(JobsEng &jobs, DbRequests &db_requests, const std::vector<std::shared_ptr<impl::JobsEng::JobsItem>> &jobs_items)
         {
             // coalesce calls
             DbRequests requests;
@@ -239,25 +239,13 @@ namespace examples::jobs_engine {
             // simulate long db call
             small::sleep(200);
 
-            std::cout << "DATABASE thread " << std::this_thread::get_id()
-                      << " processing (coalesced) calls " << ssr.str()
+            std::cout << "DATABASE processing (coalesced) calls " << ssr.str()
                       << " current calls " << ssj.str()
                       << " time " << small::toISOString(small::timeNow())
+                      << " thread " << std::this_thread::get_id()
                       << "\n";
 
-            auto jobs_requests = jobs.jobs_get(requests);
-
-            for (auto &jobs_item : jobs_requests) {
-                // save the response
-                auto success = db_processing(jobs, jobs_item);
-
-                // mark dbs as finished (this should include current jobs_item too, unless they were coalesced before)
-                if (success) {
-                    jobs.jobs_finished(jobs_item->m_id); // result is in the response
-                } else {
-                    jobs.jobs_failed(jobs_item->m_id); // 404 not found
-                }
-            }
+            return requests;
         }
 
     } // namespace impl
@@ -306,8 +294,7 @@ namespace examples::jobs_engine {
         impl::JobsEng jobs(config);
 
         auto fn_print_item = [](auto item, std::string fn_type) {
-            std::cout << "thread " << std::this_thread::get_id()
-                      << std::setw(10) << fn_type
+            std::cout << std::setw(10) << fn_type
                       << " processing "
                       << "{"
                       << " jobid=" << std::setw(2) << item->m_id
@@ -316,6 +303,7 @@ namespace examples::jobs_engine {
                       << " req=" << impl::to_string(item->m_request)
                       << "}"
                       << " time " << small::toISOString(small::timeNow())
+                      << " thread " << std::this_thread::get_id()
                       << "\n";
         };
 
@@ -363,7 +351,20 @@ namespace examples::jobs_engine {
 
         jobs.config_jobs_function_processing(impl::JobsType::kJobsDatabase, [&db_requests](auto &j /*this jobs engine*/, const auto &jobs_items, auto & /* config */) {
             // will coalesce current requests
-            db_process(j, db_requests, jobs_items);
+            auto requests = db_call(j, db_requests, jobs_items);
+
+            auto jobs_requests = j.jobs_get(requests);
+            for (auto &jobs_item : jobs_requests) {
+                // save the response
+                auto success = impl::db_processing(j, jobs_item);
+
+                // mark dbs as finished (this should include current jobs_item too, unless they were coalesced before)
+                if (success) {
+                    j.jobs_finished(jobs_item->m_id); // result is in the response already
+                } else {
+                    j.jobs_failed(jobs_item->m_id); // 404 not found
+                }
+            }
         });
 
         //
@@ -386,17 +387,16 @@ namespace examples::jobs_engine {
             }
         });
 
-        // cache may have as child the db
+        // cache may have as child the db (in POST scenario)
         // add custom children finish function to actually add the cache item into the processing cache worker
-        jobs.config_jobs_function_children_finished(impl::JobsType::kJobsCache, [&](auto &j /*this jobs engine*/, auto jobs_item, auto jobs_child) {
+        jobs.config_jobs_function_children_finished(impl::JobsType::kJobsCache, [&cache_server](auto &j /*this jobs engine*/, auto jobs_item /*parent*/, auto jobs_child) {
             if (jobs_child->is_state_finished()) {
                 // cache has external executors
-                // may pass db data to cache but here skip it for the demo
-                cache_server.push_back(jobs_item);
+                cache_server.push_back(jobs_item); // when it will be finished parent POST will be automatically finished
             } else {
                 // if db failed, cache will fail too
                 // because this function overrides the default children function jobs need to be failed manually
-                j.jobs_failed(jobs_item->m_id);
+                j.jobs_cancelled(jobs_item->m_id);
             }
         });
 
@@ -440,12 +440,14 @@ namespace examples::jobs_engine {
         // GET
         //
         // will create 2 children (DB+CACHE) and will be finished when at least 1 is finished
-        //      (this will demonstrate OR and custom children function)
-        jobs.config_jobs_function_processing(impl::JobsType::kJobsApiGet, [&](auto &j /*this jobs engine*/, const auto &jobs_items, auto &jobs_config) {
+        //      unlike POST where children are chained, here there is a star topology even thou the DB will wait for cache
+        //      (normally this will need 3 children if CACHE (not found) -> DB -> CACHE update)
+        //
+        jobs.config_jobs_function_processing(impl::JobsType::kJobsApiGet, [&fn_print_item, &db_requests, &cache_server](auto &j /*this jobs engine*/, const auto &jobs_items, auto &jobs_config) {
             for (auto &jobs_item : jobs_items) {
                 fn_print_item(jobs_item, "GET");
 
-                // create first the cache child (it will start when db is finished)
+                // create children
                 impl::JobsEng::JobsID jobs_child_cache_id{};
                 impl::JobsEng::JobsID jobs_child_db_id{};
 
@@ -464,13 +466,13 @@ namespace examples::jobs_engine {
                     continue;
                 }
 
+                // the db request will be started (if not found in cache) in children function
                 // add to db_requests
-                impl::db_add_request(j, db_requests, jobs_child_db_id);
+                impl::db_add_request(j, db_requests, jobs_child_db_id); // this may execute earlier due to coalesce db calls
 
-                // start the db request
-                j.jobs_start(small::EnumPriorities::kNormal, jobs_child_db_id);
-                // cache has external executors
-                cache_server.push_back(jobs_item);
+                // start the external cache executor
+                auto jobs_cache = j.jobs_get(jobs_child_cache_id);
+                cache_server.push_back(jobs_cache);
             }
 
             // config to wait after request (even if it is not specified in the global config - so custom throttle)
@@ -478,15 +480,37 @@ namespace examples::jobs_engine {
         });
 
         // custom children function for GET to finish the parent when at least 1 child is finished
-        jobs.config_jobs_function_children_finished(impl::JobsType::kJobsApiGet, [&](auto &j /*this jobs engine*/, auto jobs_item, auto jobs_child) {
-            // TODO cleanup the children
-            // if one child failed wait for the second one -> remove it from the children list
-            if (jobs_item->is_complete()) {
-                return;
-            }
-
-            if (jobs_child->is_state_finished()) {
-                jobs_item->set_state(jobs_child->get_state());
+        jobs.config_jobs_function_children_finished(impl::JobsType::kJobsApiGet, [](auto &j /*this jobs engine*/, auto jobs_item /*parent*/, auto jobs_child) {
+            if (jobs_child->m_type == impl::JobsType::kJobsCache) {
+                std::string           response;
+                impl::JobsEng::JobsID jobs_child_db_id{};
+                {
+                    std::unique_lock l(j);
+                    response         = jobs_child->m_response;
+                    jobs_child_db_id = jobs_item->m_childrenIDs.size() >= 2 ? jobs_item->m_childrenIDs[1] : 0;
+                }
+                if (jobs_child->is_state_finished()) {
+                    // found in cache, finish the db, and the parent should be finished too
+                    // parent could be finished earlier due to db coalesce calls
+                    j.jobs_finished(jobs_child_db_id, response); // this will call children function again for the db
+                } else {
+                    // cache failed, start the db request
+                    j.jobs_start(small::EnumPriorities::kNormal, jobs_child_db_id);
+                }
+            } else /* if (jobs_child->m_type == impl::JobsType::kJobsDatabase) */ {
+                // db is finished, so the parent should be finished with same state as the db
+                if (jobs_child->is_state_finished()) {
+                    // finish the parent
+                    std::string response;
+                    {
+                        std::unique_lock l(j);
+                        response = jobs_child->m_response;
+                    }
+                    j.jobs_finished(jobs_item->m_id, response);
+                } else {
+                    // fail the parent with the same state as the db
+                    j.jobs_set_state(jobs_item->m_id, jobs_child->m_state.load());
+                }
             }
         });
 
@@ -495,16 +519,61 @@ namespace examples::jobs_engine {
         //
         // will create 2 children (DB+CACHE) and will be finished when DB is finished
         //  (this will demonstrate the default case AND and custom children function)
-        // TODO
+        jobs.config_jobs_function_processing(impl::JobsType::kJobsApiDelete, [&fn_print_item, &db_requests, &cache_server](auto &j /*this jobs engine*/, const auto &jobs_items, auto &jobs_config) {
+            for (auto &jobs_item : jobs_items) {
+                fn_print_item(jobs_item, "DELETE");
 
-        // TODO add function for custom wait children and demonstrate set progress to another item
+                // create children
+                impl::JobsEng::JobsID jobs_child_cache_id{};
+                impl::JobsEng::JobsID jobs_child_db_id{};
 
-        impl::JobsEng::JobsID              jobs_id{};
-        std::vector<impl::JobsEng::JobsID> jobs_ids;
+                auto ret_cache = j.queue().push_back_child(jobs_item->m_id /*parent*/, impl::JobsType::kJobsCache, jobs_item->m_request, &jobs_child_cache_id);
+                auto ret_db    = j.queue().push_back_child(jobs_item->m_id /*parent*/, impl::JobsType::kJobsDatabase, jobs_item->m_request, &jobs_child_db_id);
+
+                // if both failed, then the parent will fail too
+                if (!ret_cache && !ret_db) {
+                    j.jobs_failed(jobs_item->m_id);
+                    if (ret_cache) {
+                        j.jobs_failed(jobs_child_cache_id);
+                    }
+                    if (ret_db) {
+                        j.jobs_failed(jobs_child_db_id);
+                    }
+                    continue;
+                }
+
+                // the db request will be started (if not found in cache) in children function
+                // add to db_requests
+                impl::db_add_request(j, db_requests, jobs_child_db_id); // this may execute earlier due to coalesce db calls
+
+                // start the db request
+                j.jobs_start(small::EnumPriorities::kNormal, jobs_child_db_id);
+
+                // start the external cache executor
+                auto jobs_cache = j.jobs_get(jobs_child_cache_id);
+                cache_server.push_back(jobs_cache);
+            }
+        });
+
+        // custom children function for DELETE to finish the parent only if the db is finished
+        jobs.config_jobs_function_children_finished(impl::JobsType::kJobsApiGet, [](auto &j /*this jobs engine*/, auto jobs_item /*parent*/, auto jobs_child) {
+            if (jobs_child->m_type == impl::JobsType::kJobsDatabase) {
+                // db is finished, so the parent should be finished with same state as the db
+                std::string response;
+                {
+                    std::unique_lock l(j);
+                    response = jobs_child->m_response;
+                }
+                j.jobs_set_state(jobs_item->m_id, jobs_child->m_state.load(), response);
+            }
+        });
 
         //
         // ADD JOBS
         //
+        impl::JobsEng::JobsID              jobs_id{};
+        std::vector<impl::JobsEng::JobsID> jobs_ids;
+
         // kJobsSettings one request will succeed and one request will timeout for demo purposes
         jobs.queue().push_back(impl::JobsType::kJobsSettings, {1, "normal1"}, &jobs_id);
         settings_promises[jobs_id] = std::promise<bool>();
