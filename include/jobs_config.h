@@ -41,9 +41,11 @@ namespace small {
         };
 
         // functions
-        using FunctionProcessing         = std::function<void(const std::vector<std::shared_ptr<JobsItem>> &, ConfigProcessing &config)>;
-        using FunctionOnChildrenFinished = std::function<void(const std::vector<std::shared_ptr<JobsItem>> &)>;
-        using FunctionFinished           = std::function<void(const std::vector<std::shared_ptr<JobsItem>> &)>;
+        using FunctionProcessing = std::function<void(const std::vector<std::shared_ptr<JobsItem>> & /*jobs_items*/, ConfigProcessing & /* config */)>;
+
+        using FunctionOnChildrenFinished = std::function<void(std::shared_ptr<JobsItem> /*jobs_parent*/, std::shared_ptr<JobsItem> /*jobs_child*/)>;
+
+        using FunctionFinished = std::function<void(const std::vector<std::shared_ptr<JobsItem>> & /*jobs_items*/)>;
 
         // config for an individual job type
         struct ConfigJobsType

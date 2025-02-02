@@ -1,10 +1,11 @@
 #pragma once
 
 #include <unordered_map>
+#include <unordered_set>
 
-#include "impl/jobs_engine_thread_pool_impl.h"
 #include "impl/jobs_item_impl.h"
 #include "impl/jobs_queue_impl.h"
+#include "impl/jobs_thread_pool_impl.h"
 #include "jobs_config.h"
 
 // enum class JobsType
@@ -167,38 +168,69 @@ namespace small {
         template <typename _Callable, typename... Args>
         inline void config_default_function_processing(_Callable function_processing, Args... extra_parameters)
         {
-            m_config.config_default_function_processing(std::bind(std::forward<_Callable>(function_processing), std::ref(*this), std::placeholders::_1 /*jobs_items*/, std::placeholders::_2 /*config*/, std::forward<Args>(extra_parameters)...));
+            m_config.config_default_function_processing(
+                std::bind(std::forward<_Callable>(function_processing),
+                          std::ref(*this),
+                          std::placeholders::_1 /*jobs_items*/,
+                          std::placeholders::_2 /*config*/,
+                          std::forward<Args>(extra_parameters)...));
         }
 
         template <typename _Callable, typename... Args>
         inline void config_default_function_children_finished(_Callable function_children_finished, Args... extra_parameters)
         {
-            m_config.config_default_function_children_finished(std::bind(std::forward<_Callable>(function_children_finished), std::ref(*this), std::placeholders::_1 /*jobs_items*/, std::placeholders::_2 /*config*/, std::forward<Args>(extra_parameters)...));
+            m_config.config_default_function_children_finished(
+                std::bind(std::forward<_Callable>(function_children_finished),
+                          std::ref(*this),
+                          std::placeholders::_1 /*parent job*/,
+                          std::placeholders::_2 /*child job*/,
+                          std::forward<Args>(extra_parameters)...));
         }
 
         template <typename _Callable, typename... Args>
         inline void config_default_function_finished(_Callable function_finished, Args... extra_parameters)
         {
-            m_config.config_default_function_finished(std::bind(std::forward<_Callable>(function_finished), std::ref(*this), std::placeholders::_1 /*jobs_items*/, std::placeholders::_2 /*config*/, std::forward<Args>(extra_parameters)...));
+            m_config.config_default_function_finished(
+                std::bind(std::forward<_Callable>(function_finished),
+                          std::ref(*this),
+                          std::placeholders::_1 /*jobs_items*/,
+                          std::forward<Args>(extra_parameters)...));
         }
 
         // specific jobs functions
         template <typename _Callable, typename... Args>
         inline void config_jobs_function_processing(const JobsTypeT &jobs_type, _Callable function_processing, Args... extra_parameters)
         {
-            m_config.config_jobs_function_processing(jobs_type, std::bind(std::forward<_Callable>(function_processing), std::ref(*this), std::placeholders::_1 /*jobs_items*/, std::placeholders::_2 /*config*/, std::forward<Args>(extra_parameters)...));
+            m_config.config_jobs_function_processing(
+                jobs_type,
+                std::bind(std::forward<_Callable>(function_processing),
+                          std::ref(*this),
+                          std::placeholders::_1 /*jobs_items*/,
+                          std::placeholders::_2 /*config*/,
+                          std::forward<Args>(extra_parameters)...));
         }
 
         template <typename _Callable, typename... Args>
         inline void config_jobs_function_children_finished(const JobsTypeT &jobs_type, _Callable function_children_finished, Args... extra_parameters)
         {
-            m_config.config_jobs_function_children_finished(jobs_type, std::bind(std::forward<_Callable>(function_children_finished), std::ref(*this), std::placeholders::_1 /*jobs_items*/, std::forward<Args>(extra_parameters)...));
+            m_config.config_jobs_function_children_finished(
+                jobs_type,
+                std::bind(std::forward<_Callable>(function_children_finished),
+                          std::ref(*this),
+                          std::placeholders::_1 /*parent job*/,
+                          std::placeholders::_2 /*child job*/,
+                          std::forward<Args>(extra_parameters)...));
         }
 
         template <typename _Callable, typename... Args>
         inline void config_jobs_function_finished(const JobsTypeT &jobs_type, _Callable function_finished, Args... extra_parameters)
         {
-            m_config.config_jobs_function_finished(jobs_type, std::bind(std::forward<_Callable>(function_finished), std::ref(*this), std::placeholders::_1 /*jobs_items*/, std::forward<Args>(extra_parameters)...));
+            m_config.config_jobs_function_finished(
+                jobs_type,
+                std::bind(std::forward<_Callable>(function_finished),
+                          std::ref(*this),
+                          std::placeholders::_1 /*jobs_items*/,
+                          std::forward<Args>(extra_parameters)...));
         }
 
         //
@@ -270,7 +302,7 @@ namespace small {
         {
             return jobs_set_state(jobs_id, small::jobsimpl::EnumJobsState::kFinished);
         }
-        inline bool jobs_finished(const std::vector<JobsID> &jobs_ids)
+        inline std::size_t jobs_finished(const std::vector<JobsID> &jobs_ids)
         {
             return jobs_set_state(jobs_ids, small::jobsimpl::EnumJobsState::kFinished);
         }
@@ -287,7 +319,7 @@ namespace small {
         {
             return jobs_set_state(jobs_id, small::jobsimpl::EnumJobsState::kFailed);
         }
-        inline bool jobs_failed(const std::vector<JobsID> &jobs_ids)
+        inline std::size_t jobs_failed(const std::vector<JobsID> &jobs_ids)
         {
             return jobs_set_state(jobs_ids, small::jobsimpl::EnumJobsState::kFailed);
         }
@@ -304,7 +336,7 @@ namespace small {
         {
             return jobs_set_state(jobs_id, small::jobsimpl::EnumJobsState::kCancelled);
         }
-        inline bool jobs_cancelled(const std::vector<JobsID> &jobs_ids)
+        inline std::size_t jobs_cancelled(const std::vector<JobsID> &jobs_ids)
         {
             return jobs_set_state(jobs_ids, small::jobsimpl::EnumJobsState::kCancelled);
         }
@@ -315,6 +347,12 @@ namespace small {
         inline bool jobs_cancelled(const JobsID &jobs_id, JobsResponseT &&jobs_response)
         {
             return jobs_set_state(jobs_id, small::jobsimpl::EnumJobsState::kCancelled, std::forward<JobsResponseT>(jobs_response));
+        }
+
+        inline std::size_t jobs_timeout(const std::vector<JobsID> &jobs_ids)
+        {
+            // set the jobs as timeout if it is not finished until now (called from queue)
+            return jobs_set_state(jobs_ids, small::jobsimpl::EnumJobsState::kTimeout);
         }
 
         // clang-format off
@@ -413,7 +451,7 @@ namespace small {
                 m_config.m_default_function_finished = std::bind(&jobs_engine::jobs_on_finished, this, std::placeholders::_1 /*jobs_items*/);
             }
             if (!m_config.m_default_function_children_finished) {
-                m_config.m_default_function_children_finished = std::bind(&jobs_engine::jobs_on_children_finished, this, std::placeholders::_1 /*jobs_items*/);
+                m_config.m_default_function_children_finished = std::bind(&jobs_engine::jobs_on_children_finished, this, std::placeholders::_1 /*jobs parent*/, std::placeholders::_2 /*jobs_child*/);
             }
 
             m_config.apply_default_function_processing();
@@ -459,7 +497,7 @@ namespace small {
         //
         // inner thread function for executing items (should return if there are more items) (called from thread_pool)
         //
-        friend small::jobsimpl::jobs_engine_thread_pool<JobsGroupT, ThisJobsEngine>;
+        friend small::jobsimpl::jobs_thread_pool<JobsGroupT, ThisJobsEngine>;
 
         inline EnumLock do_action(const JobsGroupT &jobs_group, std::chrono::milliseconds &delay_next_request)
         {
@@ -529,8 +567,8 @@ namespace small {
 
         inline void jobs_add(std::shared_ptr<JobsItem> jobs_item)
         {
-            // add it to the timeout queue
-            // only if job type has config a timeout
+            // called from queue for extra processing when a jobs is added
+            // check if needs to be added it to the timeout queue (only if job type has config a timeout)
             auto timeout = m_config.m_types[jobs_item->m_type].m_timeout;
             if (timeout) {
                 m_timeout_queue.queue().push_delay_for(*timeout, jobs_item->m_id);
@@ -553,6 +591,7 @@ namespace small {
 
         inline std::size_t push_back(std::vector<JobsID> &&jobs_ids)
         {
+            // this jobs has reached the timeout
             jobs_timeout(jobs_ids);
             return jobs_ids.size();
         }
@@ -598,6 +637,11 @@ namespace small {
             return jobs_set_state(*jobs_item, jobs_state);
         }
 
+        inline std::size_t jobs_set_state(const std::vector<JobsID> &jobs_ids, const small::jobsimpl::EnumJobsState &jobs_state)
+        {
+            return jobs_set_state(jobs_get(jobs_ids), jobs_state);
+        }
+
         inline bool jobs_set_state(const JobsID &jobs_id, const small::jobsimpl::EnumJobsState &jobs_state, const JobsResponseT &jobs_response)
         {
             auto *jobs_item = jobs_get(jobs_id);
@@ -618,16 +662,10 @@ namespace small {
             return jobs_set_state(*jobs_item, jobs_state);
         }
 
-        inline std::size_t jobs_timeout(const std::vector<JobsID> &jobs_ids)
-        {
-            // set the jobs as timeout if it is not finished until now (called from queue)
-            return jobs_set_state(jobs_get(jobs_ids), small::jobsimpl::EnumJobsState::kTimeout);
-        }
-
         //
         // jobs set progress
         //
-        inline bool jobs_set_progress(const std::shared_ptr<JobsItem> &jobs_item, const int &progress)
+        inline bool jobs_set_progress(std::shared_ptr<JobsItem> jobs_item, const int &progress)
         {
             jobs_item->set_progress(progress);
             if (progress == 100) {
@@ -639,13 +677,13 @@ namespace small {
         //
         // jobs set response
         //
-        inline void jobs_set_response(std::shared_ptr<JobsItem> &jobs_item, const JobsResponseT &jobs_response)
+        inline void jobs_set_response(std::shared_ptr<JobsItem> jobs_item, const JobsResponseT &jobs_response)
         {
             std::unique_lock l(*this);
             jobs_item->m_response = jobs_response;
         }
 
-        inline void jobs_set_response(std::shared_ptr<JobsItem> &jobs_item, JobsResponseT &&jobs_response)
+        inline void jobs_set_response(std::shared_ptr<JobsItem> jobs_item, JobsResponseT &&jobs_response)
         {
             std::unique_lock l(*this);
             jobs_item->m_response = std::move(jobs_response);
@@ -663,7 +701,7 @@ namespace small {
         //
         // apply state
         //
-        inline bool jobs_set_state(const std::shared_ptr<JobsItem> &jobs_item, const small::jobsimpl::EnumJobsState &jobs_state)
+        inline bool jobs_set_state(std::shared_ptr<JobsItem> jobs_item, const small::jobsimpl::EnumJobsState &jobs_state)
         {
             small::jobsimpl::EnumJobsState set_state = jobs_state;
 
@@ -733,7 +771,11 @@ namespace small {
                 // if it has parents call jobs_on_children_finished (or custom function)
                 if (jobs_item->has_parents()) {
                     jobs_set_progress(jobs_item, 100); // TODO update parents too
-                    m_config.m_types[jobs_item->m_type].m_function_children_finished({jobs_item});
+
+                    auto jobs_parents = jobs_get(jobs_item->m_parentIDs);
+                    for (auto &jobs_parent : jobs_parents) {
+                        m_config.m_types[jobs_parent->m_type].m_function_children_finished(jobs_parent, jobs_item /*child*/);
+                    }
                 } else {
                     // delete only if there are no parents (+delete all children)
                     m_queue.jobs_erase(jobs_item->m_id);
@@ -744,7 +786,7 @@ namespace small {
         //
         // when is finished
         //
-        inline void jobs_on_finished(const std::vector<std::shared_ptr<JobsItem>> &/* jobs_items */)
+        inline void jobs_on_finished(const std::vector<std::shared_ptr<JobsItem>> & /* jobs_items */)
         {
             // by default nothing to here, but it can be setup for each jobs type
         }
@@ -752,56 +794,55 @@ namespace small {
         //
         // after child is finished
         //
-        inline void jobs_on_children_finished(const std::vector<std::shared_ptr<JobsItem>> &jobs_children)
+        inline void jobs_on_children_finished(std::shared_ptr<JobsItem> jobs_parent, std::shared_ptr<JobsItem> jobs_child)
         {
-            for (auto &jobs_item : jobs_children) {
-                //
-                // compute parent state and progress based on children
-                // if a children has failed/timeout/cancelled then parent is set to failed
-                // if all children are finished then the parent is finished
-                //
-                std::unordered_map<JobsID /*parent*/, std::pair<std::shared_ptr<JobsItem>, std::vector<std::shared_ptr<JobsItem>>>> unfinished_parents;
-                {
-                    std::unique_lock l(*this);
+            //
+            // compute parent state and progress based on children
+            // if a children has failed/timeout/cancelled then parent is set to failed
+            // if all children are finished then the parent is finished
+            //
 
-                    auto parent_jobs_items = jobs_get(jobs_item->m_parentIDs);
-                    for (auto &parent_jobs_item : parent_jobs_items) {
-                        if (parent_jobs_item->is_complete()) {
-                            continue;
-                        }
-                        // add to the unfinished parents map (with all children)
-                        unfinished_parents[parent_jobs_item->m_id] = {parent_jobs_item, jobs_get(parent_jobs_item->m_childrenIDs)};
-                    }
-                } // lock finished
+            // get all children
+            std::vector<std::shared_ptr<JobsItem>> all_children;
+            {
+                std::unique_lock l(*this);
 
-                for (auto &[parent_jobs_id, parent_info] : unfinished_parents) {
-                    // compute progress from all finished children
-                    std::size_t count_failed_children    = 0;
-                    std::size_t count_completed_children = 0;
-                    std::size_t count_total_children     = parent_info.second.size();
-                    for (auto &child_jobs_item : parent_info.second) {
-                        if (!child_jobs_item->is_complete()) {
-                            continue;
-                        }
+                if (jobs_parent->is_complete()) {
+                    return;
+                }
 
-                        ++count_completed_children;
-                        if (!child_jobs_item->is_state_finished()) {
-                            ++count_failed_children;
-                        }
-                    }
+                // TODO progress is already set (and will include finished) - here get children an check if one of them is failed
+                // and take into account the current child if it is failed dont get children
+                all_children = jobs_get(jobs_parent->m_childrenIDs);
 
-                    if (count_failed_children) {
-                        jobs_failed(parent_jobs_id);
-                    } else {
+            } // lock finished
 
-                        std::size_t progress = count_total_children ? (count_completed_children * 100 / count_total_children) : 100;
-                        jobs_progress(parent_jobs_id, progress); // TODO this should be recursive child->parent->parent (taking into account state)
+            // compute progress from all finished children
+            std::size_t count_failed_children    = 0;
+            std::size_t count_completed_children = 0;
+            std::size_t count_total_children     = all_children.size();
+            for (auto &child_jobs_item : all_children) {
+                if (!child_jobs_item->is_complete()) {
+                    continue;
+                }
 
-                        // set finished state
-                        if (count_total_children == count_completed_children) {
-                            jobs_finished(parent_jobs_id);
-                        }
-                    }
+                ++count_completed_children;
+                if (!child_jobs_item->is_state_finished()) {
+                    ++count_failed_children;
+                }
+            }
+
+            if (count_failed_children) {
+                jobs_set_state(jobs_parent, small::jobsimpl::EnumJobsState::kFailed);
+            } else {
+
+                std::size_t progress = count_total_children ? (count_completed_children * 100 / count_total_children) : 100;
+
+                jobs_set_progress(jobs_parent, progress); // TODO this should be recursive child->parent->parent (taking into account state)
+
+                // set finished state
+                if (count_total_children == count_completed_children) {
+                    jobs_set_state(jobs_parent, small::jobsimpl::EnumJobsState::kFinished);
                 }
             }
         }
@@ -810,9 +851,9 @@ namespace small {
         //
         // members
         //
-        JobsConfig                                                           m_config;
-        JobsQueue                                                            m_queue{*this};
-        JobsQueueTimeout                                                     m_timeout_queue{*this}; // for timeout elements
-        small::jobsimpl::jobs_engine_thread_pool<JobsGroupT, ThisJobsEngine> m_thread_pool{*this};   // for processing items (by group) using a pool of threads
+        JobsConfig                                                    m_config;
+        JobsQueue                                                     m_queue{*this};
+        JobsQueueTimeout                                              m_timeout_queue{*this}; // for timeout elements
+        small::jobsimpl::jobs_thread_pool<JobsGroupT, ThisJobsEngine> m_thread_pool{*this};   // for processing items (by group) using a pool of threads
     };
 } // namespace small
