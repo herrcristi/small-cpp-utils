@@ -363,9 +363,9 @@ namespace examples::jobs_engine {
 
                 // mark dbs as finished (this should include current jobs_item too, unless they were coalesced before)
                 if (success) {
-                    j.jobs_finished(jobs_item->m_id); // result is in the response already
+                    j.state().jobs_finished(jobs_item->m_id); // result is in the response already
                 } else {
-                    j.jobs_failed(jobs_item->m_id); // 404 not found
+                    j.state().jobs_failed(jobs_item->m_id); // 404 not found
                 }
             }
         });
@@ -383,9 +383,9 @@ namespace examples::jobs_engine {
                 auto &job_id  = item->m_id;
                 bool  success = impl::cache_processing(jobs, item);
                 if (success) {
-                    jobs.jobs_finished(job_id); // the data found will be returned in m_response already
+                    jobs.state().jobs_finished(job_id); // the data found will be returned in m_response already
                 } else {
-                    jobs.jobs_failed(job_id); // 404 not found
+                    jobs.state().jobs_failed(job_id); // 404 not found
                 }
             }
         });
@@ -397,9 +397,9 @@ namespace examples::jobs_engine {
                 // cache has external executors
                 cache_server.push_back(jobs_item); // when it will be finished parent POST will be automatically finished
             } else {
-                // if db failed, cache will fail too
+                // if db failed, cache should fail too
                 // because this function overrides the default children function jobs need to be failed manually
-                j.jobs_cancelled(jobs_item->m_id);
+                j.state().jobs_cancelled(jobs_item->m_id);
             }
         });
 
@@ -418,7 +418,7 @@ namespace examples::jobs_engine {
                 
                 auto ret = j.queue().push_back_child(jobs_item->m_id /*parent*/, impl::JobsType::kJobsCache, jobs_item->m_request, &jobs_child_cache_id);
                 if (!ret) {
-                    j.jobs_failed(jobs_item->m_id);
+                    j.state().jobs_failed(jobs_item->m_id);
                     continue;
                 }
 
@@ -426,8 +426,8 @@ namespace examples::jobs_engine {
                 impl::JobsEng::JobsID jobs_child_db_id{};
                 ret = j.queue().push_back_child(jobs_child_cache_id /*cache parent*/, impl::JobsType::kJobsDatabase, jobs_item->m_request, &jobs_child_db_id);
                 if (!ret) {
-                    j.jobs_failed(jobs_item->m_id); // set parent to failed here even thou the failure of child will trigger the parent to fail
-                    j.jobs_failed(jobs_child_cache_id);
+                    j.state().jobs_failed(jobs_item->m_id); // set parent to failed here even thou the failure of child will trigger the parent to fail
+                    j.state().jobs_failed(jobs_child_cache_id);
                     continue;
                 }
 
@@ -459,12 +459,12 @@ namespace examples::jobs_engine {
 
                 // if both failed, then the parent will fail too
                 if (!ret_cache && !ret_db) {
-                    j.jobs_failed(jobs_item->m_id);
+                    j.state().jobs_failed(jobs_item->m_id);
                     if (ret_cache) {
-                        j.jobs_failed(jobs_child_cache_id);
+                        j.state().jobs_failed(jobs_child_cache_id);
                     }
                     if (ret_db) {
-                        j.jobs_failed(jobs_child_db_id);
+                        j.state().jobs_failed(jobs_child_db_id);
                     }
                     continue;
                 }
@@ -495,7 +495,7 @@ namespace examples::jobs_engine {
                 if (jobs_child->is_state_finished()) {
                     // found in cache, finish the db, and the parent should be finished too
                     // parent could be finished earlier due to db coalesce calls
-                    j.jobs_finished(jobs_child_db_id, response); // this will call children function again for the db
+                    j.state().jobs_finished(jobs_child_db_id, response); // this will call children function again for the db
                 } else {
                     // cache failed, start the db request
                     j.jobs_start(small::EnumPriorities::kNormal, jobs_child_db_id);
@@ -509,10 +509,10 @@ namespace examples::jobs_engine {
                         std::unique_lock l(j);
                         response = jobs_child->m_response;
                     }
-                    j.jobs_finished(jobs_item->m_id, response);
+                    j.state().jobs_finished(jobs_item->m_id, response);
                 } else {
                     // fail the parent with the same state as the db
-                    j.jobs_set_state(jobs_item->m_id, jobs_child->m_state.load());
+                    j.state().jobs_state(jobs_item->m_id, jobs_child->m_state.load());
                 }
             }
         });
@@ -535,12 +535,12 @@ namespace examples::jobs_engine {
 
                 // if both failed, then the parent will fail too
                 if (!ret_cache && !ret_db) {
-                    j.jobs_failed(jobs_item->m_id);
+                    j.state().jobs_failed(jobs_item->m_id);
                     if (ret_cache) {
-                        j.jobs_failed(jobs_child_cache_id);
+                        j.state().jobs_failed(jobs_child_cache_id);
                     }
                     if (ret_db) {
-                        j.jobs_failed(jobs_child_db_id);
+                        j.state().jobs_failed(jobs_child_db_id);
                     }
                     continue;
                 }
@@ -567,7 +567,7 @@ namespace examples::jobs_engine {
                     std::unique_lock l(j);
                     response = jobs_child->m_response;
                 }
-                j.jobs_set_state(jobs_item->m_id, jobs_child->m_state.load(), response);
+                j.state().jobs_state(jobs_item->m_id, jobs_child->m_state.load(), response);
             }
         });
 

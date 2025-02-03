@@ -655,7 +655,7 @@ namespace small::jobsimpl {
 
             m_jobs.erase(jobs_id);
 
-            // delete all children
+            // recursive delete all children
             for (auto &child_jobs_id : jobs_item->m_childrenIDs) {
                 jobs_erase(child_jobs_id);
             }

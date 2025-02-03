@@ -136,6 +136,11 @@ namespace small::jobsimpl {
             }
         }
 
+        inline int get_progress() const
+        {
+            return m_progress.load();
+        }
+
         //
         // add child
         //
