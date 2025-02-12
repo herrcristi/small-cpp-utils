@@ -572,9 +572,9 @@ namespace small {
             small::jobsimpl::EnumJobsState jobs_state    = small::jobsimpl::EnumJobsState::kInProgress;
             state().get_children_states(jobs_parent, &jobs_state, &jobs_progress);
 
-            state().jobs_state(jobs_parent, jobs_state);
-            if (!jobs_parent->is_complete()) {
-
+            if (JobsItem::is_state_complete(jobs_state)) {
+                state().jobs_state(jobs_parent, jobs_state);
+            } else {
                 state().jobs_progress(jobs_parent, jobs_progress); // TODO this should be recursive child->parent->grand parent (taking into account state)
             }
         }

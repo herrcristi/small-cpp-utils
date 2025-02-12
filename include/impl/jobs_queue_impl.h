@@ -631,6 +631,7 @@ namespace small::jobsimpl {
                 m_parent_caller.jobs_schedule(jobs_type, jobs_id);
             } else {
                 // TODO call m_parent.jobs_failed(jobs_id)? // jobs_start should not be under lock then
+                // should call instead of jobs_start with ids jobs_start with the items instead
                 jobs_erase(jobs_id);
             }
             return ret;

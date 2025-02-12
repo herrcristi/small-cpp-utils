@@ -322,6 +322,12 @@ namespace small::jobsimpl {
         inline bool jobs_apply_state(std::shared_ptr<JobsItem> jobs_item, const small::jobsimpl::EnumJobsState &jobs_state, small::jobsimpl::EnumJobsState *jobs_set_state)
         {
             *jobs_set_state = jobs_state;
+
+            // set the jobs as waitforchildren only if there are children otherwise advance to finish
+            if (*jobs_set_state == small::jobsimpl::EnumJobsState::kWaitChildren && !jobs_item->has_children()) {
+                *jobs_set_state = small::jobsimpl::EnumJobsState::kFinished;
+            }
+
             // state is already the same
             if (jobs_item->is_state(*jobs_set_state)) {
                 return false;
@@ -330,11 +336,6 @@ namespace small::jobsimpl {
             // set the jobs as timeout only if it is not finished until now
             if (*jobs_set_state == small::jobsimpl::EnumJobsState::kTimeout && jobs_item->is_state_finished()) {
                 return false;
-            }
-
-            // set the jobs as waitforchildren only if there are children otherwise advance to finish
-            if (*jobs_set_state == small::jobsimpl::EnumJobsState::kWaitChildren && !jobs_item->has_children()) {
-                *jobs_set_state = small::jobsimpl::EnumJobsState::kFinished;
             }
 
             jobs_item->set_state(*jobs_set_state);
