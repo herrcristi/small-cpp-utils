@@ -49,6 +49,17 @@ namespace examples::jobs_engine {
             kJobsGroupCache,
         };
 
+        namespace color {
+            const std::string red("\033[0;31m");
+            const std::string green("\033[1;32m");
+            const std::string yellow("\033[1;33m");
+            const std::string blue("\033[0;34m");
+            const std::string lightblue("\033[0;94m");
+            const std::string magenta("\033[0;35m");
+            const std::string cyan("\033[0;36m");
+            const std::string reset("\033[0m");
+        } // namespace color
+
         using WebID       = int;
         using WebData     = std::string;
         using WebRequest  = std::tuple<JobsType, WebID, WebData>;
@@ -147,12 +158,13 @@ namespace examples::jobs_engine {
                 data[data_type][webID] = webData;
                 success                = true;
 
-                std::cout << std::setw(15) << "..."
+                std::cout << color::lightblue << std::setw(15) << "..."
                           << "ADD TO " << data_type
                           << " {" << webID << ", " << webData << "} jobid=" << jobs_item->m_id
                           << " time " << small::toISOString(small::timeNow())
                           << " thread " << std::this_thread::get_id()
-                          << "\n";
+                          << "\n"
+                          << color::reset;
             } else if (type == JobsType::kJobsApiDelete) {
 
                 auto it_data = data[data_type].find(webID);
@@ -163,19 +175,21 @@ namespace examples::jobs_engine {
                     jobs_item->m_response = it_data->second;
                     data[data_type].erase(it_data);
 
-                    std::cout << std::setw(15) << "..."
+                    std::cout << color::lightblue << std::setw(15) << "..."
                               << "DELETE FROM " << data_type
                               << " {" << webID << ", " << it_data->second << "} jobid=" << jobs_item->m_id
                               << " time " << small::toISOString(small::timeNow())
                               << " thread " << std::this_thread::get_id()
-                              << "\n";
+                              << "\n"
+                              << color::reset;
                 } else {
-                    std::cout << std::setw(15) << "..."
+                    std::cout << color::yellow << std::setw(15) << "..."
                               << "DELETE NOT FOUND IN " << data_type
                               << " {" << webID << "} jobid=" << jobs_item->m_id
                               << " time " << small::toISOString(small::timeNow())
                               << " thread " << std::this_thread::get_id()
-                              << "\n";
+                              << "\n"
+                              << color::reset;
                 }
 
             } else if (type == JobsType::kJobsApiGet) {
@@ -186,19 +200,21 @@ namespace examples::jobs_engine {
                     // save the response
                     jobs_item->m_response = it_data->second;
 
-                    std::cout << std::setw(15) << "..."
+                    std::cout << color::lightblue << std::setw(15) << "..."
                               << "GET FROM " << data_type
                               << " {" << webID << ", " << it_data->second << "} jobid=" << jobs_item->m_id
                               << " time " << small::toISOString(small::timeNow())
                               << " thread " << std::this_thread::get_id()
-                              << "\n";
+                              << "\n"
+                              << color::reset;
                 } else {
-                    std::cout << std::setw(15) << "..."
+                    std::cout << color::yellow << std::setw(15) << "..."
                               << "GET NOT FOUND IN " << data_type
                               << " {" << webID << "} jobid=" << jobs_item->m_id
                               << " time " << small::toISOString(small::timeNow())
                               << " thread " << std::this_thread::get_id()
-                              << "\n";
+                              << "\n"
+                              << color::reset;
                 }
             }
 
@@ -252,22 +268,24 @@ namespace examples::jobs_engine {
                 ssj << jobs_item->m_id << " ";
             }
 
-            std::cout << std::setw(15) << "..."
+            std::cout << color::cyan << std::setw(15) << "..."
                       << "DATABASE processing (coalesced) calls for jobsids [ " << ssr.str() << " ]"
                       << " current jobsids calls [ " << ssj.str() << " ]"
                       << " time " << small::toISOString(small::timeNow())
                       << " thread " << std::this_thread::get_id()
-                      << "\n";
+                      << "\n"
+                      << color::reset;
 
             // simulate long db call
             small::sleep(200);
 
-            std::cout << std::setw(15) << "..."
+            std::cout << color::cyan << std::setw(15) << "..."
                       << "DATABASE processed (coalesced) calls for jobsids [ " << ssr.str() << " ]"
                       << " current jobsids calls [ " << ssj.str() << " ]"
                       << " time " << small::toISOString(small::timeNow())
                       << " thread " << std::this_thread::get_id()
-                      << "\n";
+                      << "\n"
+                      << color::reset;
 
             return requests;
         }
@@ -318,7 +336,17 @@ namespace examples::jobs_engine {
         impl::JobsEng jobs(config);
 
         auto fn_print_item = [](auto item, std::string fn_type) {
-            std::cout << std::setw(10) << fn_type
+            std::string col = impl::color::reset;
+            if (item->m_state.load() == small::jobsimpl::EnumJobsState::kFinished) {
+                col = impl::color::green;
+            } else if (item->m_state.load() == small::jobsimpl::EnumJobsState::kTimeout) {
+                col = impl::color::yellow;
+            } else if (item->m_state.load() == small::jobsimpl::EnumJobsState::kFailed) {
+                col = impl::color::red;
+            } else if (item->m_state.load() == small::jobsimpl::EnumJobsState::kCancelled) {
+                col = impl::color::magenta;
+            }
+            std::cout << col << std::setw(10) << fn_type
                       << " processing "
                       << "{"
                       << " jobid=" << std::setw(2) << item->m_id
@@ -329,7 +357,8 @@ namespace examples::jobs_engine {
                       << "}"
                       << " time " << small::toISOString(small::timeNow())
                       << " thread " << std::this_thread::get_id()
-                      << "\n";
+                      << "\n"
+                      << impl::color::reset;
         };
 
         //
@@ -446,6 +475,9 @@ namespace examples::jobs_engine {
                     j.state().jobs_failed(jobs_item->m_id);
                     continue;
                 }
+                std::cout << std::setw(15) << "..."
+                          << "CACHE child jobid="<< jobs_child_cache_id 
+                          << " created for POST jobid=" << jobs_item->m_id << "\n";
 
                 // create the database child with cache as parent (but dont start yet)
                 impl::JobsEng::JobsID jobs_child_db_id{};
@@ -455,6 +487,11 @@ namespace examples::jobs_engine {
                     j.state().jobs_failed(jobs_child_cache_id);
                     continue;
                 }
+
+                std::cout << std::setw(15) << "..."
+                          << "DB    child jobid="<< jobs_child_db_id 
+                          << " created as child of cache jobid=" << jobs_child_cache_id 
+                          << " for POST jobid=" << jobs_item->m_id << "\n";
 
                 // add to db_requests
                 impl::db_add_request(j, db_requests, jobs_child_db_id);
@@ -481,6 +518,13 @@ namespace examples::jobs_engine {
 
                 auto ret_cache = j.queue().push_back_child(jobs_item->m_id /*parent*/, impl::JobsType::kJobsCache, jobs_item->m_request, &jobs_child_cache_id);
                 auto ret_db    = j.queue().push_back_child(jobs_item->m_id /*parent*/, impl::JobsType::kJobsDatabase, jobs_item->m_request, &jobs_child_db_id);
+
+                std::cout << std::setw(15) << "..."
+                          << "CACHE child jobid=" << jobs_child_cache_id
+                          << " created for GET jobid=" << jobs_item->m_id << "\n";
+                std::cout << std::setw(15) << "..."
+                          << "DB    child jobid=" << jobs_child_db_id
+                          << " created for GET jobid=" << jobs_item->m_id << "\n";
 
                 // if both failed, then the parent will fail too
                 if (!ret_cache && !ret_db) {
@@ -559,6 +603,14 @@ namespace examples::jobs_engine {
                 auto ret_cache = j.queue().push_back_child(jobs_item->m_id /*parent*/, impl::JobsType::kJobsCache, jobs_item->m_request, &jobs_child_cache_id);
                 auto ret_db    = j.queue().push_back_child(jobs_child_cache_id /*parent*/, impl::JobsType::kJobsDatabase, jobs_item->m_request, &jobs_child_db_id);
 
+                std::cout << std::setw(15) << "..."
+                          << "CACHE child jobid=" << jobs_child_cache_id
+                          << " created for DELETE jobid=" << jobs_item->m_id << "\n";
+                std::cout << std::setw(15) << "..."
+                          << "DB    child jobid=" << jobs_child_db_id
+                          << " created as child of cache jobid=" << jobs_child_cache_id
+                          << " for DELETE jobid=" << jobs_item->m_id << "\n";
+
                 // if both failed, then the parent will fail too
                 if (!ret_cache && !ret_db) {
                     j.state().jobs_failed(jobs_item->m_id);
@@ -587,33 +639,33 @@ namespace examples::jobs_engine {
         std::vector<impl::JobsEng::JobsID> jobs_ids;
 
         // kJobsSettings one request will succeed and one request will timeout for demo purposes
-        jobs.queue().push_back(impl::JobsType::kJobsSettings, {impl::JobsType::kJobsSettings, 1, "settings1"}, &jobs_id);
+        jobs.queue().push_back(impl::JobsType::kJobsSettings, {impl::JobsType::kJobsSettings, 101, "settings101"}, &jobs_id);
         settings_promises[jobs_id] = std::promise<bool>();
         jobs.queue().jobs_start_delay_for(std::chrono::milliseconds(100), small::EnumPriorities::kNormal, jobs_id);
 
-        jobs.queue().push_back(impl::JobsType::kJobsSettings, {impl::JobsType::kJobsSettings, 2, "settings2"}, &jobs_id);
+        jobs.queue().push_back(impl::JobsType::kJobsSettings, {impl::JobsType::kJobsSettings, 102, "settings102"}, &jobs_id);
         settings_promises[jobs_id] = std::promise<bool>();
         jobs.queue().jobs_start_delay_for(std::chrono::milliseconds(100), small::EnumPriorities::kHigh, jobs_id);
 
         // kJobsApiPost will create 2 children (DB+CACHE) and will be finished when ALL will be finished
-        jobs.queue().push_back_and_start(small::EnumPriorities::kNormal, impl::JobsType::kJobsApiPost, {impl::JobsType::kJobsApiPost, 3, "data3"}, &jobs_id);
+        jobs.queue().push_back_and_start(small::EnumPriorities::kNormal, impl::JobsType::kJobsApiPost, {impl::JobsType::kJobsApiPost, 103, "data103"}, &jobs_id);
 
         // kJobsApiGet will create 2 children (CACHE+DB) and will be finished when at least 1 is finished
         // but because has high priority is executed before post so there are no data in cache or db
-        jobs.queue().push_back_and_start(small::EnumPriorities::kHighest, impl::JobsType::kJobsApiGet, {impl::JobsType::kJobsApiGet, 3, ""}, &jobs_id);
+        jobs.queue().push_back_and_start(small::EnumPriorities::kHighest, impl::JobsType::kJobsApiGet, {impl::JobsType::kJobsApiGet, 103, ""}, &jobs_id);
 
         // second get will succeed because the post will populate the db
-        jobs.queue().push_back_and_start(small::EnumPriorities::kNormal, impl::JobsType::kJobsApiGet, {impl::JobsType::kJobsApiGet, 3, ""}, &jobs_id);
+        jobs.queue().push_back_and_start(small::EnumPriorities::kNormal, impl::JobsType::kJobsApiGet, {impl::JobsType::kJobsApiGet, 103, ""}, &jobs_id);
         // third get will find the data in cache
-        jobs.queue().push_back_and_start_delay_for(std::chrono::milliseconds(600), small::EnumPriorities::kNormal, impl::JobsType::kJobsApiGet, {impl::JobsType::kJobsApiGet, 3, ""}, &jobs_id);
+        jobs.queue().push_back_and_start_delay_for(std::chrono::milliseconds(600), small::EnumPriorities::kNormal, impl::JobsType::kJobsApiGet, {impl::JobsType::kJobsApiGet, 103, ""}, &jobs_id);
 
         // kJobsApiPost here the DB child will be coalesced by previous calls to DB
         std::vector<std::shared_ptr<impl::JobsEng::JobsItem>> jobs_items = {
-            std::make_shared<impl::JobsEng::JobsItem>(impl::JobsType::kJobsApiPost, impl::WebRequest{impl::JobsType::kJobsApiPost, 4, "data4"}),
-            std::make_shared<impl::JobsEng::JobsItem>(impl::JobsType::kJobsApiGet, impl::WebRequest{impl::JobsType::kJobsApiGet, 4, ""}),
-            std::make_shared<impl::JobsEng::JobsItem>(impl::JobsType::kJobsApiDelete, impl::WebRequest{impl::JobsType::kJobsApiDelete, 4, "data4"}),
-            std::make_shared<impl::JobsEng::JobsItem>(impl::JobsType::kJobsApiGet, impl::WebRequest{impl::JobsType::kJobsApiGet, 4, ""}),
-            std::make_shared<impl::JobsEng::JobsItem>(impl::JobsType::kJobsApiDelete, impl::WebRequest{impl::JobsType::kJobsApiDelete, 4, "data4"}),
+            std::make_shared<impl::JobsEng::JobsItem>(impl::JobsType::kJobsApiPost, impl::WebRequest{impl::JobsType::kJobsApiPost, 104, "data104"}),
+            std::make_shared<impl::JobsEng::JobsItem>(impl::JobsType::kJobsApiGet, impl::WebRequest{impl::JobsType::kJobsApiGet, 104, ""}),
+            std::make_shared<impl::JobsEng::JobsItem>(impl::JobsType::kJobsApiDelete, impl::WebRequest{impl::JobsType::kJobsApiDelete, 104, ""}),
+            std::make_shared<impl::JobsEng::JobsItem>(impl::JobsType::kJobsApiGet, impl::WebRequest{impl::JobsType::kJobsApiGet, 104, ""}),
+            std::make_shared<impl::JobsEng::JobsItem>(impl::JobsType::kJobsApiDelete, impl::WebRequest{impl::JobsType::kJobsApiDelete, 104, ""}),
         };
         jobs.queue().push_back_and_start(small::EnumPriorities::kLow, jobs_items, &jobs_ids);
 
@@ -628,6 +680,10 @@ namespace examples::jobs_engine {
         }
 
         // wait here for jobs to finish due to exit flag
+        small::sleep(20'000); // TODO implement wait for jobs to finish
+        // show wait for with timeout
+        auto ret = jobs.wait_for(std::chrono::milliseconds(100)); // wait to finished
+        std::cout << "TESTING wait for with timeout, ret = " << static_cast<int>(ret) << " as timeout\n";
         jobs.wait();
 
         // cache should exit immediately after all jobs are finished
