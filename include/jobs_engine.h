@@ -483,12 +483,20 @@ namespace small {
             }
         }
 
+        inline bool jobs_cancelled(std::shared_ptr<JobsItem> jobs_item)
+        {
+            // called from queue for extra processing when a jobs is cancelled
+            return state().jobs_state(jobs_item, small::jobsimpl::EnumJobsState::kCancelled);
+        }
+
         //
         // inner function for activate the jobs from queue (called from queue)
         //
-        inline void jobs_schedule(const JobsTypeT &jobs_type, const JobsID & /* jobs_id */)
+        inline void jobs_schedule(std::shared_ptr<JobsItem> jobs_item)
         {
-            m_thread_pool.jobs_schedule(m_config.m_types[jobs_type].m_group);
+            if (jobs_item) {
+                m_thread_pool.jobs_schedule(m_config.m_types[jobs_item->m_type].m_group);
+            }
         }
 
         //
