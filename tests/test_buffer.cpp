@@ -32,7 +32,7 @@ namespace {
         small::buffer b1{'a'};
         ASSERT_EQ(b1, "a");
 
-        small::buffer b2{"abc"};
+        small::buffer b2{"abc", 3};
         ASSERT_EQ(b2, "abc");
 
         small::buffer b3{"abc", 2};
@@ -59,7 +59,7 @@ namespace {
         ASSERT_EQ(b1, "a");
 
         small::buffer b2;
-        b2 = {"abc"};
+        b2 = {"abc", 3 /*length*/};
         ASSERT_EQ(b2, "abc");
 
         b2 = b1;
@@ -145,7 +145,7 @@ namespace {
         b = m_test;
         ASSERT_EQ(b, m_test);
 
-        small::buffer b1 = "a";
+        small::buffer b1 = std::string_view{"a"};
         ASSERT_EQ(b1, "a");
 
         b.swap(b1);
@@ -343,7 +343,7 @@ namespace {
 
     TEST_F(BufferTest, buffer_erase)
     {
-        small::buffer b = "abcd";
+        small::buffer b = {"abcd", 4};
         ASSERT_EQ(b, "abcd");
 
         b.erase(2);
@@ -355,7 +355,7 @@ namespace {
 
     TEST_F(BufferTest, buffer_erase_with_length)
     {
-        small::buffer b = "abcd";
+        small::buffer b = std::string_view{"abcd"};
         ASSERT_EQ(b, "abcd");
 
         b.erase(2, 1);
@@ -367,7 +367,7 @@ namespace {
 
     TEST_F(BufferTest, buffer_is_eq)
     {
-        small::buffer b = "abcd";
+        small::buffer b = std::string_view{"abcd"};
         ASSERT_EQ(b, "abcd");
         ASSERT_EQ(b.is_equal("abcd", 4), true);
         ASSERT_EQ(b.compare("abcd", 4), 0);
@@ -377,7 +377,7 @@ namespace {
 
     TEST_F(BufferTest, buffer_at)
     {
-        small::buffer b = "abcd";
+        small::buffer b = std::string_view{"abcd"};
         ASSERT_EQ(b, "abcd");
         ASSERT_EQ(b[0], 'a');
         ASSERT_EQ(b[1], 'b');
@@ -395,7 +395,7 @@ namespace {
 
     TEST_F(BufferTest, buffer_push_pop)
     {
-        small::buffer b = "abcd";
+        small::buffer b = std::string_view{"abcd"};
         ASSERT_EQ(b, "abcd");
 
         b.push_back('e');
@@ -422,7 +422,7 @@ namespace {
 
     TEST_F(BufferTest, buffer_substr)
     {
-        small::buffer b = "abcd";
+        small::buffer b = std::string_view{"abcd"};
         ASSERT_EQ(b.substr(1), "bcd");
         ASSERT_EQ(b.substr(1, 2), "bc");
         ASSERT_EQ(b.substr(0, 5), "abcd");
@@ -430,7 +430,7 @@ namespace {
 
     TEST_F(BufferTest, buffer_starts_with)
     {
-        small::buffer b = "abcd";
+        small::buffer b = std::string_view{"abcd"};
         ASSERT_EQ(b.starts_with('a'), true);
         ASSERT_EQ(b.starts_with({"b", 1}), false);
         ASSERT_EQ(b.starts_with("abc"), true);
@@ -440,7 +440,7 @@ namespace {
 
     TEST_F(BufferTest, buffer_ends_with)
     {
-        small::buffer b = "abcd";
+        small::buffer b = std::string_view{"abcd"};
         ASSERT_EQ(b.ends_with('d'), true);
         ASSERT_EQ(b.ends_with({"a", 1}), false);
         ASSERT_EQ(b.ends_with("bcd"), true);
@@ -450,7 +450,7 @@ namespace {
 
     TEST_F(BufferTest, buffer_contains)
     {
-        small::buffer b = "abcd";
+        small::buffer b = std::string_view{"abcd"};
         ASSERT_EQ(b.contains('d'), true);
         ASSERT_EQ(b.contains({"a", 1}), true);
         ASSERT_EQ(b.contains({"e", 1}), false);
@@ -461,7 +461,7 @@ namespace {
 
     TEST_F(BufferTest, buffer_find)
     {
-        small::buffer b = "abcd";
+        small::buffer b = std::string_view{"abcd"};
         ASSERT_EQ(b.find('d'), 3);
         ASSERT_EQ(b.find({"a", 1}), 0);
         ASSERT_EQ(b.find({"a", 1}, 2), std::string::npos);
@@ -476,7 +476,7 @@ namespace {
 
     TEST_F(BufferTest, buffer_rfind)
     {
-        small::buffer b = "abcd";
+        small::buffer b = std::string_view{"abcd"};
         ASSERT_EQ(b.rfind('d'), 3);
         ASSERT_EQ(b.rfind({"c", 1}), 2);
         ASSERT_EQ(b.rfind({"a", 1}), 0);
@@ -493,7 +493,7 @@ namespace {
 
     TEST_F(BufferTest, buffer_find_first_of)
     {
-        small::buffer b = "abcd";
+        small::buffer b = std::string_view{"abcd"};
         ASSERT_EQ(b.find_first_of('d'), 3);
         ASSERT_EQ(b.find_first_of({"c", 1}), 2);
         ASSERT_EQ(b.find_first_of({"a", 1}), 0);
@@ -509,7 +509,7 @@ namespace {
 
     TEST_F(BufferTest, buffer_find_last_of)
     {
-        small::buffer b = "abcd";
+        small::buffer b = std::string_view{"abcd"};
         ASSERT_EQ(b.find_last_of('d'), 3);
         ASSERT_EQ(b.find_last_of({"c", 1}), 2);
         ASSERT_EQ(b.find_last_of({"a", 1}), 0);
@@ -525,7 +525,7 @@ namespace {
 
     TEST_F(BufferTest, buffer_find_first_not_of)
     {
-        small::buffer b = "abcd";
+        small::buffer b = std::string_view{"abcd"};
         ASSERT_EQ(b.find_first_not_of('d'), 0);
         ASSERT_EQ(b.find_first_not_of({"c", 1}), 0);
         ASSERT_EQ(b.find_first_not_of({"a", 1}), 1);
@@ -541,7 +541,7 @@ namespace {
 
     TEST_F(BufferTest, buffer_find_last_not_of)
     {
-        small::buffer b = "abcd";
+        small::buffer b = std::string_view{"abcd"};
         ASSERT_EQ(b.find_last_not_of('d'), 2);
         ASSERT_EQ(b.find_last_not_of({"c", 1}), 3);
         ASSERT_EQ(b.find_last_not_of({"a", 1}), 3);
@@ -555,7 +555,7 @@ namespace {
 
     TEST_F(BufferTest, buffer_comparison)
     {
-        small::buffer b = "abcd";
+        small::buffer b = std::string_view{"abcd"};
         ASSERT_EQ(b == "abcd", true);
         ASSERT_EQ(b == "abcde", false);
         ASSERT_EQ(b == m_test, false);

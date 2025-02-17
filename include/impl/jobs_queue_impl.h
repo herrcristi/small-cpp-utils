@@ -448,7 +448,7 @@ namespace small::jobsimpl {
             m_delayed_items.queue().signal_exit_force(); 
             
             m_lock.signal_exit_force();
-            for (auto &[group, q] : m_groups_queues) {
+            for (auto& [group, q] : m_groups_queues) {
                 q.signal_exit_force();
             }
         }

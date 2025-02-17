@@ -41,21 +41,21 @@ namespace small::bufferimpl {
 
         // clang-format off
         // data access to buffer
-        inline const char * get_buffer      () const    { return m_buffer_data; }
-        inline char *       get_buffer      ()          { return m_buffer_data; } // direct access
+        inline const char*  get_buffer      () const    { return m_buffer_data; }
+        inline char*        get_buffer      ()          { return m_buffer_data; } // direct access
 
-        inline const char * data            () const    { return m_buffer_data; }
-        inline char *       data            ()          { return m_buffer_data; } // direct access
+        inline const char*  data            () const    { return m_buffer_data; }
+        inline char*        data            ()          { return m_buffer_data; } // direct access
         
-        inline const char * begin           () const noexcept { return data(); }
-        inline const char * end             () const noexcept { return data() + size(); }
-        inline const char * cbegin          () const noexcept { return data(); }
-        inline const char * cend            () const noexcept { return data() + size(); }
+        inline const char*  begin           () const noexcept { return data(); }
+        inline const char*  end             () const noexcept { return data() + size(); }
+        inline const char*  cbegin          () const noexcept { return data(); }
+        inline const char*  cend            () const noexcept { return data() + size(); }
         
-        inline const char * rbegin          () const noexcept { return end(); }
-        inline const char * rend            () const noexcept { return begin(); }
-        inline const char * crbegin         () const noexcept { return end(); }
-        inline const char * crend           () const noexcept { return begin(); }
+        inline const char*  rbegin          () const noexcept { return end(); }
+        inline const char*  rend            () const noexcept { return begin(); }
+        inline const char*  crbegin         () const noexcept { return end(); }
+        inline const char*  crend           () const noexcept { return begin(); }
         // clang-format on
 
         // clang-format off
@@ -75,7 +75,7 @@ namespace small::bufferimpl {
 
         // clang-format off
         // assign
-        inline void assign(const base_buffer &b)
+        inline void assign(const base_buffer& b)
         {
             if (this != &b) {
                 set(0 /*startfrom*/, b.data(), b.size());
@@ -83,54 +83,49 @@ namespace small::bufferimpl {
         }
 
         inline void     assign          (const char c)                                      { set(0 /*startfrom*/, c); }
-        inline void     assign          (const char *s)                                     { set(0 /*startfrom*/, s); }
-        inline void     assign          (const char *s, std::size_t len)                    { set(0 /*startfrom*/, s, len); }
+        inline void     assign          (const char* s, std::size_t len)                    { set(0 /*startfrom*/, s, len); }
         inline void     assign          (const std::string_view s)                          { set(0 /*startfrom*/, s); }
-        inline void     assign          (const std::vector<char> &v)                        { set(0 /*startfrom*/, v); }
+        inline void     assign          (const std::vector<char>& v)                        { set(0 /*startfrom*/, v); }
         // clang-format on
 
         // clang-format off
         // append
-        inline void     append          (const base_buffer &b)                              { set(size() /*startfrom*/, b); }
+        inline void     append          (const base_buffer& b)                              { set(size() /*startfrom*/, b); }
 
         inline void     append          (const char c)                                      { set(size() /*startfrom*/, c); }
-        inline void     append          (const char *s)                                     { set(size() /*startfrom*/, s); }
-        inline void     append          (const char *s, std::size_t len)                    { set(size() /*startfrom*/, s, len); }
+        inline void     append          (const char* s, std::size_t len)                    { set(size() /*startfrom*/, s, len); }
         inline void     append          (const std::string_view s)                          { set(size() /*startfrom*/, s); }
-        inline void     append          (const std::vector<char> &v)                        { set(size() /*startfrom*/, v); }
+        inline void     append          (const std::vector<char>& v)                        { set(size() /*startfrom*/, v); }
         // clang-format on
 
         // clang-format off
         // insert
-        inline void     insert          (std::size_t from, const base_buffer &b)            { this->insert_impl(from, b.data(), b.size()); }
+        inline void     insert          (std::size_t from, const base_buffer& b)            { this->insert_impl(from, b.data(), b.size()); }
 
         inline void     insert          (std::size_t from, const char c)                    { this->insert_impl(from, &c, 1); }
-        inline void     insert          (std::size_t from, const char *s)                   { this->insert_impl(from, s, strlen(s)); }
-        inline void     insert          (std::size_t from, const char *s, std::size_t len)  { this->insert_impl(from, s, len); }
+        inline void     insert          (std::size_t from, const char* s, std::size_t len)  { this->insert_impl(from, s, len); }
         inline void     insert          (std::size_t from, const std::string_view s)        { this->insert_impl(from, s.data(), s.size()); }
-        inline void     insert          (std::size_t from, const std::vector<char> &v)      { this->insert_impl(from, v.data(), v.size()); }
+        inline void     insert          (std::size_t from, const std::vector<char>& v)      { this->insert_impl(from, v.data(), v.size()); }
         // clang-format on
 
         // clang-format off
         // overwrite
-        inline void     overwrite       (std::size_t from, const base_buffer &b)            { set(from, b); }
+        inline void     overwrite       (std::size_t from, const base_buffer& b)            { set(from, b); }
 
         inline void     overwrite       (std::size_t from, const char c)                    { set(from, c); }
-        inline void     overwrite       (std::size_t from, const char *s)                   { set(from, s); }
-        inline void     overwrite       (std::size_t from, const char *s, std::size_t len)  { set(from, s, len); }
+        inline void     overwrite       (std::size_t from, const char* s, std::size_t len)  { set(from, s, len); }
         inline void     overwrite       (std::size_t from, const std::string_view s)        { set(from, s); }
-        inline void     overwrite       (std::size_t from, const std::vector<char> &v)      { set(from, v); }
+        inline void     overwrite       (std::size_t from, const std::vector<char>& v)      { set(from, v); }
         // clang-format on
 
         // clang-format off
         // set
-        inline void     set             (std::size_t from, const base_buffer &b)            { this->set_impl(from, b.data(), b.size()); }
+        inline void     set             (std::size_t from, const base_buffer& b)            { this->set_impl(from, b.data(), b.size()); }
 
         inline void     set             (std::size_t from, const char c)                    { this->set_impl(from, &c, 1); }
-        inline void     set             (std::size_t from, const char *s)                   { this->set_impl(from, s, strlen(s)); }
-        inline void     set             (std::size_t from, const char *s, std::size_t len)  { this->set_impl(from, s, len); }
+        inline void     set             (std::size_t from, const char* s, std::size_t len)  { this->set_impl(from, s, len); }
         inline void     set             (std::size_t from, const std::string_view s)        { this->set_impl(from, s.data(), s.size()); }
-        inline void     set             (std::size_t from, const std::vector<char> &v)      { this->set_impl(from, v.data(), v.size()); }
+        inline void     set             (std::size_t from, const std::vector<char>& v)      { this->set_impl(from, v.data(), v.size()); }
         // clang-format on
 
         // erase
@@ -175,38 +170,36 @@ namespace small::bufferimpl {
 
         // clang-format off
         // these specific operators must be implemented in derived classes
-        inline base_buffer &operator=   (const base_buffer &o) = delete;
-        inline base_buffer &operator=   (base_buffer &&o) = delete;
+        inline base_buffer& operator=   (const base_buffer& o) = delete;
+        inline base_buffer& operator=   (base_buffer&& o) = delete;
         // =
-        inline base_buffer &operator=   (const char c) noexcept             { set(0 /*from*/, c); return *this; }
-        inline base_buffer &operator=   (const char *s) noexcept            { set(0 /*from*/, s); return *this; }
-        inline base_buffer &operator=   (const std::string_view s) noexcept { set(0 /*from*/, s); return *this; }
-        inline base_buffer &operator=   (const std::vector<char> &v) noexcept{set(0 /*from*/, v); return *this; }
+        inline base_buffer& operator=   (const char c) noexcept             { set(0 /*from*/, c); return *this; }
+        inline base_buffer& operator=   (const std::string_view s) noexcept { set(0 /*from*/, s); return *this; }
+        inline base_buffer& operator=   (const std::vector<char>& v) noexcept{set(0 /*from*/, v); return *this; }
         // clang-format on
 
         // clang-format off
         // +=
-        inline base_buffer &operator+=  (const base_buffer &b) noexcept     { append(b); return *this; }
+        inline base_buffer& operator+=  (const base_buffer& b) noexcept     { append(b); return *this; }
 
-        inline base_buffer &operator+=  (const char c) noexcept             { append(c); return *this; }
-        inline base_buffer &operator+=  (const char *s) noexcept            { append(s); return *this; }
-        inline base_buffer &operator+=  (const std::string_view s) noexcept { append(s); return *this; }
-        inline base_buffer &operator+=  (const std::vector<char> &v) noexcept{append(v); return *this; }
+        inline base_buffer& operator+=  (const char c) noexcept             { append(c); return *this; }
+        inline base_buffer& operator+=  (const std::string_view s) noexcept { append(s); return *this; }
+        inline base_buffer& operator+=  (const std::vector<char>& v) noexcept{append(v); return *this; }
         // clang-format on
 
         // clang-format off
         // [] / at
-        inline char &       operator[]  (std::size_t index)         { return m_buffer_data[index]; }
+        inline char&        operator[]  (std::size_t index)         { return m_buffer_data[index]; }
         inline char         operator[]  (std::size_t index) const   { return m_buffer_data[index]; }
 
-        inline char &       at          (std::size_t index)         { return m_buffer_data[index]; }
+        inline char&        at          (std::size_t index)         { return m_buffer_data[index]; }
         inline char         at          (std::size_t index) const   { return m_buffer_data[index]; }
 
         // front / back
-        inline char &       front       ()                          { return m_buffer_data[0]; }
+        inline char&        front       ()                          { return m_buffer_data[0]; }
         inline char         front       () const                    { return m_buffer_data[0]; }
 
-        inline char &       back        ()                          { return size() > 0 ? m_buffer_data[size() - 1] : m_buffer_data[0]; }
+        inline char&        back        ()                          { return size() > 0 ? m_buffer_data[size() - 1] : m_buffer_data[0]; }
         inline char         back        () const                    { return size() > 0 ? m_buffer_data[size() - 1] : m_buffer_data[0]; }
 
         // push / pop
@@ -233,7 +226,7 @@ namespace small::bufferimpl {
         // starts_with
         inline bool     starts_with     (std::string_view __x) const noexcept   { return substr(0, __x.size()) == __x; }
         inline bool     starts_with     (char __x) const noexcept               { return !empty() && (front() == __x); }
-        inline bool     starts_with     (const char *__x) const noexcept        { return starts_with(std::string_view(__x)); }
+        inline bool     starts_with     (const char* __x) const noexcept        { return starts_with(std::string_view(__x)); }
 
         // ends_with
         inline bool     ends_with       (std::string_view __x) const noexcept 
@@ -243,48 +236,48 @@ namespace small::bufferimpl {
             return __len >= __xlen && memcmp(data() + size() - __xlen, __x.data(), __xlen) == 0;
         }
         inline bool     ends_with       (char __x) const noexcept               { return !empty() && (back() == __x); }
-        inline bool     ends_with       (const char *__x) const noexcept        { return ends_with(std::string_view(__x)); }
+        inline bool     ends_with       (const char* __x) const noexcept        { return ends_with(std::string_view(__x)); }
 
         // contains
         inline bool     contains        (std::string_view __x) const noexcept   { return find(__x) != std::string::npos; }
         inline bool     contains        (char __x) const noexcept               { return find(__x) != std::string::npos; }
-        inline bool     contains        (const char *__x) const noexcept        { return find(__x) != std::string::npos; }
+        inline bool     contains        (const char* __x) const noexcept        { return find(__x) != std::string::npos; }
 
         // find
         inline std::size_t find         (std::string_view __str, std::size_t __pos = 0) const noexcept          { return c_view().find(__str, __pos); }
         inline std::size_t find         (char __c, std::size_t __pos = 0) const noexcept                        { return c_view().find(__c, __pos); }
-        inline std::size_t find         (const char *__str, std::size_t __pos, std::size_t __n) const noexcept  { return c_view().find(__str, __pos, __n); }
-        inline std::size_t find         (const char *__str, std::size_t __pos = 0) const noexcept               { return c_view().find(__str, __pos); }
+        inline std::size_t find         (const char* __str, std::size_t __pos, std::size_t __n) const noexcept  { return c_view().find(__str, __pos, __n); }
+        inline std::size_t find         (const char* __str, std::size_t __pos = 0) const noexcept               { return c_view().find(__str, __pos); }
 
         // rfind
         inline std::size_t rfind        (std::string_view __str, std::size_t __pos = std::string::npos) const noexcept { return c_view().rfind(__str, __pos); }
         inline std::size_t rfind        (char __c, std::size_t __pos = std::string::npos) const noexcept        { return c_view().rfind(__c, __pos); }
-        inline std::size_t rfind        (const char *__str, std::size_t __pos, std::size_t __n) const noexcept  { return c_view().rfind(__str, __pos, __n); }
-        inline std::size_t rfind        (const char *__str, std::size_t __pos = std::string::npos) const noexcept{return c_view().rfind(__str, __pos); }
+        inline std::size_t rfind        (const char* __str, std::size_t __pos, std::size_t __n) const noexcept  { return c_view().rfind(__str, __pos, __n); }
+        inline std::size_t rfind        (const char* __str, std::size_t __pos = std::string::npos) const noexcept{return c_view().rfind(__str, __pos); }
 
         // find_first_of
         inline std::size_t find_first_of(std::string_view __str, std::size_t __pos = 0) const noexcept          { return c_view().find_first_of(__str, __pos); }
         inline std::size_t find_first_of(char __c, std::size_t __pos = 0) const noexcept                        { return c_view().find_first_of(__c, __pos); }
-        inline std::size_t find_first_of(const char *__str, std::size_t __pos, std::size_t __n) const noexcept  { return c_view().find_first_of(__str, __pos, __n); }
-        inline std::size_t find_first_of(const char *__str, std::size_t __pos = 0) const noexcept               { return c_view().find_first_of(__str, __pos); }
+        inline std::size_t find_first_of(const char* __str, std::size_t __pos, std::size_t __n) const noexcept  { return c_view().find_first_of(__str, __pos, __n); }
+        inline std::size_t find_first_of(const char* __str, std::size_t __pos = 0) const noexcept               { return c_view().find_first_of(__str, __pos); }
 
         // find_last_of
         inline std::size_t find_last_of (std::string_view __str, std::size_t __pos = std::string::npos) const noexcept { return c_view().find_last_of(__str, __pos); }
         inline std::size_t find_last_of (char __c, std::size_t __pos = std::string::npos) const noexcept        { return c_view().find_last_of(__c, __pos); }
-        inline std::size_t find_last_of (const char *__str, std::size_t __pos, std::size_t __n) const noexcept  { return c_view().find_last_of(__str, __pos, __n); }
-        inline std::size_t find_last_of (const char *__str, std::size_t __pos = std::string::npos) const noexcept{return c_view().find_last_of(__str, __pos); }
+        inline std::size_t find_last_of (const char* __str, std::size_t __pos, std::size_t __n) const noexcept  { return c_view().find_last_of(__str, __pos, __n); }
+        inline std::size_t find_last_of (const char* __str, std::size_t __pos = std::string::npos) const noexcept{return c_view().find_last_of(__str, __pos); }
 
         // find_first_not_of
         inline std::size_t find_first_not_of(std::string_view __str, std::size_t __pos = 0) const noexcept      { return c_view().find_first_not_of(__str, __pos); }
         inline std::size_t find_first_not_of(char __c, std::size_t __pos = 0) const noexcept                    { return c_view().find_first_not_of(__c, __pos); }
-        inline std::size_t find_first_not_of(const char *__str, std::size_t __pos, std::size_t __n) const noexcept{return c_view().find_first_not_of(__str, __pos, __n); }
-        inline std::size_t find_first_not_of(const char *__str, std::size_t __pos = 0) const noexcept           { return c_view().find_first_not_of(__str, __pos); }
+        inline std::size_t find_first_not_of(const char* __str, std::size_t __pos, std::size_t __n) const noexcept{return c_view().find_first_not_of(__str, __pos, __n); }
+        inline std::size_t find_first_not_of(const char* __str, std::size_t __pos = 0) const noexcept           { return c_view().find_first_not_of(__str, __pos); }
 
         // find_last_not_of
         inline std::size_t find_last_not_of(std::string_view __str, std::size_t __pos = std::string::npos) const noexcept { return c_view().find_last_not_of(__str, __pos); }
         inline std::size_t find_last_not_of(char __c, std::size_t __pos = std::string::npos) const noexcept     { return c_view().find_last_not_of(__c, __pos); }
-        inline std::size_t find_last_not_of(const char *__str, std::size_t __pos, std::size_t __n) const noexcept{return c_view().find_last_not_of(__str, __pos, __n); }
-        inline std::size_t find_last_not_of(const char *__str, std::size_t __pos = std::string::npos) const noexcept{return c_view().find_last_not_of(__str, __pos); }
+        inline std::size_t find_last_not_of(const char* __str, std::size_t __pos, std::size_t __n) const noexcept{return c_view().find_last_not_of(__str, __pos, __n); }
+        inline std::size_t find_last_not_of(const char* __str, std::size_t __pos = std::string::npos) const noexcept{return c_view().find_last_not_of(__str, __pos); }
         // clang-format on
 
     protected:
@@ -308,9 +301,9 @@ namespace small::bufferimpl {
         virtual void resize_impl    (std::size_t /*size*/) = 0;
         virtual void shrink_impl    () = 0;
 
-        virtual void set_impl       (std::size_t from, const char *buffer, std::size_t length) { buffer_set_impl(from, buffer, length); }
+        virtual void set_impl       (std::size_t from, const char* buffer, std::size_t length) { buffer_set_impl(from, buffer, length); }
 
-        virtual void insert_impl    (std::size_t from, const char *buffer, std::size_t length) { buffer_insert_impl(from, buffer, length); }
+        virtual void insert_impl    (std::size_t from, const char* buffer, std::size_t length) { buffer_insert_impl(from, buffer, length); }
 
         virtual void erase_impl     (std::size_t from, std::size_t length) { buffer_erase_impl(from, length); }
         // clang-format on
@@ -364,85 +357,73 @@ namespace small::bufferimpl {
         // + must be defined in derived classes
 
         // ==
-        friend inline bool operator==(const base_buffer &b, const base_buffer &b2)      { return b.is_equal(b2.data(), b2.size()); }
+        friend inline bool operator==(const base_buffer& b, const base_buffer& b2)      { return b.is_equal(b2.data(), b2.size()); }
 
-        friend inline bool operator==(const base_buffer &b, const char c)               { return b.is_equal(&c, 1); }
-        friend inline bool operator==(const base_buffer &b, const char *s)              { return b.is_equal(s, strlen(s)); }
-        friend inline bool operator==(const base_buffer &b, const std::string_view s)   { return b.is_equal(s.data(), s.size()); }
-        friend inline bool operator==(const base_buffer &b, const std::vector<char> &v) { return b.is_equal(v.data(), v.size()); }
+        friend inline bool operator==(const base_buffer& b, const char c)               { return b.is_equal(&c, 1); }
+        friend inline bool operator==(const base_buffer& b, const std::string_view s)   { return b.is_equal(s.data(), s.size()); }
+        friend inline bool operator==(const base_buffer& b, const std::vector<char>& v) { return b.is_equal(v.data(), v.size()); }
 
-        friend inline bool operator==(const char c, const base_buffer &b)               { return b.is_equal(&c, 1); }
-        friend inline bool operator==(const char *s, const base_buffer &b)              { return b.is_equal(s, strlen(s)); }
-        friend inline bool operator==(const std::string_view s, const base_buffer &b)   { return b.is_equal(s.data(), s.size()); }
-        friend inline bool operator==(const std::vector<char> &v, const base_buffer &b) { return b.is_equal(v.data(), v.size()); }
+        friend inline bool operator==(const char c, const base_buffer& b)               { return b.is_equal(&c, 1); }
+        friend inline bool operator==(const std::string_view s, const base_buffer& b)   { return b.is_equal(s.data(), s.size()); }
+        friend inline bool operator==(const std::vector<char>& v, const base_buffer& b) { return b.is_equal(v.data(), v.size()); }
 
         // !=
-        friend inline bool operator!=(const base_buffer &b, const base_buffer &b2)      { return !b.is_equal(b2.data(), b2.size()); }
+        friend inline bool operator!=(const base_buffer& b, const base_buffer& b2)      { return !b.is_equal(b2.data(), b2.size()); }
 
-        friend inline bool operator!=(const base_buffer &b, const char c)               { return !b.is_equal(&c, 1); }
-        friend inline bool operator!=(const base_buffer &b, const char *s)              { return !b.is_equal(s, strlen(s)); }
-        friend inline bool operator!=(const base_buffer &b, const std::string_view s)   { return !b.is_equal(s.data(), s.size()); }
-        friend inline bool operator!=(const base_buffer &b, const std::vector<char> &v) { return !b.is_equal(v.data(), v.size()); }
+        friend inline bool operator!=(const base_buffer& b, const char c)               { return !b.is_equal(&c, 1); }
+        friend inline bool operator!=(const base_buffer& b, const std::string_view s)   { return !b.is_equal(s.data(), s.size()); }
+        friend inline bool operator!=(const base_buffer& b, const std::vector<char>& v) { return !b.is_equal(v.data(), v.size()); }
 
-        friend inline bool operator!=(const char c, const base_buffer &b)               { return !b.is_equal(&c, 1); }
-        friend inline bool operator!=(const char *s, const base_buffer &b)              { return !b.is_equal(s, strlen(s)); }
-        friend inline bool operator!=(const std::string_view s, const base_buffer &b)   { return !b.is_equal(s.data(), s.size()); }
-        friend inline bool operator!=(const std::vector<char> &v, const base_buffer &b) { return !b.is_equal(v.data(), v.size()); }
+        friend inline bool operator!=(const char c, const base_buffer& b)               { return !b.is_equal(&c, 1); }
+        friend inline bool operator!=(const std::string_view s, const base_buffer& b)   { return !b.is_equal(s.data(), s.size()); }
+        friend inline bool operator!=(const std::vector<char>& v, const base_buffer& b) { return !b.is_equal(v.data(), v.size()); }
 
         // <
-        friend inline bool operator<(const base_buffer &b, const base_buffer &b2)       { return b.compare(b2.data(), b2.size()) < 0; }
+        friend inline bool operator<(const base_buffer& b, const base_buffer& b2)       { return b.compare(b2.data(), b2.size()) < 0; }
 
-        friend inline bool operator<(const base_buffer &b, const char c)                { return b.compare(&c, 1) < 0; }
-        friend inline bool operator<(const base_buffer &b, const char *s)               { return b.compare(s, strlen(s)) < 0; }
-        friend inline bool operator<(const base_buffer &b, const std::string_view s)    { return b.compare(s.data(), s.size()) < 0; }
-        friend inline bool operator<(const base_buffer &b, const std::vector<char> &v)  { return b.compare(v.data(), v.size()) < 0; }
+        friend inline bool operator<(const base_buffer& b, const char c)                { return b.compare(&c, 1) < 0; }
+        friend inline bool operator<(const base_buffer& b, const std::string_view s)    { return b.compare(s.data(), s.size()) < 0; }
+        friend inline bool operator<(const base_buffer& b, const std::vector<char>& v)  { return b.compare(v.data(), v.size()) < 0; }
 
-        friend inline bool operator<(const char c, const base_buffer &b)                { return b.compare(&c, 1) >= 0; }
-        friend inline bool operator<(const char *s, const base_buffer &b)               { return b.compare(s, strlen(s)) >= 0; }
-        friend inline bool operator<(const std::string_view s, const base_buffer &b)    { return b.compare(s.data(), s.size()) >= 0; }
-        friend inline bool operator<(const std::vector<char> &v, const base_buffer &b)  { return b.compare(v.data(), v.size()) >= 0; }
+        friend inline bool operator<(const char c, const base_buffer& b)                { return b.compare(&c, 1) >= 0; }
+        friend inline bool operator<(const std::string_view s, const base_buffer& b)    { return b.compare(s.data(), s.size()) >= 0; }
+        friend inline bool operator<(const std::vector<char>& v, const base_buffer& b)  { return b.compare(v.data(), v.size()) >= 0; }
 
         // <=
-        friend inline bool operator<=(const base_buffer &b, const base_buffer &b2)      { return b.compare(b2.data(), b2.size()) <= 0; }
+        friend inline bool operator<=(const base_buffer& b, const base_buffer& b2)      { return b.compare(b2.data(), b2.size()) <= 0; }
 
-        friend inline bool operator<=(const base_buffer &b, const char c)               { return b.compare(&c, 1) <= 0; }
-        friend inline bool operator<=(const base_buffer &b, const char *s)              { return b.compare(s, strlen(s)) <= 0; }
-        friend inline bool operator<=(const base_buffer &b, const std::string_view s)   { return b.compare(s.data(), s.size()) <= 0; }
-        friend inline bool operator<=(const base_buffer &b, const std::vector<char> &v) { return b.compare(v.data(), v.size()) <= 0; }
+        friend inline bool operator<=(const base_buffer& b, const char c)               { return b.compare(&c, 1) <= 0; }
+        friend inline bool operator<=(const base_buffer& b, const std::string_view s)   { return b.compare(s.data(), s.size()) <= 0; }
+        friend inline bool operator<=(const base_buffer& b, const std::vector<char>& v) { return b.compare(v.data(), v.size()) <= 0; }
 
-        friend inline bool operator<=(const char c, const base_buffer &b)               { return b.compare(&c, 1) > 0; }
-        friend inline bool operator<=(const char *s, const base_buffer &b)              { return b.compare(s, strlen(s)) > 0; }
-        friend inline bool operator<=(const std::string_view s, const base_buffer &b)   { return b.compare(s.data(), s.size()) > 0; }
-        friend inline bool operator<=(const std::vector<char> &v, const base_buffer &b) { return b.compare(v.data(), v.size()) > 0; }
+        friend inline bool operator<=(const char c, const base_buffer& b)               { return b.compare(&c, 1) > 0; }
+        friend inline bool operator<=(const std::string_view s, const base_buffer& b)   { return b.compare(s.data(), s.size()) > 0; }
+        friend inline bool operator<=(const std::vector<char>& v, const base_buffer& b) { return b.compare(v.data(), v.size()) > 0; }
 
         // >
-        friend inline bool operator>(const base_buffer &b, const base_buffer &b2)       { return b.compare(b2.data(), b2.size()) > 0; }
+        friend inline bool operator>(const base_buffer& b, const base_buffer& b2)       { return b.compare(b2.data(), b2.size()) > 0; }
 
-        friend inline bool operator>(const base_buffer &b, const char c)                { return b.compare(&c, 1) > 0; }
-        friend inline bool operator>(const base_buffer &b, const char *s)               { return b.compare(s, strlen(s)) > 0; }
-        friend inline bool operator>(const base_buffer &b, const std::string_view s)    { return b.compare(s.data(), s.size()) > 0; }
-        friend inline bool operator>(const base_buffer &b, const std::vector<char> &v)  { return b.compare(v.data(), v.size()) > 0; }
+        friend inline bool operator>(const base_buffer& b, const char c)                { return b.compare(&c, 1) > 0; }
+        friend inline bool operator>(const base_buffer& b, const std::string_view s)    { return b.compare(s.data(), s.size()) > 0; }
+        friend inline bool operator>(const base_buffer& b, const std::vector<char>& v)  { return b.compare(v.data(), v.size()) > 0; }
 
-        friend inline bool operator>(const char c, const base_buffer &b)                { return b.compare(&c, 1) <= 0; }
-        friend inline bool operator>(const char *s, const base_buffer &b)               { return b.compare(s, strlen(s)) <= 0; }
-        friend inline bool operator>(const std::string_view s, const base_buffer &b)    { return b.compare(s.data(), s.size()) <= 0; }
-        friend inline bool operator>(const std::vector<char> &v, const base_buffer &b)  { return b.compare(v.data(), v.size()) <= 0; }
+        friend inline bool operator>(const char c, const base_buffer& b)                { return b.compare(&c, 1) <= 0; }
+        friend inline bool operator>(const std::string_view s, const base_buffer& b)    { return b.compare(s.data(), s.size()) <= 0; }
+        friend inline bool operator>(const std::vector<char>& v, const base_buffer& b)  { return b.compare(v.data(), v.size()) <= 0; }
 
         // >=
-        friend inline bool operator>=(const base_buffer &b, const base_buffer &b2)      { return b.compare(b2.data(), b2.size()) >= 0; }
+        friend inline bool operator>=(const base_buffer& b, const base_buffer& b2)      { return b.compare(b2.data(), b2.size()) >= 0; }
 
-        friend inline bool operator>=(const base_buffer &b, const char c)               { return b.compare(&c, 1) >= 0; }
-        friend inline bool operator>=(const base_buffer &b, const char *s)              { return b.compare(s, strlen(s)) >= 0; }
-        friend inline bool operator>=(const base_buffer &b, const std::string_view s)   { return b.compare(s.data(), s.size()) >= 0; }
-        friend inline bool operator>=(const base_buffer &b, const std::vector<char> &v) { return b.compare(v.data(), v.size()) >= 0; }
+        friend inline bool operator>=(const base_buffer& b, const char c)               { return b.compare(&c, 1) >= 0; }
+        friend inline bool operator>=(const base_buffer& b, const std::string_view s)   { return b.compare(s.data(), s.size()) >= 0; }
+        friend inline bool operator>=(const base_buffer& b, const std::vector<char>& v) { return b.compare(v.data(), v.size()) >= 0; }
 
-        friend inline bool operator>=(const char c, const base_buffer &b)               { return b.compare(&c, 1) < 0; }
-        friend inline bool operator>=(const char *s, const base_buffer &b)              { return b.compare(s, strlen(s)) < 0; }
-        friend inline bool operator>=(const std::string_view s, const base_buffer &b)   { return b.compare(s.data(), s.size()) < 0; }
-        friend inline bool operator>=(const std::vector<char> &v, const base_buffer &b) { return b.compare(v.data(), v.size()) < 0; }
+        friend inline bool operator>=(const char c, const base_buffer& b)               { return b.compare(&c, 1) < 0; }
+        friend inline bool operator>=(const std::string_view s, const base_buffer& b)   { return b.compare(s.data(), s.size()) < 0; }
+        friend inline bool operator>=(const std::vector<char>& v, const base_buffer& b) { return b.compare(v.data(), v.size()) < 0; }
 
         // out
-        friend inline std::ostream &operator<<(std::ostream &out, const base_buffer &b)
+        friend inline std::ostream &operator<<(std::ostream& out, const base_buffer& b)
         {
             out << b.c_view();
             return out;

@@ -676,7 +676,9 @@ namespace examples::jobs_engine {
         for (auto& [id, promise] : settings_promises) {
             auto f       = promise.get_future();
             auto success = f.get();
-            std::cout << "PROMISE for jobid=" << id << " success=" << success << "\n";
+            std::cout << (success ? impl::color::green : impl::color::red)
+                      << "PROMISE for jobid=" << id << " success=" << success << "\n"
+                      << impl::color::reset;
         }
 
         // wait here for jobs to finish due to exit flag
