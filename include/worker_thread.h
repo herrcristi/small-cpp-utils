@@ -77,7 +77,7 @@ namespace small {
         template <typename _Callable, typename... Args>
         worker_thread(const config_worker_thread config, _Callable function, Args... extra_parameters)
             : m_config(config),
-              m_processing_function(std::bind(std::forward<_Callable>(function), std::ref(*this), std::placeholders::_1 /*item*/, std::forward<Args>(extra_parameters)...))
+              m_function_processing(std::bind(std::forward<_Callable>(function), std::ref(*this), std::placeholders::_1 /*item*/, std::forward<Args>(extra_parameters)...))
         {
             // auto start threads if count > 0 otherwise threads should be manually started
             if (config.threads_count) {
@@ -310,7 +310,7 @@ namespace small {
         // callback for queue_items
         inline void process_items(std::vector<T> &&items)
         {
-            m_processing_function(std::forward<std::vector<T>>(items)); // bind the std::placeholders::_1
+            m_function_processing(std::forward<std::vector<T>>(items)); // bind the std::placeholders::_1
         }
 
     private:
@@ -320,6 +320,6 @@ namespace small {
         config_worker_thread                                 m_config;                // config
         small::lock_queue_thread<T, small::worker_thread<T>> m_queue_items{*this};    // queue of items
         small::time_queue_thread<T, small::worker_thread<T>> m_delayed_items{*this};  // queue of delayed items
-        std::function<void(const std::vector<T> &)>          m_processing_function{}; // processing Function
+        std::function<void(const std::vector<T> &)>          m_function_processing{}; // processing Function
     };
 } // namespace small

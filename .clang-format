@@ -12,6 +12,7 @@ AlignConsecutiveAssignments:
     AlignFunctionDeclarations: true
 AlignConsecutiveBitFields: true
 AlignConsecutiveMacros: true
+# PointerAlignment: Left
 BraceWrapping:
     AfterEnum: true
     AfterStruct: true

@@ -10,18 +10,18 @@ namespace small::jobsimpl {
     // helper class for jobs_engine to execute group of jobs (parent caller must implement 'do_action')
     //
     template <typename JobGroupT, typename ParentCallerT>
-    class jobs_engine_thread_pool
+    class jobs_thread_pool
     {
     public:
         //
-        // jobs_engine_thread_pool
+        // jobs_thread_pool
         //
-        explicit jobs_engine_thread_pool(ParentCallerT &parent_caller)
+        explicit jobs_thread_pool(ParentCallerT &parent_caller)
             : m_parent_caller(parent_caller)
         {
         }
 
-        ~jobs_engine_thread_pool()
+        ~jobs_thread_pool()
         {
             wait();
         }
@@ -36,7 +36,7 @@ namespace small::jobsimpl {
         // clang-format on
 
         // clang-format off
-        // use it as locker (std::unique_lock<small:jobs_engine_thread_pool<T>> m...)
+        // use it as locker (std::unique_lock<small:jobs_thread_pool<T>> m...)
         inline void     lock        () { m_workers.lock(); }
         inline void     unlock      () { m_workers.unlock(); }
         inline bool     try_lock    () { return m_workers.try_lock(); }
@@ -54,7 +54,7 @@ namespace small::jobsimpl {
         // config processing by job group type
         // this should be done in the initial setup phase once
         //
-        inline void add_job_group(const JobGroupT &job_group, const int &threads_count)
+        inline void config_jobs_group(const JobGroupT &job_group, const int &threads_count)
         {
             m_scheduler[job_group].m_threads_count = threads_count;
         }
@@ -63,7 +63,7 @@ namespace small::jobsimpl {
         // when items are added to be processed in parent class the start scheduler should be called
         // to trigger action (if needed for the new job group)
         //
-        inline void job_start(const JobGroupT &job_group)
+        inline void jobs_schedule(const JobGroupT &job_group)
         {
             auto it = m_scheduler.find(job_group); // map is not changed, so can be access without locking
             if (it == m_scheduler.end()) {
@@ -73,7 +73,7 @@ namespace small::jobsimpl {
             // even if here it is considered that there are items and something will be scheduled,
             // the actual check if work will still exists will be done in do_action of parent
             auto &stats = it->second;
-            job_action_start(job_group, true, stats);
+            jobs_action_start(job_group, true /*has items*/, std::chrono::milliseconds(0) /*delay*/, stats);
         }
 
         // clang-format off
@@ -114,10 +114,10 @@ namespace small::jobsimpl {
 
     private:
         // some prevention
-        jobs_engine_thread_pool(const jobs_engine_thread_pool &)            = delete;
-        jobs_engine_thread_pool(jobs_engine_thread_pool &&)                 = delete;
-        jobs_engine_thread_pool &operator=(const jobs_engine_thread_pool &) = delete;
-        jobs_engine_thread_pool &operator=(jobs_engine_thread_pool &&__t)   = delete;
+        jobs_thread_pool(const jobs_thread_pool &)            = delete;
+        jobs_thread_pool(jobs_thread_pool &&)                 = delete;
+        jobs_thread_pool &operator=(const jobs_thread_pool &) = delete;
+        jobs_thread_pool &operator=(jobs_thread_pool &&__t)   = delete;
 
     private:
         struct JobGroupStats
@@ -129,7 +129,7 @@ namespace small::jobsimpl {
         //
         // to trigger action (if needed for the new job group)
         //
-        inline void job_action_start(const JobGroupT &job_group, const bool has_items, JobGroupStats &stats)
+        inline void jobs_action_start(const JobGroupT &job_group, const bool has_items, const std::chrono::milliseconds &delay_next_request, JobGroupStats &stats)
         {
             if (!has_items) {
                 return;
@@ -141,14 +141,18 @@ namespace small::jobsimpl {
             bool needs_runners = stats.m_running < stats.m_threads_count;
             if (needs_runners) {
                 ++stats.m_running;
-                m_workers.push_back(job_group);
+                if (delay_next_request.count() > 0) {
+                    m_workers.push_back_delay_for(delay_next_request, job_group);
+                } else {
+                    m_workers.push_back(job_group);
+                }
             }
         }
 
         //
         // job action ended
         //
-        inline void job_action_end(const JobGroupT &job_group, const bool has_items)
+        inline void jobs_action_end(const JobGroupT &job_group, const bool has_items, const std::chrono::milliseconds &delay_next_request)
         {
             auto it = m_scheduler.find(job_group); // map is not changed, so can be access without locking
             if (it == m_scheduler.end()) {
@@ -160,7 +164,7 @@ namespace small::jobsimpl {
             auto &stats = it->second;
             --stats.m_running;
 
-            job_action_start(job_group, has_items, stats);
+            jobs_action_start(job_group, has_items, delay_next_request, stats);
         }
 
         //
@@ -170,11 +174,21 @@ namespace small::jobsimpl {
         {
             for (auto job_group : items) {
 
-                bool has_items = false;
-                m_parent_caller.do_action(job_group, &has_items);
+                std::chrono::milliseconds delay_next_request{};
+
+                auto ret       = m_parent_caller.do_action(job_group, delay_next_request);
+                bool has_items = ret == small::EnumLock::kElement;
+
+                // has items does not mean that there are still items in the queue
+                // it means that items were processed in this iteration
+                // as such an execution will be scheduled no matter what
+                // and next processing time will check to see if there are items or not
+
+                // for delay is important items -> delay -> next item -> delay ....
+                //                                       -> empty ... when new items arrive delay was already processed
 
                 // start another action
-                job_action_end(job_group, has_items);
+                jobs_action_end(job_group, has_items, delay_next_request);
             }
         }
 
@@ -188,7 +202,7 @@ namespace small::jobsimpl {
         //
         struct JobWorkerThreadFunction
         {
-            void operator()(small::worker_thread<JobGroupT> &, const std::vector<JobGroupT> &items, jobs_engine_thread_pool<JobGroupT, ParentCallerT> *pThis) const
+            void operator()(small::worker_thread<JobGroupT> &, const std::vector<JobGroupT> &items, jobs_thread_pool<JobGroupT, ParentCallerT> *pThis) const
             {
                 pThis->thread_function(items);
             }
