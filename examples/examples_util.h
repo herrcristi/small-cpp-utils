@@ -20,12 +20,12 @@ namespace examples::util {
         constexpr std::string_view b{"B"};
         m[std::string(b)] = 2;
 
-        constexpr const char *a = "a";
+        constexpr const char* a = "a";
         m[a]                    = 1;
         m["A"]                  = 3; // this will have override the "a"
 
         std::cout << "current map values ";
-        for (auto &[key, val] : m) {
+        for (auto& [key, val] : m) {
             std::cout << "(" << key << ", " << val << ") ";
         }
         std::cout << "\n";

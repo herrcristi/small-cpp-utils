@@ -31,19 +31,19 @@ namespace small {
         //
         // base_queue_wait
         //
-        explicit base_queue_wait(ParentCallerT &parent_caller)
+        explicit base_queue_wait(ParentCallerT& parent_caller)
             : m_parent_caller(parent_caller)
         {
         }
 
-        base_queue_wait(const base_queue_wait &o) : base_queue_wait() { operator=(o); };
-        base_queue_wait(base_queue_wait &&o) noexcept : base_queue_wait() { operator=(std::move(o)); };
+        base_queue_wait(const base_queue_wait& o) : base_queue_wait() { operator=(o); };
+        base_queue_wait(base_queue_wait&& o) noexcept : base_queue_wait() { operator=(std::move(o)); };
 
-        inline base_queue_wait &operator=(const base_queue_wait &)
+        inline base_queue_wait& operator=(const base_queue_wait&)
         {
             return *this;
         }
-        inline base_queue_wait &operator=(base_queue_wait &&) noexcept
+        inline base_queue_wait& operator=(base_queue_wait&&) noexcept
         {
             return *this;
         }
@@ -76,7 +76,7 @@ namespace small {
         //
         // wait pop and return that element
         //
-        inline EnumLock wait_pop(T *elem)
+        inline EnumLock wait_pop(T* elem)
         {
             std::unique_lock l(m_lock);
 
@@ -100,7 +100,7 @@ namespace small {
             }
         }
 
-        inline EnumLock wait_pop(std::vector<T> &vec_elems, int max_count = 1)
+        inline EnumLock wait_pop(std::vector<T>& vec_elems, int max_count = 1)
         {
             vec_elems.clear();
             vec_elems.reserve(max_count);
@@ -143,7 +143,7 @@ namespace small {
 
         // wait pop_for and return that element
         template <typename _Rep, typename _Period>
-        inline EnumLock wait_pop_for(const std::chrono::duration<_Rep, _Period> &__rtime, T *elem)
+        inline EnumLock wait_pop_for(const std::chrono::duration<_Rep, _Period>& __rtime, T* elem)
         {
             using __dur    = TimeDuration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
@@ -154,7 +154,7 @@ namespace small {
         }
 
         template <typename _Rep, typename _Period>
-        inline EnumLock wait_pop_for(const std::chrono::duration<_Rep, _Period> &__rtime, std::vector<T> &vec_elems, int max_count = 1)
+        inline EnumLock wait_pop_for(const std::chrono::duration<_Rep, _Period>& __rtime, std::vector<T>& vec_elems, int max_count = 1)
         {
             using __dur    = TimeDuration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
@@ -166,7 +166,7 @@ namespace small {
 
         // wait until
         // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
-        inline EnumLock wait_pop_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, T *elem)
+        inline EnumLock wait_pop_until(const std::chrono::time_point<TimeClock, TimeDuration>& __atime, T* elem)
         {
             std::unique_lock l(m_lock);
 
@@ -199,7 +199,7 @@ namespace small {
         }
 
         // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
-        inline EnumLock wait_pop_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, std::vector<T> &vec_elems, int max_count = 1)
+        inline EnumLock wait_pop_until(const std::chrono::time_point<TimeClock, TimeDuration>& __atime, std::vector<T>& vec_elems, int max_count = 1)
         {
             vec_elems.clear();
             vec_elems.reserve(max_count);
@@ -264,7 +264,7 @@ namespace small {
         }
 
         template <typename _Rep, typename _Period>
-        inline EnumLock wait_for(const std::chrono::duration<_Rep, _Period> &__rtime)
+        inline EnumLock wait_for(const std::chrono::duration<_Rep, _Period>& __rtime)
         {
             using __dur    = typename std::chrono::system_clock::duration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
@@ -275,7 +275,7 @@ namespace small {
         }
 
         template <typename _Clock, typename _Duration>
-        inline EnumLock wait_until(const std::chrono::time_point<_Clock, _Duration> &__atime)
+        inline EnumLock wait_until(const std::chrono::time_point<_Clock, _Duration>& __atime)
         {
             signal_exit_when_done();
 
@@ -295,7 +295,7 @@ namespace small {
         //
         // call the parent
         //
-        inline small::WaitFlags test_and_get(T *elem, TimePoint *time_wait_until)
+        inline small::WaitFlags test_and_get(T* elem, TimePoint* time_wait_until)
         {
             *time_wait_until        = TimeClock::now() + std::chrono::minutes(60);
             bool is_empty_after_get = false;
@@ -325,6 +325,6 @@ namespace small {
         //
         mutable small::base_lock    m_lock;                  // locker
         std::condition_variable_any m_queues_exit_condition; // condition to wait for queues to be empty when signal_exit_when_done
-        ParentCallerT              &m_parent_caller;         // parent caller
+        ParentCallerT&              m_parent_caller;         // parent caller
     };
 } // namespace small

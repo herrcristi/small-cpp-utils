@@ -87,13 +87,13 @@ namespace small {
         //
         // jobs_engine
         //
-        explicit jobs_engine(const JobsConfig &config = {})
+        explicit jobs_engine(const JobsConfig& config = {})
             : m_config{config}
         {
             apply_config();
         }
 
-        explicit jobs_engine(JobsConfig &&config)
+        explicit jobs_engine(JobsConfig&& config)
             : m_config{config}
         {
             apply_config();
@@ -154,13 +154,13 @@ namespace small {
         // config
         // THIS SHOULD BE DONE IN THE INITIAL SETUP PHASE ONCE
         //
-        inline void set_config(const JobsConfig &config)
+        inline void set_config(const JobsConfig& config)
         {
             m_config = config;
             apply_config();
         }
 
-        inline void set_config(JobsConfig &&config)
+        inline void set_config(JobsConfig&& config)
         {
             m_config = std::move(config);
             apply_config();
@@ -201,7 +201,7 @@ namespace small {
 
         // specific jobs functions
         template <typename _Callable, typename... Args>
-        inline void config_jobs_function_processing(const JobsTypeT &jobs_type, _Callable function_processing, Args... extra_parameters)
+        inline void config_jobs_function_processing(const JobsTypeT& jobs_type, _Callable function_processing, Args... extra_parameters)
         {
             m_config.config_jobs_function_processing(
                 jobs_type,
@@ -213,7 +213,7 @@ namespace small {
         }
 
         template <typename _Callable, typename... Args>
-        inline void config_jobs_function_children_finished(const JobsTypeT &jobs_type, _Callable function_children_finished, Args... extra_parameters)
+        inline void config_jobs_function_children_finished(const JobsTypeT& jobs_type, _Callable function_children_finished, Args... extra_parameters)
         {
             m_config.config_jobs_function_children_finished(
                 jobs_type,
@@ -225,7 +225,7 @@ namespace small {
         }
 
         template <typename _Callable, typename... Args>
-        inline void config_jobs_function_finished(const JobsTypeT &jobs_type, _Callable function_finished, Args... extra_parameters)
+        inline void config_jobs_function_finished(const JobsTypeT& jobs_type, _Callable function_finished, Args... extra_parameters)
         {
             m_config.config_jobs_function_finished(
                 jobs_type,
@@ -246,20 +246,20 @@ namespace small {
         inline JobsQueue &queue() { return m_queue; }
 
         // and some helper functions
-        inline std::size_t jobs_start(const JobsPrioT &priority, const JobsID &jobs_id)                 { return queue().jobs_start(priority, jobs_id); }
-        inline std::size_t jobs_start(const JobsPrioT &priority, const std::vector<JobsID> &jobs_ids)   { return queue().jobs_start(priority, jobs_ids); }
+        inline std::size_t jobs_start(const JobsPrioT& priority, const JobsID& jobs_id)                 { return queue().jobs_start(priority, jobs_id); }
+        inline std::size_t jobs_start(const JobsPrioT& priority, const std::vector<JobsID>& jobs_ids)   { return queue().jobs_start(priority, jobs_ids); }
 
-        inline std::shared_ptr<JobsItem>              jobs_get(const JobsID &jobs_id)                   { return queue().jobs_get(jobs_id); }
-        inline std::vector<std::shared_ptr<JobsItem>> jobs_get(const std::vector<JobsID> &jobs_ids)     { return queue().jobs_get(jobs_ids); }
+        inline std::shared_ptr<JobsItem>              jobs_get(const JobsID& jobs_id)                   { return queue().jobs_get(jobs_id); }
+        inline std::vector<std::shared_ptr<JobsItem>> jobs_get(const std::vector<JobsID>& jobs_ids)     { return queue().jobs_get(jobs_ids); }
 
-        inline std::size_t jobs_parent_child(const JobsID &parent_jobs_id, const JobsID &child_jobs_id) { return queue().jobs_parent_child(parent_jobs_id, child_jobs_id); }
+        inline std::size_t jobs_parent_child(const JobsID &parent_jobs_id, const JobsID& child_jobs_id) { return queue().jobs_parent_child(parent_jobs_id, child_jobs_id); }
         inline std::size_t jobs_parent_child(std::shared_ptr<JobsItem> parent_jobs_item, std::shared_ptr<JobsItem> child_jobs_item) { return queue().jobs_parent_child(parent_jobs_item, child_jobs_item); }
         // clang-format on
 
         //
         // set states for jobs items
         //
-        inline JobsState &state() { return m_state; }
+        inline JobsState& state() { return m_state; }
 
         // clang-format off
         //
@@ -296,7 +296,7 @@ namespace small {
 
         // wait some time then signal exit
         template <typename _Rep, typename _Period>
-        inline EnumLock wait_for(const std::chrono::duration<_Rep, _Period> &__rtime)
+        inline EnumLock wait_for(const std::chrono::duration<_Rep, _Period>& __rtime)
         {
             using __dur    = typename std::chrono::system_clock::duration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
@@ -308,7 +308,7 @@ namespace small {
 
         // wait until then signal exit
         template <typename _Clock, typename _Duration>
-        inline EnumLock wait_until(const std::chrono::time_point<_Clock, _Duration> &__atime)
+        inline EnumLock wait_until(const std::chrono::time_point<_Clock, _Duration>& __atime)
         {
             signal_exit_when_done();
 
@@ -335,10 +335,10 @@ namespace small {
 
     private:
         // some prevention
-        jobs_engine(const jobs_engine &)            = delete;
-        jobs_engine(jobs_engine &&)                 = delete;
-        jobs_engine &operator=(const jobs_engine &) = delete;
-        jobs_engine &operator=(jobs_engine &&__t)   = delete;
+        jobs_engine(const jobs_engine&)            = delete;
+        jobs_engine(jobs_engine&&)                 = delete;
+        jobs_engine& operator=(const jobs_engine&) = delete;
+        jobs_engine& operator=(jobs_engine&& __t)  = delete;
 
     private:
         //
@@ -347,7 +347,7 @@ namespace small {
         inline void apply_config()
         {
             // setup jobs groups
-            for (auto &[jobs_group, jobs_group_config] : m_config.m_groups) {
+            for (auto& [jobs_group, jobs_group_config] : m_config.m_groups) {
                 m_queue.config_jobs_group(jobs_group, m_config.m_engine.m_config_prio);
                 m_thread_pool.config_jobs_group(jobs_group, jobs_group_config.m_threads_count);
             }
@@ -364,7 +364,7 @@ namespace small {
             m_config.apply_default_function_children_finished();
             m_config.apply_default_function_finished();
 
-            for (auto &[jobs_type, jobs_type_config] : m_config.m_types) {
+            for (auto& [jobs_type, jobs_type_config] : m_config.m_types) {
                 m_queue.config_jobs_type(jobs_type, jobs_type_config.m_group);
             }
 
@@ -377,7 +377,7 @@ namespace small {
         //
         // get jobs to execute based on the group
         //
-        inline EnumLock get_group_jobs(const JobsGroupT &jobs_group, std::vector<JobsID> &vec_ids, typename JobsConfig::ConfigProcessing &group_config)
+        inline EnumLock get_group_jobs(const JobsGroupT& jobs_group, std::vector<JobsID>& vec_ids, typename JobsConfig::ConfigProcessing& group_config)
         {
             // get bulk_count property
             auto it_cfg_grp = m_config.m_groups.find(jobs_group);
@@ -391,7 +391,7 @@ namespace small {
             group_config.m_delay_next_request = it_cfg_grp->second.m_delay_next_request;
 
             // get items to process
-            auto *q = m_queue.get_jobs_group_queue(jobs_group);
+            auto* q = m_queue.get_jobs_group_queue(jobs_group);
             if (!q) {
                 return small::EnumLock::kExit;
             }
@@ -406,7 +406,7 @@ namespace small {
         //
         friend small::jobsimpl::jobs_thread_pool<JobsGroupT, ThisJobsEngine>;
 
-        inline EnumLock do_action(const JobsGroupT &jobs_group, std::chrono::milliseconds &delay_next_request)
+        inline EnumLock do_action(const JobsGroupT& jobs_group, std::chrono::milliseconds& delay_next_request)
         {
             // get jobs for the group
             typename JobsConfig::ConfigProcessing group_config{}; // for delay request
@@ -422,7 +422,7 @@ namespace small {
             {
                 // get jobs
                 std::vector<std::shared_ptr<JobsItem>> jobs_items = jobs_get(vec_ids);
-                for (auto &jobs_item : jobs_items) {
+                for (auto& jobs_item : jobs_items) {
                     jobs_in_progress_by_type[jobs_item->m_type].reserve(jobs_items.size());
 
                     // mark the item as in progress
@@ -436,7 +436,7 @@ namespace small {
             }
 
             // process specific job by type
-            for (auto &[jobs_type, jobs_items] : jobs_in_progress_by_type) {
+            for (auto& [jobs_type, jobs_items] : jobs_in_progress_by_type) {
                 auto it_cfg_type = m_config.m_types.find(jobs_type);
                 if (it_cfg_type == m_config.m_types.end()) {
                     continue;
@@ -506,7 +506,7 @@ namespace small {
         using JobsQueueTimeout = small::time_queue_thread<JobsID, ThisJobsEngine>;
         friend JobsQueueTimeout;
 
-        inline std::size_t push_back(std::vector<JobsID> &&jobs_ids)
+        inline std::size_t push_back(std::vector<JobsID>&& jobs_ids)
         {
             // this jobs has reached the timeout
             state().jobs_timeout(jobs_ids);
@@ -538,7 +538,7 @@ namespace small {
                 state().jobs_progress(jobs_item, 100);
 
                 auto jobs_parents = jobs_get(jobs_item->m_parentIDs);
-                for (auto &jobs_parent : jobs_parents) {
+                for (auto& jobs_parent : jobs_parents) {
                     m_config.m_types[jobs_parent->m_type].m_function_children_finished(jobs_parent, jobs_item /*child*/);
                 }
             } else {
@@ -547,9 +547,9 @@ namespace small {
             }
         }
 
-        inline void jobs_completed(const std::vector<std::shared_ptr<JobsItem>> &jobs_items)
+        inline void jobs_completed(const std::vector<std::shared_ptr<JobsItem>>& jobs_items)
         {
-            for (auto &jobs_item : jobs_items) {
+            for (auto& jobs_item : jobs_items) {
                 jobs_completed(jobs_item);
             }
         }
@@ -557,7 +557,7 @@ namespace small {
         //
         // when is finished
         //
-        inline void jobs_on_finished(const std::vector<std::shared_ptr<JobsItem>> & /* jobs_items */)
+        inline void jobs_on_finished(const std::vector<std::shared_ptr<JobsItem>>& /* jobs_items */)
         {
             // by default nothing to do here, but it can be setup for each jobs type
         }

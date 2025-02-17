@@ -17,7 +17,7 @@ namespace {
             // clean after test
         }
 
-        const std::string m_text = "hello world";
+        const std::string m_text   = "hello world";
         const std::string m_base64 = "aGVsbG8gd29ybGQ=";
     };
 
@@ -41,7 +41,7 @@ namespace {
         ASSERT_EQ(std::string_view(b64v.data(), b64v.size()), m_base64);
 
         auto b64vu = small::tobase64<std::vector<unsigned char>>(m_text);
-        ASSERT_EQ(std::string_view(reinterpret_cast<const char *>(b64v.data()), b64vu.size()), m_base64);
+        ASSERT_EQ(std::string_view(reinterpret_cast<const char*>(b64v.data()), b64vu.size()), m_base64);
 
         auto b64b = small::tobase64<small::buffer>(m_text);
         ASSERT_EQ(b64b, m_base64);
@@ -61,8 +61,8 @@ namespace {
     TEST_F(Base64Test, ToBase64_buffer)
     {
         // as buffer
-        small::buffer b = m_text;
-        auto b64 = small::tobase64(b);
+        small::buffer b   = m_text;
+        auto          b64 = small::tobase64(b);
         ASSERT_EQ(b64, m_base64);
     }
 
@@ -86,7 +86,7 @@ namespace {
         ASSERT_EQ(std::string_view(dv.data(), dv.size()), m_text);
 
         auto dvu = small::frombase64<std::vector<unsigned char>>(m_base64);
-        ASSERT_EQ(std::string_view(reinterpret_cast<const char *>(dvu.data()), dvu.size()), m_text);
+        ASSERT_EQ(std::string_view(reinterpret_cast<const char*>(dvu.data()), dvu.size()), m_text);
 
         auto db = small::frombase64<small::buffer>(m_base64);
         ASSERT_EQ(db, m_text);
@@ -106,8 +106,8 @@ namespace {
     TEST_F(Base64Test, FromBase64_buffer)
     {
         // as buffer
-        small::buffer b = m_base64;
-        auto decoded = small::frombase64(b);
+        small::buffer b       = m_base64;
+        auto          decoded = small::frombase64(b);
         ASSERT_EQ(decoded, m_text);
     }
 } // namespace

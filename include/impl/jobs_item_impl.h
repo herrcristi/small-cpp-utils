@@ -41,19 +41,19 @@ namespace small::jobsimpl {
 
         explicit jobs_item() = default;
 
-        explicit jobs_item(const JobsID &jobs_id, const JobsTypeT &jobs_type, const JobsRequestT &jobs_request)
+        explicit jobs_item(const JobsID& jobs_id, const JobsTypeT& jobs_type, const JobsRequestT& jobs_request)
             : m_id(jobs_id), m_type(jobs_type), m_request(jobs_request) {}
-        explicit jobs_item(const JobsID &jobs_id, const JobsTypeT &jobs_type, JobsRequestT &&jobs_request)
+        explicit jobs_item(const JobsID& jobs_id, const JobsTypeT& jobs_type, JobsRequestT&& jobs_request)
             : m_id(jobs_id), m_type(jobs_type), m_request(std::forward<JobsRequestT>(jobs_request)) {}
 
-        explicit jobs_item(const JobsTypeT &jobs_type, const JobsRequestT &jobs_request)
+        explicit jobs_item(const JobsTypeT& jobs_type, const JobsRequestT& jobs_request)
             : m_type(jobs_type), m_request(jobs_request) {}
-        explicit jobs_item(const JobsTypeT &jobs_type, JobsRequestT &&jobs_request)
+        explicit jobs_item(const JobsTypeT& jobs_type, JobsRequestT&& jobs_request)
             : m_type(jobs_type), m_request(std::forward<JobsRequestT>(jobs_request)) {}
 
-        jobs_item(const jobs_item &other) { operator=(other); };
-        jobs_item(jobs_item &&other) noexcept { operator=(other); };
-        jobs_item &operator=(const jobs_item &other)
+        jobs_item(const jobs_item& other) { operator=(other); };
+        jobs_item(jobs_item&& other) noexcept { operator=(other); };
+        jobs_item& operator=(const jobs_item& other)
         {
             m_id           = other.m_id;
             m_type         = other.m_type;
@@ -67,7 +67,7 @@ namespace small::jobsimpl {
             m_response     = other.m_response;
             return *this;
         }
-        jobs_item &operator=(jobs_item &&other) noexcept
+        jobs_item& operator=(jobs_item&& other) noexcept
         {
             m_id           = std::move(other.m_id);
             m_type         = std::move(other.m_type);
@@ -85,7 +85,7 @@ namespace small::jobsimpl {
         //
         // set job state (can only go from lower to upper state)
         //
-        inline void set_state(const EnumJobsState &new_state)
+        inline void set_state(const EnumJobsState& new_state)
         {
             for (;;) {
                 EnumJobsState current_state = m_state.load();
@@ -123,7 +123,7 @@ namespace small::jobsimpl {
         //
         // set job progress (can only increase)
         //
-        inline void set_progress(const int &new_progress)
+        inline void set_progress(const int& new_progress)
         {
             for (;;) {
                 int current_progress = m_progress.load();
@@ -144,7 +144,7 @@ namespace small::jobsimpl {
         //
         // add child
         //
-        inline void add_child(const JobsID &child_jobs_id)
+        inline void add_child(const JobsID& child_jobs_id)
         {
             m_childrenIDs.push_back(child_jobs_id); // this should be set under locked area
             m_has_children = true;
@@ -158,7 +158,7 @@ namespace small::jobsimpl {
         //
         // add parent
         //
-        inline void add_parent(const JobsID &parent_jobs_id)
+        inline void add_parent(const JobsID& parent_jobs_id)
         {
             m_parentIDs.push_back(parent_jobs_id); // this should be set under locked area
             m_has_parents = true;

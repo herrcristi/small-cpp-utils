@@ -22,7 +22,7 @@ namespace examples::event {
             std::cout << "Event is used as a mutex\n";
         }
 
-        auto fn_t = [](auto i, auto iterations, small::event &_e) {
+        auto fn_t = [](auto i, auto iterations, small::event& _e) {
             for (int t = 0; t < iterations; ++t) {
                 {
                     _e.wait();

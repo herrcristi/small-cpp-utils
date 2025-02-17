@@ -88,26 +88,26 @@ namespace small {
         //
         // prio_queue
         //
-        explicit prio_queue(const config_prio_queue<PrioT> &config = {})
+        explicit prio_queue(const config_prio_queue<PrioT>& config = {})
             : m_config(config)
         {
             // create queues
-            for (auto &[prio, ratio] : m_config.priorities) {
+            for (auto& [prio, ratio] : m_config.priorities) {
                 m_prio_queues[prio];
             }
         }
 
-        prio_queue(const prio_queue &o) : prio_queue() { operator=(o); };
-        prio_queue(prio_queue &&o) noexcept : prio_queue() { operator=(std::move(o)); };
+        prio_queue(const prio_queue& o) : prio_queue() { operator=(o); };
+        prio_queue(prio_queue&& o) noexcept : prio_queue() { operator=(std::move(o)); };
 
-        prio_queue &operator=(const prio_queue &o)
+        prio_queue& operator=(const prio_queue& o)
         {
             std::scoped_lock l(m_wait, o.m_wait);
             m_config      = o.m_config;
             m_prio_queues = o.m_prio_queues;
             return *this;
         }
-        prio_queue &operator=(prio_queue &&o) noexcept
+        prio_queue& operator=(prio_queue&& o) noexcept
         {
             std::scoped_lock l(m_wait, o.m_wait);
             m_config      = std::move(o.m_config);
@@ -123,7 +123,7 @@ namespace small {
             std::unique_lock l(m_wait);
 
             std::size_t total = 0;
-            for (auto &[prio, q] : m_prio_queues) {
+            for (auto& [prio, q] : m_prio_queues) {
                 total += q.size();
             }
             return total;
@@ -147,7 +147,7 @@ namespace small {
         inline void clear()
         {
             std::unique_lock l(m_wait);
-            for (auto &[prio, q] : m_prio_queues) {
+            for (auto& [prio, q] : m_prio_queues) {
                 q.clear();
             }
         }
@@ -172,7 +172,7 @@ namespace small {
         //
         // push_back
         //
-        inline std::size_t push_back(const PrioT priority, const T &elem)
+        inline std::size_t push_back(const PrioT priority, const T& elem)
         {
             if (is_exit()) {
                 return 0;
@@ -190,7 +190,7 @@ namespace small {
             return 1;
         }
 
-        inline std::size_t push_back(const std::pair<PrioT, T> &pair_elem)
+        inline std::size_t push_back(const std::pair<PrioT, T>& pair_elem)
         {
             if (is_exit()) {
                 return 0;
@@ -208,7 +208,7 @@ namespace small {
             return 1;
         }
 
-        inline std::size_t push_back(const PrioT priority, const std::vector<T> &elems)
+        inline std::size_t push_back(const PrioT priority, const std::vector<T>& elems)
         {
             if (is_exit()) {
                 return 0;
@@ -222,7 +222,7 @@ namespace small {
             }
 
             std::size_t count = 0;
-            for (auto &elem : elems) {
+            for (auto& elem : elems) {
                 it->second.push_back(elem);
                 ++count;
             }
@@ -231,7 +231,7 @@ namespace small {
         }
 
         // push_back move semantics
-        inline std::size_t push_back(const PrioT priority, T &&elem)
+        inline std::size_t push_back(const PrioT priority, T&& elem)
         {
             if (is_exit()) {
                 return 0;
@@ -249,7 +249,7 @@ namespace small {
             return 1;
         }
 
-        inline std::size_t push_back(std::pair<PrioT, T> &&pair_elem)
+        inline std::size_t push_back(std::pair<PrioT, T>&& pair_elem)
         {
             if (is_exit()) {
                 return 0;
@@ -267,7 +267,7 @@ namespace small {
             return 1;
         }
 
-        inline std::size_t push_back(const PrioT priority, std::vector<T> &&elems)
+        inline std::size_t push_back(const PrioT priority, std::vector<T>&& elems)
         {
             if (is_exit()) {
                 return 0;
@@ -281,7 +281,7 @@ namespace small {
             }
 
             std::size_t count = 0;
-            for (auto &elem : elems) {
+            for (auto& elem : elems) {
                 it->second.push_back(std::forward<T>(elem));
                 ++count;
             }
@@ -291,7 +291,7 @@ namespace small {
 
         // emplace_back
         template <typename... _Args>
-        inline std::size_t emplace_back(const PrioT priority, _Args &&...__args)
+        inline std::size_t emplace_back(const PrioT priority, _Args&&... __args)
         {
             if (is_exit()) {
                 return 0;
@@ -325,12 +325,12 @@ namespace small {
         //
         // wait pop_front and return that element
         //
-        inline EnumLock wait_pop_front(T *elem)
+        inline EnumLock wait_pop_front(T* elem)
         {
             return m_wait.wait_pop(elem);
         }
 
-        inline EnumLock wait_pop_front(std::vector<T> &vec_elems, int max_count = 1)
+        inline EnumLock wait_pop_front(std::vector<T>& vec_elems, int max_count = 1)
         {
             return m_wait.wait_pop(vec_elems, max_count);
         }
@@ -339,13 +339,13 @@ namespace small {
         // wait pop_front_for and return that element
         //
         template <typename _Rep, typename _Period>
-        inline EnumLock wait_pop_front_for(const std::chrono::duration<_Rep, _Period> &__rtime, T *elem)
+        inline EnumLock wait_pop_front_for(const std::chrono::duration<_Rep, _Period>& __rtime, T* elem)
         {
             return m_wait.wait_pop_for(__rtime, elem);
         }
 
         template <typename _Rep, typename _Period>
-        inline EnumLock wait_pop_front_for(const std::chrono::duration<_Rep, _Period> &__rtime, std::vector<T> &vec_elems, int max_count = 1)
+        inline EnumLock wait_pop_front_for(const std::chrono::duration<_Rep, _Period>& __rtime, std::vector<T>& vec_elems, int max_count = 1)
         {
             return m_wait.wait_pop_for(__rtime, vec_elems, max_count);
         }
@@ -354,13 +354,13 @@ namespace small {
         // wait until
         //
         template <typename _Clock, typename _Duration>
-        inline EnumLock wait_pop_front_until(const std::chrono::time_point<_Clock, _Duration> &__atime, T *elem)
+        inline EnumLock wait_pop_front_until(const std::chrono::time_point<_Clock, _Duration>& __atime, T* elem)
         {
             return m_wait.wait_pop_until(__atime, elem);
         }
 
         template <typename _Clock, typename _Duration>
-        inline EnumLock wait_pop_front_until(const std::chrono::time_point<_Clock, _Duration> &__atime, std::vector<T> &vec_elems, int max_count = 1)
+        inline EnumLock wait_pop_front_until(const std::chrono::time_point<_Clock, _Duration>& __atime, std::vector<T>& vec_elems, int max_count = 1)
         {
             return m_wait.wait_pop_until(__atime, vec_elems, max_count);
         }
@@ -374,13 +374,13 @@ namespace small {
         }
 
         template <typename _Rep, typename _Period>
-        inline EnumLock wait_for(const std::chrono::duration<_Rep, _Period> &__rtime)
+        inline EnumLock wait_for(const std::chrono::duration<_Rep, _Period>& __rtime)
         {
             return m_wait.wait_for(__rtime);
         }
 
         template <typename _Clock, typename _Duration>
-        inline EnumLock wait_until(const std::chrono::time_point<_Clock, _Duration> &__atime)
+        inline EnumLock wait_until(const std::chrono::time_point<_Clock, _Duration>& __atime)
         {
             return m_wait.wait_until(__atime);
         }
@@ -397,24 +397,24 @@ namespace small {
         // reset higher priority credits
         inline void reset_higher_stats(const PrioT priority)
         {
-            for (auto &[prio, ratio] : m_config.priorities) {
+            for (auto& [prio, ratio] : m_config.priorities) {
                 if (prio == priority) {
                     break;
                 }
-                auto &stats            = m_prio_stats[prio];
+                auto& stats            = m_prio_stats[prio];
                 stats.m_count_executed = 0;
             }
         }
 
         inline void reset_all_stats()
         {
-            for (auto &[prio, ratio] : m_config.priorities) {
-                auto &stats            = m_prio_stats[prio];
+            for (auto& [prio, ratio] : m_config.priorities) {
+                auto& stats            = m_prio_stats[prio];
                 stats.m_count_executed = 0;
             }
         }
 
-        inline small::WaitFlags pop_front(std::deque<T> &queue, T *elem)
+        inline small::WaitFlags pop_front(std::deque<T>& queue, T* elem)
         {
             // get elem
             if (elem) {
@@ -426,7 +426,7 @@ namespace small {
         }
 
         // extract from queue
-        inline small::WaitFlags test_and_get(T *elem, typename BaseQueueWait::TimePoint * /* time_wait_until */, bool *is_empty_after_get)
+        inline small::WaitFlags test_and_get(T* elem, typename BaseQueueWait::TimePoint* /* time_wait_until */, bool* is_empty_after_get)
         {
             *is_empty_after_get = true;
 
@@ -437,9 +437,9 @@ namespace small {
             std::optional<PrioT> prio_with_non_empty_queue;
 
             // iterate priorities from high to low
-            for (auto &[prio, ratio] : m_config.priorities) {
-                auto *queue = &m_prio_queues[prio];
-                auto &stats = m_prio_stats[prio];
+            for (auto& [prio, ratio] : m_config.priorities) {
+                auto* queue = &m_prio_queues[prio];
+                auto& stats = m_prio_stats[prio];
 
                 // save the first priority for which the queue is not empty
                 if (!queue->empty() && !prio_with_non_empty_queue) {
@@ -461,7 +461,7 @@ namespace small {
                     // choose one from previous
                     if (prio_with_non_empty_queue) {
                         queue            = &m_prio_queues[prio_with_non_empty_queue.value()];
-                        auto &prev_stats = m_prio_stats[prio_with_non_empty_queue.value()];
+                        auto& prev_stats = m_prio_stats[prio_with_non_empty_queue.value()];
                         ++prev_stats.m_count_executed;
                     }
 
@@ -481,8 +481,8 @@ namespace small {
             reset_all_stats();
 
             if (prio_with_non_empty_queue) {
-                auto &queue      = m_prio_queues[prio_with_non_empty_queue.value()];
-                auto &prev_stats = m_prio_stats[prio_with_non_empty_queue.value()];
+                auto& queue      = m_prio_queues[prio_with_non_empty_queue.value()];
+                auto& prev_stats = m_prio_stats[prio_with_non_empty_queue.value()];
                 ++prev_stats.m_count_executed;
 
                 // get elem

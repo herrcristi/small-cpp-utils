@@ -31,7 +31,7 @@ namespace {
         std::latch sync_main{1};
 
         // create thread
-        auto thread = std::jthread([](small::lock_queue<int> &_q, std::latch &sync_thread, std::latch &sync_main) {
+        auto thread = std::jthread([](small::lock_queue<int>& _q, std::latch& sync_thread, std::latch& sync_main) {
             std::unique_lock lock(_q);
             sync_thread.count_down(); // signal that thread is started (and also locked is acquired)
             sync_main.wait();         // wait that the main finished executing test to proceed further
@@ -207,7 +207,7 @@ namespace {
 
         // push inside thread
         auto timeStart = small::timeNow();
-        auto thread    = std::jthread([](small::lock_queue<int> &_q) {
+        auto thread    = std::jthread([](small::lock_queue<int>& _q) {
             small::sleep(300);
 
             int value{5};
@@ -245,7 +245,7 @@ namespace {
 
         // create thread
         auto timeStart = small::timeNow();
-        auto thread    = std::jthread([](small::lock_queue<int> &_q) {
+        auto thread    = std::jthread([](small::lock_queue<int>& _q) {
             // signal after some time
             small::sleep(300);
             _q.signal_exit_force();
@@ -284,7 +284,7 @@ namespace {
 
         // create thread
         auto timeStart = small::timeNow();
-        auto thread    = std::jthread([](small::lock_queue<int> &_q) {
+        auto thread    = std::jthread([](small::lock_queue<int>& _q) {
             // signal after some time
             small::sleep(300);
             _q.signal_exit_when_done();

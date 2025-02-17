@@ -36,7 +36,7 @@ namespace small {
     //
     // stricmp without locale
     //
-    inline int stricmp(const char *dst, const char *src)
+    inline int stricmp(const char* dst, const char* src)
     {
         int f = 0;
         int l = 0;
@@ -58,7 +58,7 @@ namespace small {
     //
     // strnicmp without locale
     //
-    inline int strnicmp(const char *dst, const char *src, std::size_t num)
+    inline int strnicmp(const char* dst, const char* src, std::size_t num)
     {
         int f = 0;
         int l = 0;
@@ -97,19 +97,19 @@ namespace small {
     //
     // conversion toLowerCase, toUpperCase
     //
-    inline std::string toLowerCase(std::string &u)
+    inline std::string toLowerCase(std::string& u)
     {
         std::transform(u.begin(), u.end(), u.begin(), ::tolower);
         return u;
     }
 
-    inline std::string toUpperCase(std::string &u)
+    inline std::string toUpperCase(std::string& u)
     {
         std::transform(u.begin(), u.end(), u.begin(), ::toupper);
         return u;
     }
 
-    inline std::string toCapitalizeCase(std::string &u)
+    inline std::string toCapitalizeCase(std::string& u)
     {
         std::transform(u.begin(), u.end(), u.begin(), ::tolower);
         if (u.begin() != u.end()) {

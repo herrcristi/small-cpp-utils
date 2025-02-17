@@ -40,17 +40,17 @@ namespace small {
         // lock_queue
         //
         lock_queue() = default;
-        lock_queue(const lock_queue &o) : lock_queue() { operator=(o); };
-        lock_queue(lock_queue &&o) noexcept : lock_queue() { operator=(std::move(o)); };
+        lock_queue(const lock_queue& o) : lock_queue() { operator=(o); };
+        lock_queue(lock_queue&& o) noexcept : lock_queue() { operator=(std::move(o)); };
 
-        inline lock_queue &operator=(const lock_queue &o)
+        inline lock_queue& operator=(const lock_queue& o)
         {
             std::scoped_lock l(m_wait, o.m_wait);
             m_wait  = o.m_wait;
             m_queue = o.m_queue;
             return *this;
         }
-        inline lock_queue &operator=(lock_queue &&o) noexcept
+        inline lock_queue& operator=(lock_queue&& o) noexcept
         {
             std::scoped_lock l(m_wait, o.m_wait);
             m_wait  = std::move(o.m_wait);
@@ -88,7 +88,7 @@ namespace small {
         //
         // push_back
         //
-        inline std::size_t push_back(const T &elem)
+        inline std::size_t push_back(const T& elem)
         {
             if (is_exit()) {
                 return 0;
@@ -100,7 +100,7 @@ namespace small {
             return 1;
         }
 
-        inline std::size_t push_back(const std::vector<T> &elems)
+        inline std::size_t push_back(const std::vector<T>& elems)
         {
             if (is_exit()) {
                 return 0;
@@ -109,7 +109,7 @@ namespace small {
             std::unique_lock l(m_wait);
 
             std::size_t count = 0;
-            for (auto &elem : elems) {
+            for (auto& elem : elems) {
                 m_queue.push_back(elem);
                 ++count;
             }
@@ -118,7 +118,7 @@ namespace small {
         }
 
         // push_back move semantics
-        inline std::size_t push_back(T &&elem)
+        inline std::size_t push_back(T&& elem)
         {
             if (is_exit()) {
                 return 0;
@@ -130,7 +130,7 @@ namespace small {
             return 1;
         }
 
-        inline std::size_t push_back(std::vector<T> &&elems)
+        inline std::size_t push_back(std::vector<T>&& elems)
         {
             if (is_exit()) {
                 return 0;
@@ -139,7 +139,7 @@ namespace small {
             std::unique_lock l(m_wait);
 
             std::size_t count = 0;
-            for (auto &elem : elems) {
+            for (auto& elem : elems) {
                 m_queue.push_back(std::forward<T>(elem));
                 ++count;
             }
@@ -149,7 +149,7 @@ namespace small {
 
         // emplace_back
         template <typename... _Args>
-        inline std::size_t emplace_back(_Args &&...__args)
+        inline std::size_t emplace_back(_Args&&... __args)
         {
             if (is_exit()) {
                 return 0;
@@ -177,36 +177,36 @@ namespace small {
         //
         // wait and return that element
         //
-        inline EnumLock wait_pop_front(T *elem)
+        inline EnumLock wait_pop_front(T* elem)
         {
             return m_wait.wait_pop(elem);
         }
 
-        inline EnumLock wait_pop_front(std::vector<T> &vec_elems, int max_count = 1)
+        inline EnumLock wait_pop_front(std::vector<T>& vec_elems, int max_count = 1)
         {
             return m_wait.wait_pop(vec_elems, max_count);
         }
 
         template <typename _Rep, typename _Period>
-        inline EnumLock wait_pop_front_for(const std::chrono::duration<_Rep, _Period> &__rtime, T *elem)
+        inline EnumLock wait_pop_front_for(const std::chrono::duration<_Rep, _Period>& __rtime, T* elem)
         {
             return m_wait.wait_pop_for(__rtime, elem);
         }
 
         template <typename _Rep, typename _Period>
-        inline EnumLock wait_pop_front_for(const std::chrono::duration<_Rep, _Period> &__rtime, std::vector<T> &vec_elems, int max_count = 1)
+        inline EnumLock wait_pop_front_for(const std::chrono::duration<_Rep, _Period>& __rtime, std::vector<T>& vec_elems, int max_count = 1)
         {
             return m_wait.wait_pop_for(__rtime, vec_elems, max_count);
         }
 
         template <typename _Clock, typename _Duration>
-        inline EnumLock wait_pop_front_until(const std::chrono::time_point<_Clock, _Duration> &__atime, T *elem)
+        inline EnumLock wait_pop_front_until(const std::chrono::time_point<_Clock, _Duration>& __atime, T* elem)
         {
             return m_wait.wait_pop_until(__atime, elem);
         }
 
         template <typename _Clock, typename _Duration>
-        inline EnumLock wait_pop_front_until(const std::chrono::time_point<_Clock, _Duration> &__atime, std::vector<T> &vec_elems, int max_count = 1)
+        inline EnumLock wait_pop_front_until(const std::chrono::time_point<_Clock, _Duration>& __atime, std::vector<T>& vec_elems, int max_count = 1)
         {
             return m_wait.wait_pop_until(__atime, vec_elems, max_count);
         }
@@ -220,13 +220,13 @@ namespace small {
         }
 
         template <typename _Rep, typename _Period>
-        inline EnumLock wait_for(const std::chrono::duration<_Rep, _Period> &__rtime)
+        inline EnumLock wait_for(const std::chrono::duration<_Rep, _Period>& __rtime)
         {
             return m_wait.wait_for(__rtime);
         }
 
         template <typename _Clock, typename _Duration>
-        inline EnumLock wait_until(const std::chrono::time_point<_Clock, _Duration> &__atime)
+        inline EnumLock wait_until(const std::chrono::time_point<_Clock, _Duration>& __atime)
         {
             return m_wait.wait_until(__atime);
         }
@@ -238,7 +238,7 @@ namespace small {
         //
         // check for front element
         //
-        inline small::WaitFlags test_and_get(T *elem, typename BaseQueueWait::TimePoint * /* time_wait_until */, bool *is_empty_after_get)
+        inline small::WaitFlags test_and_get(T* elem, typename BaseQueueWait::TimePoint* /* time_wait_until */, bool* is_empty_after_get)
         {
             *is_empty_after_get = true;
 

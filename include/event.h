@@ -48,22 +48,22 @@ namespace small {
         //
         // event
         //
-        event(const EventType &event_type = EventType::kAutomatic)
+        event(const EventType& event_type = EventType::kAutomatic)
             : m_event_type(event_type)
         {
         }
 
-        event(const event &o) : event() { operator=(o); };
-        event(event &&o) noexcept : event() { operator=(std::move(o)); };
+        event(const event& o) : event() { operator=(o); };
+        event(event&& o) noexcept : event() { operator=(std::move(o)); };
 
-        event &operator=(const event &o)
+        event& operator=(const event& o)
         {
             std::scoped_lock l(m_lock, o.m_lock);
             m_event_type = o.m_event_type;
             m_event_value.store(o.m_event_value);
             return *this;
         }
-        event &operator=(event &&o) noexcept
+        event& operator=(event&& o) noexcept
         {
             std::scoped_lock l(m_lock, o.m_lock);
             m_event_type = o.m_event_type;
@@ -81,7 +81,7 @@ namespace small {
         //
         // set type
         //
-        inline void set_event_type(const EventType &event_type = EventType::kAutomatic)
+        inline void set_event_type(const EventType& event_type = EventType::kAutomatic)
         {
             std::unique_lock l(m_lock);
             m_event_type = event_type;
@@ -153,7 +153,7 @@ namespace small {
         }
 
         template <typename _Lock>
-        inline EnumLock wait_lock(_Lock &__lock)
+        inline EnumLock wait_lock(_Lock& __lock)
         {
             while (test_event_and_reset() == false) {
                 auto ret_w = m_lock.wait(__lock);
@@ -176,7 +176,7 @@ namespace small {
         }
 
         template <typename _Lock, typename _Predicate>
-        inline EnumLock wait_lock(_Lock &__lock, _Predicate __p)
+        inline EnumLock wait_lock(_Lock& __lock, _Predicate __p)
         {
             for (; true;) {
                 // both conditions must be met
@@ -213,7 +213,7 @@ namespace small {
         // wait for (it uses wait_until)
         //
         template <typename _Rep, typename _Period>
-        inline EnumLock wait_for(const std::chrono::duration<_Rep, _Period> &__rtime)
+        inline EnumLock wait_for(const std::chrono::duration<_Rep, _Period>& __rtime)
         {
             using __dur    = typename std::chrono::system_clock::duration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
@@ -224,7 +224,7 @@ namespace small {
         }
 
         template <typename _Lock, typename _Rep, typename _Period>
-        inline EnumLock wait_for_lock(_Lock &__lock, const std::chrono::duration<_Rep, _Period> &__rtime)
+        inline EnumLock wait_for_lock(_Lock& __lock, const std::chrono::duration<_Rep, _Period>& __rtime)
         {
             using __dur    = typename std::chrono::system_clock::duration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
@@ -238,7 +238,7 @@ namespace small {
         // wait_for with condition
         //
         template <typename _Rep, typename _Period, typename _Predicate>
-        inline EnumLock wait_for(const std::chrono::duration<_Rep, _Period> &__rtime, _Predicate __p)
+        inline EnumLock wait_for(const std::chrono::duration<_Rep, _Period>& __rtime, _Predicate __p)
         {
             using __dur    = typename std::chrono::system_clock::duration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
@@ -249,7 +249,7 @@ namespace small {
         }
 
         template <typename _Lock, typename _Rep, typename _Period, typename _Predicate>
-        inline EnumLock wait_for_lock(_Lock &__lock, const std::chrono::duration<_Rep, _Period> &__rtime, _Predicate __p)
+        inline EnumLock wait_for_lock(_Lock& __lock, const std::chrono::duration<_Rep, _Period>& __rtime, _Predicate __p)
         {
             using __dur    = typename std::chrono::system_clock::duration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
@@ -263,14 +263,14 @@ namespace small {
         // wait until
         //
         template <typename _Clock, typename _Duration>
-        inline EnumLock wait_until(const std::chrono::time_point<_Clock, _Duration> &__atime)
+        inline EnumLock wait_until(const std::chrono::time_point<_Clock, _Duration>& __atime)
         {
             std::unique_lock l(m_lock);
             return wait_until_lock(l, __atime);
         }
 
         template <typename _Lock, typename _Clock, typename _Duration>
-        inline EnumLock wait_until_lock(_Lock &__lock, const std::chrono::time_point<_Clock, _Duration> &__atime)
+        inline EnumLock wait_until_lock(_Lock& __lock, const std::chrono::time_point<_Clock, _Duration>& __atime)
         {
             while (test_event_and_reset() == false) {
                 auto ret_w = m_lock.wait_until(__lock, __atime);
@@ -289,14 +289,14 @@ namespace small {
         // wait_until (with condition)
         //
         template <typename _Clock, typename _Duration, typename _Predicate>
-        inline EnumLock wait_until(const std::chrono::time_point<_Clock, _Duration> &__atime, _Predicate __p)
+        inline EnumLock wait_until(const std::chrono::time_point<_Clock, _Duration>& __atime, _Predicate __p)
         {
             std::unique_lock l(m_lock);
             return wait_until_lock(l, __atime, __p);
         }
 
         template <typename _Lock, typename _Clock, typename _Duration, typename _Predicate>
-        inline EnumLock wait_until_lock(_Lock &__lock, const std::chrono::time_point<_Clock, _Duration> &__atime, _Predicate __p)
+        inline EnumLock wait_until_lock(_Lock& __lock, const std::chrono::time_point<_Clock, _Duration>& __atime, _Predicate __p)
         {
             for (; true;) {
 

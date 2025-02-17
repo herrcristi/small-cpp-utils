@@ -78,7 +78,7 @@ namespace small::base64impl {
     //
     // to base64 (buffer must be proper allocated using get_base64_size + 1)
     //
-    inline bool tobase64(char *base64, const char *src, const std::size_t src_length)
+    inline bool tobase64(char* base64, const char* src, const std::size_t src_length)
     {
         unsigned int encoded_word = 0;
         int          count_bits   = 0;
@@ -134,7 +134,7 @@ namespace small::base64impl {
     //
     // decode from base 64 (returns length)
     //
-    inline std::size_t frombase64(char *decoded_buffer, const char *base64, const std::size_t base64_length)
+    inline std::size_t frombase64(char* decoded_buffer, const char* base64, const std::size_t base64_length)
     {
         std::size_t decoded_length = 0;
 

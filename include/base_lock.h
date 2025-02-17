@@ -26,16 +26,16 @@ namespace small {
         // base_lock
         //
         base_lock() = default;
-        base_lock(const base_lock &o) : base_lock() { operator=(o); };
-        base_lock(base_lock &&o) noexcept : base_lock() { operator=(std::move(o)); };
+        base_lock(const base_lock& o) : base_lock() { operator=(o); };
+        base_lock(base_lock&& o) noexcept : base_lock() { operator=(std::move(o)); };
 
-        base_lock &operator=(const base_lock &o)
+        base_lock& operator=(const base_lock& o)
         {
             m_is_exit_force.store(o.m_is_exit_force);
             m_is_exit_when_done.store(o.m_is_exit_when_done);
             return *this;
         }
-        base_lock &operator=(base_lock &&o) noexcept
+        base_lock& operator=(base_lock&& o) noexcept
         {
             m_is_exit_force.store(o.m_is_exit_force);
             m_is_exit_when_done.store(o.m_is_exit_when_done);
@@ -99,7 +99,7 @@ namespace small {
         // wait
         //
         template <typename _Lock>
-        inline EnumLock wait(_Lock &__lock)
+        inline EnumLock wait(_Lock& __lock)
         {
             if (is_exit_force()) {
                 return EnumLock::kExit;
@@ -111,7 +111,7 @@ namespace small {
         }
 
         template <typename _Lock, typename _Predicate>
-        inline EnumLock wait(_Lock &__lock, _Predicate __p)
+        inline EnumLock wait(_Lock& __lock, _Predicate __p)
         {
             if (is_exit_force()) {
                 return EnumLock::kExit;
@@ -126,7 +126,7 @@ namespace small {
         // wait for
         //
         template <typename _Lock, typename _Rep, typename _Period>
-        inline EnumLock wait_for(_Lock &__lock, const std::chrono::duration<_Rep, _Period> &__rtime)
+        inline EnumLock wait_for(_Lock& __lock, const std::chrono::duration<_Rep, _Period>& __rtime)
         {
             using __dur    = typename std::chrono::system_clock::duration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
@@ -137,7 +137,7 @@ namespace small {
         }
 
         template <typename _Lock, typename _Rep, typename _Period, typename _Predicate>
-        inline EnumLock wait_for(_Lock &__lock, const std::chrono::duration<_Rep, _Period> &__rtime, _Predicate __p)
+        inline EnumLock wait_for(_Lock& __lock, const std::chrono::duration<_Rep, _Period>& __rtime, _Predicate __p)
         {
             using __dur    = typename std::chrono::system_clock::duration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
@@ -152,7 +152,7 @@ namespace small {
         // wait until
         //
         template <typename _Lock, typename _Clock, typename _Duration>
-        inline EnumLock wait_until(_Lock &__lock, const std::chrono::time_point<_Clock, _Duration> &__atime)
+        inline EnumLock wait_until(_Lock& __lock, const std::chrono::time_point<_Clock, _Duration>& __atime)
         {
             if (is_exit_force()) {
                 return EnumLock::kExit;
@@ -168,7 +168,7 @@ namespace small {
         }
 
         template <typename _Lock, typename _Clock, typename _Duration, typename _Predicate>
-        inline EnumLock wait_until(_Lock &__lock, const std::chrono::time_point<_Clock, _Duration> &__atime, _Predicate __p)
+        inline EnumLock wait_until(_Lock& __lock, const std::chrono::time_point<_Clock, _Duration>& __atime, _Predicate __p)
         {
             if (is_exit_force()) {
                 return EnumLock::kExit;

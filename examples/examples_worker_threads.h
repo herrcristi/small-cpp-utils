@@ -18,7 +18,7 @@ namespace examples::worker_thread {
 
         using qc = std::pair<int, std::string>;
 
-        small::worker_thread<qc> workers({.threads_count = 0 /*dont start any threads*/}, [](auto &w /*this*/, const auto &items, auto b /*extra param b*/) {
+        small::worker_thread<qc> workers({.threads_count = 0 /*dont start any threads*/}, [](auto& w /*this*/, const auto& items, auto b /*extra param b*/) {
             // process item using the workers lock (not recommended)
             {
                 std::unique_lock mlock( w );
@@ -62,12 +62,12 @@ namespace examples::worker_thread {
         struct WorkerThreadFunction
         {
             using qc = std::pair<int, std::string>;
-            void operator()(small::worker_thread<qc> &w, const std::vector<qc> &items) const
+            void operator()(small::worker_thread<qc>& w, const std::vector<qc>& items) const
             {
                 {
                     std::unique_lock mlock(w);
 
-                    for (auto &[i, s] : items) {
+                    for (auto& [i, s] : items) {
                         std::cout << "thread " << std::this_thread::get_id()
                                   << " processing {" << i << ", \"" << s << "\"}";
 
@@ -107,10 +107,10 @@ namespace examples::worker_thread {
                 auto timeStart = small::timeNow();
 
                 // create worker
-                small::worker_thread<int> workers({.threads_count = threads, .bulk_count = bulk_count}, [](auto &w /*this*/, const std::vector<int> &elems) {
+                small::worker_thread<int> workers({.threads_count = threads, .bulk_count = bulk_count}, [](auto& w /*this*/, const std::vector<int>& elems) {
                     // simulate some work
                     int sum = 0;
-                    for (auto &elem : elems) {
+                    for (auto& elem : elems) {
                         sum += elem;
                     }
                     std::ignore = sum;

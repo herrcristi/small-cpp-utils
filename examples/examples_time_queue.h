@@ -18,7 +18,7 @@ namespace examples::time_queue {
 
         auto timeStart = small::timeNow();
 
-        std::thread t([](small::time_queue<qc> &_q) {
+        std::thread t([](small::time_queue<qc>& _q) {
             std::cout << "push {1, \"A\"}" << std::endl;
             _q.push_delay_for(std::chrono::milliseconds(600), {1, "A"});
 

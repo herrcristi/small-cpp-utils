@@ -31,7 +31,7 @@ namespace {
         std::latch sync_main{1};
 
         // create thread
-        auto thread = std::jthread([](small::event &e, std::latch &sync_thread, std::latch &sync_main) {
+        auto thread = std::jthread([](small::event& e, std::latch& sync_thread, std::latch& sync_main) {
             std::unique_lock lock(e);
             sync_thread.count_down(); // signal that thread is started (and also locked is acquired)
             sync_main.wait();         // wait that the main finished executing test to proceed further
@@ -89,7 +89,7 @@ namespace {
 
         // create thread
         auto timeStart = small::timeNow();
-        auto thread = std::jthread([](small::event &e) {
+        auto thread    = std::jthread([](small::event& e) {
             small::sleep(300);
             e.set_event();
         },
@@ -108,11 +108,11 @@ namespace {
         small::event event(small::EventType::kManual);
 
         // create listening threads
-        auto thread0 = std::jthread([](small::event &e) {
+        auto thread0 = std::jthread([](small::event& e) {
             e.wait();
         },
                                     std::ref(event));
-        auto thread1 = std::jthread([](small::event &e) {
+        auto thread1 = std::jthread([](small::event& e) {
             e.wait();
         },
                                     std::ref(event));
@@ -141,7 +141,7 @@ namespace {
 
         // create thread
         auto timeStart = small::timeNow();
-        auto thread = std::jthread([](small::event &e) {
+        auto thread    = std::jthread([](small::event& e) {
             small::sleep(300);
             e.set_event(); // signal
         },
@@ -167,13 +167,13 @@ namespace {
 
         // create thread
         auto timeStart = small::timeNow();
-        auto thread = std::jthread([](small::event &e) {
+        auto thread    = std::jthread([](small::event& e) {
             e.set_event(); // signal
         },
                                    std::ref(event));
 
-        const int waitTimeCondition = 300;
-        int conditionEvaluatedInc = 0;
+        const int waitTimeCondition     = 300;
+        int       conditionEvaluatedInc = 0;
 
         // wait to be signaled in the thread
         event.wait([&]() {
@@ -197,8 +197,8 @@ namespace {
 
         auto timeStart = small::timeNow();
 
-        const int waitTimeCondition = 300;
-        int conditionEvaluatedInc = 0;
+        const int waitTimeCondition     = 300;
+        int       conditionEvaluatedInc = 0;
 
         // wait to be signaled in the thread
         event.wait([&]() {
@@ -224,7 +224,7 @@ namespace {
 
         auto timeStart = small::timeNow();
 
-        auto ret = event.wait_for(std::chrono::milliseconds(300));
+        auto ret     = event.wait_for(std::chrono::milliseconds(300));
         auto elapsed = small::timeDiffMs(timeStart);
 
         ASSERT_GE(elapsed, 300 - 1); // due conversion
@@ -239,7 +239,7 @@ namespace {
 
         auto timeStart = small::timeNow();
 
-        auto ret = event.wait_for(std::chrono::milliseconds(300));
+        auto ret     = event.wait_for(std::chrono::milliseconds(300));
         auto elapsed = small::timeDiffMs(timeStart);
 
         ASSERT_LE(elapsed, 100); // check some time even there is no delay
@@ -254,11 +254,11 @@ namespace {
         // create manual event
         small::event event(small::EventType::kManual);
 
-        auto timeStart = small::timeNow();
-        int conditionEvaluatedInc = 0;
+        auto timeStart             = small::timeNow();
+        int  conditionEvaluatedInc = 0;
 
         // wait to be signaled in the thread
-        auto ret = event.wait_for(std::chrono::milliseconds(300), [&]() {
+        auto ret     = event.wait_for(std::chrono::milliseconds(300), [&]() {
             return false;
         });
         auto elapsed = small::timeDiffMs(timeStart);
@@ -274,11 +274,11 @@ namespace {
         small::event event;
         event.set_event();
 
-        auto timeStart = small::timeNow();
-        int conditionEvaluatedInc = 0;
+        auto timeStart             = small::timeNow();
+        int  conditionEvaluatedInc = 0;
 
         // wait to be signaled in the thread
-        auto ret = event.wait_for(std::chrono::milliseconds(300), [&]() {
+        auto ret     = event.wait_for(std::chrono::milliseconds(300), [&]() {
             conditionEvaluatedInc++;
             return true;
         });
@@ -299,7 +299,7 @@ namespace {
 
         auto timeStart = small::timeNow();
 
-        auto ret = event.wait_until(timeStart + std::chrono::milliseconds(300));
+        auto ret     = event.wait_until(timeStart + std::chrono::milliseconds(300));
         auto elapsed = small::timeDiffMs(timeStart);
 
         ASSERT_GE(elapsed, 300 - 1); // due conversion
@@ -314,7 +314,7 @@ namespace {
 
         auto timeStart = small::timeNow();
 
-        auto ret = event.wait_until(timeStart + std::chrono::milliseconds(300));
+        auto ret     = event.wait_until(timeStart + std::chrono::milliseconds(300));
         auto elapsed = small::timeDiffMs(timeStart);
 
         ASSERT_LE(elapsed, 100); // check some time even there is no delay
@@ -329,11 +329,11 @@ namespace {
         // create manual event
         small::event event(small::EventType::kManual);
 
-        auto timeStart = small::timeNow();
-        int conditionEvaluatedInc = 0;
+        auto timeStart             = small::timeNow();
+        int  conditionEvaluatedInc = 0;
 
         // wait to be signaled in the thread
-        auto ret = event.wait_until(timeStart + std::chrono::milliseconds(300), [&]() {
+        auto ret     = event.wait_until(timeStart + std::chrono::milliseconds(300), [&]() {
             return false;
         });
         auto elapsed = small::timeDiffMs(timeStart);
@@ -349,11 +349,11 @@ namespace {
         small::event event;
         event.set_event();
 
-        auto timeStart = small::timeNow();
-        int conditionEvaluatedInc = 0;
+        auto timeStart             = small::timeNow();
+        int  conditionEvaluatedInc = 0;
 
         // wait to be signaled in the thread
-        auto ret = event.wait_until(timeStart + std::chrono::milliseconds(300), [&]() {
+        auto ret     = event.wait_until(timeStart + std::chrono::milliseconds(300), [&]() {
             conditionEvaluatedInc++;
             return true;
         });

@@ -33,7 +33,7 @@ namespace small::jobsimpl {
         //
         // jobs_queue
         //
-        explicit jobs_queue(ParentCallerT &parent_caller)
+        explicit jobs_queue(ParentCallerT& parent_caller)
             : m_parent_caller(parent_caller) {}
 
         // size of active items
@@ -52,7 +52,7 @@ namespace small::jobsimpl {
 
             m_delayed_items.clear();
 
-            for (auto &[group, q] : m_groups_queues) {
+            for (auto& [group, q] : m_groups_queues) {
                 q.clear();
             }
         }
@@ -85,7 +85,7 @@ namespace small::jobsimpl {
         // config groups
         // m_groups_queues will be initialized in the initial setup phase and will be accessed without locking afterwards
         //
-        inline void config_jobs_group(const JobsGroupT &job_group, const small::config_prio_queue<JobsPrioT> &config_prio)
+        inline void config_jobs_group(const JobsGroupT& job_group, const small::config_prio_queue<JobsPrioT>& config_prio)
         {
             m_groups_queues[job_group] = JobsQueue{config_prio};
         }
@@ -94,7 +94,7 @@ namespace small::jobsimpl {
         // config job types
         // m_types_queues will be initialized in the initial setup phase and will be accessed without locking afterwards
         //
-        inline bool config_jobs_type(const JobsTypeT &jobs_type, const JobsGroupT &jobs_group)
+        inline bool config_jobs_type(const JobsTypeT& jobs_type, const JobsGroupT& jobs_group)
         {
             auto it_g = m_groups_queues.find(jobs_group);
             if (it_g == m_groups_queues.end()) {
@@ -113,13 +113,13 @@ namespace small::jobsimpl {
         // add items to be processed
         // push_back only add the jobs item but does not start it
         //
-        inline std::size_t push_back(const JobsTypeT &jobs_type, const JobsRequestT &job_req, JobsID *jobs_id)
+        inline std::size_t push_back(const JobsTypeT& jobs_type, const JobsRequestT& job_req, JobsID* jobs_id)
         {
             // this job should be manually started by calling jobs_start
             return push_back(std::make_shared<JobsItem>(jobs_type, job_req), jobs_id);
         }
 
-        inline std::size_t push_back(std::shared_ptr<JobsItem> jobs_item, JobsID *jobs_id)
+        inline std::size_t push_back(std::shared_ptr<JobsItem> jobs_item, JobsID* jobs_id)
         {
             if (is_exit()) {
                 return 0;
@@ -134,7 +134,7 @@ namespace small::jobsimpl {
             return 1;
         }
 
-        inline std::size_t push_back(const std::vector<std::shared_ptr<JobsItem>> &jobs_items, std::vector<JobsID> *jobs_ids)
+        inline std::size_t push_back(const std::vector<std::shared_ptr<JobsItem>>& jobs_items, std::vector<JobsID>* jobs_ids)
         {
             if (is_exit()) {
                 return 0;
@@ -149,7 +149,7 @@ namespace small::jobsimpl {
                 jobs_ids->clear();
             }
             JobsID jobs_id{};
-            for (auto &jobs_item : jobs_items) {
+            for (auto& jobs_item : jobs_items) {
                 auto ret = push_back(jobs_item, &jobs_id);
                 if (ret) {
                     if (jobs_ids) {
@@ -162,7 +162,7 @@ namespace small::jobsimpl {
         }
 
         // push_back move semantics
-        inline std::size_t push_back(const JobsTypeT &jobs_type, JobsRequestT &&jobs_req, JobsID *jobs_id)
+        inline std::size_t push_back(const JobsTypeT& jobs_type, JobsRequestT&& jobs_req, JobsID* jobs_id)
         {
             // this job should be manually started by calling jobs_start
             return push_back(std::make_shared<JobsItem>(jobs_type, std::forward<JobsRequestT>(jobs_req)), jobs_id);
@@ -171,12 +171,12 @@ namespace small::jobsimpl {
         //
         // push back and start the job
         //
-        inline std::size_t push_back_and_start(const JobsPrioT &priority, const JobsTypeT &jobs_type, const JobsRequestT &job_req, JobsID *jobs_id = nullptr)
+        inline std::size_t push_back_and_start(const JobsPrioT& priority, const JobsTypeT& jobs_type, const JobsRequestT& job_req, JobsID* jobs_id = nullptr)
         {
             return push_back_and_start(priority, std::make_shared<JobsItem>(jobs_type, job_req), jobs_id);
         }
 
-        inline std::size_t push_back_and_start(const JobsPrioT &priority, std::shared_ptr<JobsItem> jobs_item, JobsID *jobs_id = nullptr)
+        inline std::size_t push_back_and_start(const JobsPrioT& priority, std::shared_ptr<JobsItem> jobs_item, JobsID* jobs_id = nullptr)
         {
             {
                 std::unique_lock l(m_lock);
@@ -196,7 +196,7 @@ namespace small::jobsimpl {
             return jobs_start(priority, jobs_item);
         }
 
-        inline std::size_t push_back_and_start(const JobsPrioT &priority, const std::vector<std::shared_ptr<JobsItem>> &jobs_items, std::vector<JobsID> *jobs_ids = nullptr)
+        inline std::size_t push_back_and_start(const JobsPrioT& priority, const std::vector<std::shared_ptr<JobsItem>>& jobs_items, std::vector<JobsID>* jobs_ids = nullptr)
         {
             if (is_exit()) {
                 return 0;
@@ -222,7 +222,7 @@ namespace small::jobsimpl {
         }
 
         // push_back move semantics
-        inline std::size_t push_back_and_start(const JobsPrioT &priority, const JobsTypeT &jobs_type, JobsRequestT &&jobs_req, JobsID *jobs_id = nullptr)
+        inline std::size_t push_back_and_start(const JobsPrioT& priority, const JobsTypeT& jobs_type, JobsRequestT&& jobs_req, JobsID* jobs_id = nullptr)
         {
             return push_back_and_start(priority, std::make_shared<JobsItem>(jobs_type, std::forward<JobsRequestT>(jobs_req)), jobs_id);
         }
@@ -230,13 +230,13 @@ namespace small::jobsimpl {
         //
         // helper push_back a new job child and link with the parent
         //
-        inline std::size_t push_back_child(const JobsID &parent_jobs_id, const JobsTypeT &child_jobs_type, const JobsRequestT &child_job_req, JobsID *child_jobs_id)
+        inline std::size_t push_back_child(const JobsID& parent_jobs_id, const JobsTypeT& child_jobs_type, const JobsRequestT& child_job_req, JobsID* child_jobs_id)
         {
             // this job should be manually started by calling jobs_start
             return push_back_child(parent_jobs_id, std::make_shared<JobsItem>(child_jobs_type, child_job_req), child_jobs_id);
         }
 
-        inline std::size_t push_back_child(const JobsID &parent_jobs_id, std::shared_ptr<JobsItem> child_jobs_item, JobsID *child_jobs_id)
+        inline std::size_t push_back_child(const JobsID& parent_jobs_id, std::shared_ptr<JobsItem> child_jobs_item, JobsID* child_jobs_id)
         {
             if (is_exit()) {
                 return 0;
@@ -264,7 +264,7 @@ namespace small::jobsimpl {
             return 1;
         }
 
-        inline std::size_t push_back_child(const JobsID &parent_jobs_id, const std::vector<std::shared_ptr<JobsItem>> &children_jobs_items, std::vector<JobsID> *children_jobs_ids)
+        inline std::size_t push_back_child(const JobsID& parent_jobs_id, const std::vector<std::shared_ptr<JobsItem>>& children_jobs_items, std::vector<JobsID>* children_jobs_ids)
         {
             if (is_exit()) {
                 return 0;
@@ -279,7 +279,7 @@ namespace small::jobsimpl {
                 children_jobs_ids->clear();
             }
             JobsID child_jobs_id{};
-            for (auto &child_jobs_item : children_jobs_items) {
+            for (auto& child_jobs_item : children_jobs_items) {
                 auto ret = push_back_child(parent_jobs_id, child_jobs_item, &child_jobs_id);
                 if (ret) {
                     if (children_jobs_ids) {
@@ -292,7 +292,7 @@ namespace small::jobsimpl {
         }
 
         // push_back_child move semantics
-        inline std::size_t push_back_child(const JobsID &parent_jobs_id, const JobsTypeT &child_jobs_type, JobsRequestT &&child_jobs_req, JobsID *child_jobs_id)
+        inline std::size_t push_back_child(const JobsID& parent_jobs_id, const JobsTypeT& child_jobs_type, JobsRequestT&& child_jobs_req, JobsID* child_jobs_id)
         {
             // this job should be manually started by calling jobs_start
             return push_back_child(parent_jobs_id, std::make_shared<JobsItem>(child_jobs_type, std::forward<JobsRequestT>(child_jobs_req)), child_jobs_id);
@@ -301,12 +301,12 @@ namespace small::jobsimpl {
         //
         // helper push_back a new job child and link with the parent and start the child job
         //
-        inline std::size_t push_back_and_start_child(const JobsID &parent_jobs_id, const JobsPrioT &child_priority, const JobsTypeT &child_jobs_type, const JobsRequestT &child_job_req, JobsID *child_jobs_id = nullptr)
+        inline std::size_t push_back_and_start_child(const JobsID& parent_jobs_id, const JobsPrioT& child_priority, const JobsTypeT& child_jobs_type, const JobsRequestT& child_job_req, JobsID* child_jobs_id = nullptr)
         {
             return push_back_and_start_child(parent_jobs_id, child_priority, std::make_shared<JobsItem>(child_jobs_type, child_job_req), child_jobs_id);
         }
 
-        inline std::size_t push_back_and_start_child(const JobsID &parent_jobs_id, const JobsPrioT &child_priority, std::shared_ptr<JobsItem> child_jobs_item, JobsID *child_jobs_id = nullptr)
+        inline std::size_t push_back_and_start_child(const JobsID& parent_jobs_id, const JobsPrioT& child_priority, std::shared_ptr<JobsItem> child_jobs_item, JobsID* child_jobs_id = nullptr)
         {
             if (is_exit()) {
                 return 0;
@@ -330,7 +330,7 @@ namespace small::jobsimpl {
             return jobs_start(child_priority, child_jobs_item);
         }
 
-        inline std::size_t push_back_and_start_child(const JobsID &parent_jobs_id, const JobsPrioT &children_priority, const std::vector<std::shared_ptr<JobsItem>> &children_jobs_items, std::vector<JobsID> *children_jobs_ids = nullptr)
+        inline std::size_t push_back_and_start_child(const JobsID& parent_jobs_id, const JobsPrioT& children_priority, const std::vector<std::shared_ptr<JobsItem>>& children_jobs_items, std::vector<JobsID>* children_jobs_ids = nullptr)
         {
             if (is_exit()) {
                 return 0;
@@ -356,7 +356,7 @@ namespace small::jobsimpl {
         }
 
         // push_back move semantics
-        inline std::size_t push_back_and_start_child(const JobsID &parent_jobs_id, const JobsPrioT &child_priority, const JobsTypeT &child_jobs_type, JobsRequestT &&child_jobs_req, JobsID *child_jobs_id = nullptr)
+        inline std::size_t push_back_and_start_child(const JobsID& parent_jobs_id, const JobsPrioT& child_priority, const JobsTypeT& child_jobs_type, JobsRequestT&& child_jobs_req, JobsID* child_jobs_id = nullptr)
         {
             return push_back_and_start_child(parent_jobs_id, child_priority, std::make_shared<JobsItem>(child_jobs_type, std::forward<JobsRequestT>(child_jobs_req)), child_jobs_id);
         }
@@ -367,13 +367,13 @@ namespace small::jobsimpl {
         // push_back with specific timeings
         //
         template <typename _Rep, typename _Period>
-        inline std::size_t push_back_and_start_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const JobsPrioT &priority, const JobsTypeT &jobs_type, const JobsRequestT &jobs_req, JobsID *jobs_id = nullptr)
+        inline std::size_t push_back_and_start_delay_for(const std::chrono::duration<_Rep, _Period>& __rtime, const JobsPrioT& priority, const JobsTypeT& jobs_type, const JobsRequestT& jobs_req, JobsID* jobs_id = nullptr)
         {
             return push_back_and_start_delay_for(__rtime, priority, std::make_shared<JobsItem>(jobs_type, jobs_req), jobs_id);
         }
 
         template <typename _Rep, typename _Period>
-        inline std::size_t push_back_and_start_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const JobsPrioT &priority, std::shared_ptr<JobsItem> jobs_item, JobsID *jobs_id = nullptr)
+        inline std::size_t push_back_and_start_delay_for(const std::chrono::duration<_Rep, _Period>& __rtime, const JobsPrioT& priority, std::shared_ptr<JobsItem> jobs_item, JobsID* jobs_id = nullptr)
         {
             if (is_exit()) {
                 return 0;
@@ -387,18 +387,18 @@ namespace small::jobsimpl {
         }
 
         template <typename _Rep, typename _Period>
-        inline std::size_t push_back_and_start_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const JobsPrioT &priority, const JobsTypeT &jobs_type, JobsRequestT &&jobs_req, JobsID *jobs_id = nullptr)
+        inline std::size_t push_back_and_start_delay_for(const std::chrono::duration<_Rep, _Period>& __rtime, const JobsPrioT& priority, const JobsTypeT& jobs_type, JobsRequestT&& jobs_req, JobsID* jobs_id = nullptr)
         {
             return push_back_and_start_delay_for(__rtime, priority, std::make_shared<JobsItem>(jobs_type, std::forward<JobsRequestT>(jobs_req)), jobs_id);
         }
 
         // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
-        inline std::size_t push_back_and_start_delay_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, const JobsPrioT &priority, const JobsTypeT &jobs_type, const JobsRequestT &jobs_req, JobsID *jobs_id = nullptr)
+        inline std::size_t push_back_and_start_delay_until(const std::chrono::time_point<TimeClock, TimeDuration>& __atime, const JobsPrioT& priority, const JobsTypeT& jobs_type, const JobsRequestT& jobs_req, JobsID* jobs_id = nullptr)
         {
             return push_back_and_start_delay_until(__atime, priority, std::make_shared<JobsItem>(jobs_type, jobs_req), jobs_id);
         }
 
-        inline std::size_t push_back_and_start_delay_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, const JobsPrioT &priority, std::shared_ptr<JobsItem> jobs_item, JobsID *jobs_id = nullptr)
+        inline std::size_t push_back_and_start_delay_until(const std::chrono::time_point<TimeClock, TimeDuration>& __atime, const JobsPrioT& priority, std::shared_ptr<JobsItem> jobs_item, JobsID* jobs_id = nullptr)
         {
             if (is_exit()) {
                 return 0;
@@ -411,7 +411,7 @@ namespace small::jobsimpl {
             return m_delayed_items.queue().push_delay_until(__atime, {priority, id});
         }
 
-        inline std::size_t push_back_and_start_delay_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, const JobsPrioT &priority, const JobsTypeT &jobs_type, JobsRequestT &&jobs_req, JobsID *jobs_id = nullptr)
+        inline std::size_t push_back_and_start_delay_until(const std::chrono::time_point<TimeClock, TimeDuration>& __atime, const JobsPrioT& priority, const JobsTypeT& jobs_type, JobsRequestT&& jobs_req, JobsID* jobs_id = nullptr)
         {
             return push_back_and_start_delay_until(__atime, priority, std::make_shared<JobsItem>(jobs_type, std::forward<JobsRequestT>(jobs_req)), jobs_id);
         }
@@ -420,7 +420,7 @@ namespace small::jobsimpl {
         // jobs start with specific timeings
         //
         template <typename _Rep, typename _Period>
-        inline std::size_t jobs_start_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const JobsPrioT &priority, const JobsID &jobs_id)
+        inline std::size_t jobs_start_delay_for(const std::chrono::duration<_Rep, _Period>& __rtime, const JobsPrioT& priority, const JobsID& jobs_id)
         {
             if (is_exit()) {
                 return 0;
@@ -430,7 +430,7 @@ namespace small::jobsimpl {
         }
 
         // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
-        inline std::size_t jobs_start_delay_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, const JobsPrioT &priority, const JobsID &jobs_id)
+        inline std::size_t jobs_start_delay_until(const std::chrono::time_point<TimeClock, TimeDuration>& __atime, const JobsPrioT& priority, const JobsID& jobs_id)
         {
             if (is_exit()) {
                 return 0;
@@ -469,10 +469,10 @@ namespace small::jobsimpl {
             m_delayed_items.wait();
 
             // only now can signal exit when done for all queues (when no more delayed items can be pushed)
-            for (auto &[group, q] : m_groups_queues) {
+            for (auto& [group, q] : m_groups_queues) {
                 q.signal_exit_when_done();
             }
-            for (auto &[group, q] : m_groups_queues) {
+            for (auto& [group, q] : m_groups_queues) {
                 q.wait();
             }
 
@@ -481,7 +481,7 @@ namespace small::jobsimpl {
 
         // wait some time then signal exit
         template <typename _Rep, typename _Period>
-        inline EnumLock wait_for(const std::chrono::duration<_Rep, _Period> &__rtime)
+        inline EnumLock wait_for(const std::chrono::duration<_Rep, _Period>& __rtime)
         {
             using __dur    = typename std::chrono::system_clock::duration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
@@ -493,7 +493,7 @@ namespace small::jobsimpl {
 
         // wait until then signal exit
         template <typename _Clock, typename _Duration>
-        inline EnumLock wait_until(const std::chrono::time_point<_Clock, _Duration> &__atime)
+        inline EnumLock wait_until(const std::chrono::time_point<_Clock, _Duration>& __atime)
         {
             signal_exit_when_done();
 
@@ -504,11 +504,11 @@ namespace small::jobsimpl {
             }
 
             // only now can signal exit when done for all queues (when no more delayed items can be pushed)
-            for (auto &[group, q] : m_groups_queues) {
+            for (auto& [group, q] : m_groups_queues) {
                 q.signal_exit_when_done();
             }
 
-            for (auto &[group, q] : m_groups_queues) {
+            for (auto& [group, q] : m_groups_queues) {
                 auto status = q.wait_until(__atime);
                 if (status == small::EnumLock::kTimeout) {
                     return small::EnumLock::kTimeout;
@@ -522,7 +522,7 @@ namespace small::jobsimpl {
         //
         // get jobs group queue
         //
-        inline JobsQueue *get_jobs_group_queue(const JobsGroupT &jobs_group)
+        inline JobsQueue* get_jobs_group_queue(const JobsGroupT& jobs_group)
         {
             auto it = m_groups_queues.find(jobs_group);
             return it != m_groups_queues.end() ? &it->second : nullptr;
@@ -531,7 +531,7 @@ namespace small::jobsimpl {
         //
         // get jobs type queue
         //
-        inline JobsQueue *get_jobs_type_queue(const JobsTypeT &jobs_type)
+        inline JobsQueue* get_jobs_type_queue(const JobsTypeT& jobs_type)
         {
             // optimization to get the queue from the type
             // (instead of getting the group from type from m_config.m_types and then getting the queue from the m_groups_queues)
@@ -542,7 +542,7 @@ namespace small::jobsimpl {
         //
         // get job items
         //
-        inline std::shared_ptr<JobsItem> jobs_get(const JobsID &jobs_id)
+        inline std::shared_ptr<JobsItem> jobs_get(const JobsID& jobs_id)
         {
             std::unique_lock l(m_lock);
 
@@ -553,14 +553,14 @@ namespace small::jobsimpl {
             return it_j->second;
         }
 
-        inline std::vector<std::shared_ptr<JobsItem>> jobs_get(const std::vector<JobsID> &jobs_ids)
+        inline std::vector<std::shared_ptr<JobsItem>> jobs_get(const std::vector<JobsID>& jobs_ids)
         {
             std::vector<std::shared_ptr<JobsItem>> jobs_items;
             jobs_items.reserve(jobs_ids.size());
 
             std::unique_lock l(m_lock);
 
-            for (auto &jobs_id : jobs_ids) {
+            for (auto& jobs_id : jobs_ids) {
                 auto jobs_item = jobs_get(jobs_id);
                 if (jobs_item) {
                     jobs_items.push_back(jobs_item);
@@ -592,7 +592,7 @@ namespace small::jobsimpl {
         //
         // start the jobs
         //
-        inline std::size_t jobs_start(const JobsPrioT &priority, const JobsID &jobs_id)
+        inline std::size_t jobs_start(const JobsPrioT& priority, const JobsID& jobs_id)
         {
             auto jobs_item = jobs_get(jobs_id);
             if (!jobs_item) {
@@ -601,14 +601,14 @@ namespace small::jobsimpl {
             return jobs_start(priority, jobs_item);
         }
 
-        inline std::size_t jobs_start(const JobsPrioT &priority, std::shared_ptr<JobsItem> jobs_item)
+        inline std::size_t jobs_start(const JobsPrioT& priority, std::shared_ptr<JobsItem> jobs_item)
         {
             std::size_t ret = 0;
             if (!jobs_item || !jobs_item->m_id) {
                 return ret;
             }
 
-            auto *q = get_jobs_type_queue(jobs_item->m_type);
+            auto* q = get_jobs_type_queue(jobs_item->m_type);
             if (q) {
                 ret = q->push_back(priority, jobs_item->m_id);
             }
@@ -622,15 +622,15 @@ namespace small::jobsimpl {
             return ret;
         }
 
-        inline std::size_t jobs_start(const JobsPrioT &priority, const std::vector<JobsID> &jobs_ids)
+        inline std::size_t jobs_start(const JobsPrioT& priority, const std::vector<JobsID>& jobs_ids)
         {
             return jobs_start(priority, jobs_get(jobs_ids));
         }
 
-        inline std::size_t jobs_start(const JobsPrioT &priority, const std::vector<std::shared_ptr<JobsItem>> &jobs_items)
+        inline std::size_t jobs_start(const JobsPrioT& priority, const std::vector<std::shared_ptr<JobsItem>>& jobs_items)
         {
             std::size_t count = 0;
-            for (auto &jobs_item : jobs_items) {
+            for (auto& jobs_item : jobs_items) {
                 auto ret = jobs_start(priority, jobs_item);
                 if (ret) {
                     ++count;
@@ -642,7 +642,7 @@ namespace small::jobsimpl {
         //
         // erase jobs item
         //
-        inline void jobs_erase(const JobsID &jobs_id)
+        inline void jobs_erase(const JobsID& jobs_id)
         {
             std::unique_lock l(m_lock);
 
@@ -659,7 +659,7 @@ namespace small::jobsimpl {
             m_jobs.erase(jobs_id);
 
             // recursive delete all children
-            for (auto &child_jobs_id : jobs_item->m_childrenIDs) {
+            for (auto& child_jobs_id : jobs_item->m_childrenIDs) {
                 jobs_erase(child_jobs_id);
             }
         }
@@ -667,7 +667,7 @@ namespace small::jobsimpl {
         //
         // set relationship parent-child
         //
-        inline std::size_t jobs_parent_child(const JobsID &parent_jobs_id, const JobsID &child_jobs_id)
+        inline std::size_t jobs_parent_child(const JobsID& parent_jobs_id, const JobsID& child_jobs_id)
         {
             std::unique_lock l(m_lock);
 
@@ -693,10 +693,10 @@ namespace small::jobsimpl {
 
     private:
         // some prevention
-        jobs_queue(const jobs_queue &)            = delete;
-        jobs_queue(jobs_queue &&)                 = delete;
-        jobs_queue &operator=(const jobs_queue &) = delete;
-        jobs_queue &operator=(jobs_queue &&__t)   = delete;
+        jobs_queue(const jobs_queue&)            = delete;
+        jobs_queue(jobs_queue&&)                 = delete;
+        jobs_queue& operator=(const jobs_queue&) = delete;
+        jobs_queue& operator=(jobs_queue&& __t)  = delete;
 
     private:
         //
@@ -705,10 +705,10 @@ namespace small::jobsimpl {
         //
         friend JobQueueDelayedT;
 
-        inline std::size_t push_back(std::vector<JobDelayedItems> &&items)
+        inline std::size_t push_back(std::vector<JobDelayedItems>&& items)
         {
             std::size_t count = 0;
-            for (auto &[priority, jobs_id] : items) {
+            for (auto& [priority, jobs_id] : items) {
                 count += jobs_start(priority, jobs_id);
             }
             return count;
@@ -722,10 +722,10 @@ namespace small::jobsimpl {
         std::atomic<JobsID>                                   m_jobs_seq_id{}; // to get the next jobs id
         std::unordered_map<JobsID, std::shared_ptr<JobsItem>> m_jobs;          // current jobs
         std::unordered_map<JobsGroupT, JobsQueue>             m_groups_queues; // map of queues by group
-        std::unordered_map<JobsTypeT, JobsQueue *>            m_types_queues;  // optimize to have queues by type (which reference queues by group)
+        std::unordered_map<JobsTypeT, JobsQueue*>             m_types_queues;  // optimize to have queues by type (which reference queues by group)
 
         JobQueueDelayedT m_delayed_items{*this}; // queue of delayed items
 
-        ParentCallerT &m_parent_caller; // jobs engine
+        ParentCallerT& m_parent_caller; // jobs engine
     };
 } // namespace small::jobsimpl
