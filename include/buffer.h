@@ -63,12 +63,12 @@ namespace small {
         }
 
         // from buffer
-        buffer(const buffer &o) noexcept : buffer()
+        buffer(const buffer& o) noexcept : buffer()
         {
             init();
             operator=(o);
         }
-        buffer(buffer &&o) noexcept : buffer()
+        buffer(buffer&& o) noexcept : buffer()
         {
             init();
             operator=(std::forward<buffer>(o));
@@ -118,11 +118,11 @@ namespace small {
         }
 
         // extract buffer - be sure to call free after you use it
-        inline char *extract()
+        inline char* extract()
         {
-            char *b = nullptr;
+            char* b = nullptr;
             if (m_chunk_buffer_data == nullptr || m_chunk_buffer_data == get_empty_buffer()) {
-                b = (char *)malloc(sizeof(char));
+                b = (char*)malloc(sizeof(char));
                 if (b) {
                     *b = '\0';
                 }
@@ -134,9 +134,9 @@ namespace small {
         }
 
         // add a static functions to be called to safely free this buffer from where it was allocated
-        static void free(char *&b)
+        static void free(char*& b)
         {
-            ::free((void *)b);
+            ::free((void*)b);
             b = nullptr;
         }
 
@@ -153,7 +153,7 @@ namespace small {
 
         // operators
         // =
-        inline buffer &operator=(const buffer &o) noexcept
+        inline buffer& operator=(const buffer& o) noexcept
         {
             if (this != &o) {
                 m_config = o.m_config;
@@ -163,7 +163,7 @@ namespace small {
             return *this;
         }
         // move operator
-        inline buffer &operator=(buffer &&o) noexcept
+        inline buffer& operator=(buffer&& o) noexcept
         {
             if (this != &o) {
                 clear_buffer();
@@ -178,7 +178,7 @@ namespace small {
         }
 
         // swap
-        inline void swap(buffer &o) noexcept
+        inline void swap(buffer& o) noexcept
         {
             std::swap(m_config, o.m_config);
             std::swap(m_chunk_buffer_length, o.m_chunk_buffer_length);
@@ -189,10 +189,10 @@ namespace small {
             } else if (m_chunk_buffer_data == get_empty_buffer() && o.m_chunk_buffer_data == o.get_empty_buffer()) { /*do nothing*/
             } else if (m_chunk_buffer_data != get_empty_buffer() && o.m_chunk_buffer_data == o.get_empty_buffer()) {
                 o.m_chunk_buffer_data = m_chunk_buffer_data;
-                m_chunk_buffer_data   = (char *)(get_empty_buffer());
+                m_chunk_buffer_data   = (char*)(get_empty_buffer());
             } else if (m_chunk_buffer_data == get_empty_buffer() && o.m_chunk_buffer_data != o.get_empty_buffer()) {
                 m_chunk_buffer_data   = o.m_chunk_buffer_data;
-                o.m_chunk_buffer_data = (char *)o.get_empty_buffer();
+                o.m_chunk_buffer_data = (char*)o.get_empty_buffer();
             }
             setup_buffer(m_chunk_buffer_data, m_chunk_buffer_length);
             o.setup_buffer(o.m_chunk_buffer_data, o.m_chunk_buffer_length);
@@ -203,7 +203,7 @@ namespace small {
         inline void init()
         {
             m_config.chunk_size       = std::max(m_config.chunk_size, std::size_t(1));
-            m_chunk_buffer_data       = (char *)get_empty_buffer();
+            m_chunk_buffer_data       = (char*)get_empty_buffer();
             m_chunk_buffer_length     = 0;
             m_chunk_buffer_alloc_size = 0;
             setup_buffer(m_chunk_buffer_data, m_chunk_buffer_length);
@@ -216,7 +216,7 @@ namespace small {
             m_chunk_buffer_alloc_size = 0;
             if (m_chunk_buffer_data && (m_chunk_buffer_data != get_empty_buffer())) {
                 buffer::free(m_chunk_buffer_data);
-                m_chunk_buffer_data = (char *)get_empty_buffer();
+                m_chunk_buffer_data = (char*)get_empty_buffer();
             }
         }
 
@@ -235,7 +235,7 @@ namespace small {
 
             // (re)allocate
             if (reallocate) {
-                m_chunk_buffer_data       = (m_chunk_buffer_alloc_size == 0) ? (char *)malloc(new_alloc_size) : (char *)realloc(m_chunk_buffer_data, new_alloc_size);
+                m_chunk_buffer_data       = (m_chunk_buffer_alloc_size == 0) ? (char*)malloc(new_alloc_size) : (char*)realloc(m_chunk_buffer_data, new_alloc_size);
                 m_chunk_buffer_alloc_size = new_alloc_size;
             }
 
@@ -298,7 +298,7 @@ namespace small {
         // chunk size
         config_buffer m_config{};
         // buffer use char* instead of vector<char> because it is much faster
-        char       *m_chunk_buffer_data{};
+        char*       m_chunk_buffer_data{};
         std::size_t m_chunk_buffer_length{};
         std::size_t m_chunk_buffer_alloc_size{};
     };

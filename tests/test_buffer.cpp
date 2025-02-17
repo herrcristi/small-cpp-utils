@@ -39,7 +39,7 @@ namespace {
         ASSERT_EQ(b3, "ab");
 
         constexpr std::string_view sv = "abc";
-        small::buffer b4{sv};
+        small::buffer              b4{sv};
         ASSERT_EQ(b4, "abc");
 
         small::buffer b5{{.chunk_size = 0} /*alloc size*/, sv};
@@ -70,7 +70,7 @@ namespace {
         ASSERT_EQ(b3, "ab");
 
         constexpr std::string_view sv = "abc";
-        small::buffer b4;
+        small::buffer              b4;
         b4 = {sv};
         ASSERT_EQ(b4, "abc");
 
@@ -86,8 +86,8 @@ namespace {
     {
         struct AutoDelete
         {
-            char **m_e{};
-            explicit AutoDelete(char *&e) : m_e(&e) {}
+            char** m_e{};
+            explicit AutoDelete(char*& e) : m_e(&e) {}
             ~AutoDelete() { small::buffer::free(*m_e); };
         };
 
@@ -134,8 +134,8 @@ namespace {
         b += {"c", 1};
         ASSERT_EQ(b, m_test + "abc");
 
-        constexpr std::string_view sv = "d";
-        b += {sv};
+        constexpr std::string_view sv  = "d";
+        b                             += {sv};
         ASSERT_EQ(b, m_test + "abcd");
     }
 
@@ -231,7 +231,7 @@ namespace {
         ASSERT_EQ(b2, "a");
         ASSERT_EQ(b, "a");
         b2 += 'b';
-        b += 'c';
+        b  += 'c';
         ASSERT_EQ(b2, "ab");
         ASSERT_EQ(b, "ac");
 
@@ -578,7 +578,7 @@ namespace {
     TEST_F(BufferTest, buffer_hash)
     {
         small::buffer b = m_test;
-        auto h = std::hash<std::string_view>{}(b);
+        auto          h = std::hash<std::string_view>{}(b);
         ASSERT_EQ(h, 3766111187626408651);
         ASSERT_EQ(h, std::hash<std::string>{}(m_test));
     }

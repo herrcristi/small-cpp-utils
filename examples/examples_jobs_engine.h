@@ -104,7 +104,7 @@ namespace examples::jobs_engine {
             }
         }
 
-        inline std::string to_string(const small::jobsimpl::EnumJobsState &state)
+        inline std::string to_string(const small::jobsimpl::EnumJobsState& state)
         {
             switch (state) {
             case small::jobsimpl::EnumJobsState::kNone:
@@ -126,22 +126,22 @@ namespace examples::jobs_engine {
             }
         }
 
-        inline std::string to_string(const WebRequest &request)
+        inline std::string to_string(const WebRequest& request)
         {
-            auto &[type, webid, data] = request;
+            auto& [type, webid, data] = request;
             return "{ type=" + to_string(type) + ", id=" + std::to_string(webid) + ", data=\"" + data + "\" }";
         }
 
-        inline std::string to_string(const WebResponse &response)
+        inline std::string to_string(const WebResponse& response)
         {
-            auto &data = response;
+            auto& data = response;
             return "{ data=\"" + data + "\" }";
         }
 
         //
         // processing helper for cache and database
         //
-        inline bool data_processing(JobsEng &jobs, const std::string &data_type, std::shared_ptr<impl::JobsEng::JobsItem> jobs_item)
+        inline bool data_processing(JobsEng& jobs, const std::string& data_type, std::shared_ptr<impl::JobsEng::JobsItem> jobs_item)
         {
             using DataMap = std::unordered_map<WebID, WebData>;
             using TypeMap = std::unordered_map<std::string, DataMap>;
@@ -150,7 +150,7 @@ namespace examples::jobs_engine {
             // use the lock from jobs engine
             std::unique_lock l(jobs);
 
-            const auto &[type, webID, webData] = jobs_item->m_request;
+            const auto& [type, webID, webData] = jobs_item->m_request;
 
             bool success = false;
             // simulate cache server work
@@ -224,7 +224,7 @@ namespace examples::jobs_engine {
         //
         // cache processing
         //
-        inline bool cache_processing(JobsEng &jobs, std::shared_ptr<impl::JobsEng::JobsItem> jobs_item)
+        inline bool cache_processing(JobsEng& jobs, std::shared_ptr<impl::JobsEng::JobsItem> jobs_item)
         {
             return data_processing(jobs, "CACHE", jobs_item);
         }
@@ -234,18 +234,18 @@ namespace examples::jobs_engine {
         //
         using DbRequests = std::vector<impl::JobsEng::JobsID>;
 
-        inline void db_add_request(JobsEng &jobs, DbRequests &db_requests, const impl::JobsEng::JobsID &jobs_id)
+        inline void db_add_request(JobsEng& jobs, DbRequests& db_requests, const impl::JobsEng::JobsID& jobs_id)
         {
             std::unique_lock l(jobs); // better use another lock
             db_requests.push_back(jobs_id);
         }
 
-        inline bool db_processing(JobsEng &jobs, std::shared_ptr<impl::JobsEng::JobsItem> jobs_item)
+        inline bool db_processing(JobsEng& jobs, std::shared_ptr<impl::JobsEng::JobsItem> jobs_item)
         {
             return data_processing(jobs, "DATABASE", jobs_item);
         }
 
-        inline DbRequests db_call(JobsEng &jobs, DbRequests &db_requests, const std::vector<std::shared_ptr<impl::JobsEng::JobsItem>> &jobs_items)
+        inline DbRequests db_call(JobsEng& jobs, DbRequests& db_requests, const std::vector<std::shared_ptr<impl::JobsEng::JobsItem>>& jobs_items)
         {
             // coalesce calls
             DbRequests requests;
@@ -259,12 +259,12 @@ namespace examples::jobs_engine {
             }
 
             std::stringstream ssr;
-            for (auto &jobs_id : requests) {
+            for (auto& jobs_id : requests) {
                 ssr << jobs_id << " ";
             }
 
             std::stringstream ssj;
-            for (auto &jobs_item : jobs_items) {
+            for (auto& jobs_item : jobs_items) {
                 ssj << jobs_item->m_id << " ";
             }
 
@@ -300,7 +300,7 @@ namespace examples::jobs_engine {
         std::cout << "Jobs Engine example 1\n";
 
         // this functions is defined without the engine params (it is here just for the example)
-        auto jobs_function_processing = [](const std::vector<std::shared_ptr<impl::JobsEng::JobsItem>> &items, impl::JobsEng::JobsConfig::ConfigProcessing & /* config */) {
+        auto jobs_function_processing = [](const std::vector<std::shared_ptr<impl::JobsEng::JobsItem>>& items, impl::JobsEng::JobsConfig::ConfigProcessing& /* config */) {
             std::cout << "this function is defined without the engine params, called for " << (int)items[0]->m_type << "\n";
         };
 
@@ -366,8 +366,8 @@ namespace examples::jobs_engine {
         //
         // default processing used for kJobsSettings with custom delay in between requests
         // one request will succeed and one request will timeout for demo purposes
-        jobs.config_default_function_processing([&fn_print_item](auto &j /*this jobs engine*/, const auto &jobs_items, auto &jobs_config) {
-            for (auto &item : jobs_items) {
+        jobs.config_default_function_processing([&fn_print_item](auto& j /*this jobs engine*/, const auto& jobs_items, auto& jobs_config) {
+            for (auto& item : jobs_items) {
                 fn_print_item(item, "DEFAULT PROCESSING");
             }
 
@@ -375,8 +375,8 @@ namespace examples::jobs_engine {
             jobs_config.m_delay_next_request = std::chrono::milliseconds(600);
         });
 
-        jobs.config_default_function_finished([&fn_print_item](auto &j /*this jobs engine*/, const auto &jobs_items) {
-            for (auto &item : jobs_items) {
+        jobs.config_default_function_finished([&fn_print_item](auto& j /*this jobs engine*/, const auto& jobs_items) {
+            for (auto& item : jobs_items) {
                 fn_print_item(item, "DEFAULT FINISHED");
             }
         });
@@ -387,8 +387,8 @@ namespace examples::jobs_engine {
         // and setup specific finish function for kJobsSettings
         // to setup the promises/futures for the requests and complete them on finish
         std::unordered_map<impl::JobsEng::JobsID, std::promise<bool>> settings_promises;
-        jobs.config_jobs_function_finished(impl::JobsType::kJobsSettings, [&fn_print_item, &settings_promises](auto &j /*this jobs engine*/, const auto &jobs_items) {
-            for (auto &item : jobs_items) {
+        jobs.config_jobs_function_finished(impl::JobsType::kJobsSettings, [&fn_print_item, &settings_promises](auto& j /*this jobs engine*/, const auto& jobs_items) {
+            for (auto& item : jobs_items) {
                 fn_print_item(item, "FINISHED");
 
                 // set promises
@@ -406,12 +406,12 @@ namespace examples::jobs_engine {
         // will coalesce calls because calls will simulate to take long
         impl::DbRequests db_requests;
 
-        jobs.config_jobs_function_processing(impl::JobsType::kJobsDatabase, [&db_requests](auto &j /*this jobs engine*/, const auto &jobs_items, auto & /* config */) {
+        jobs.config_jobs_function_processing(impl::JobsType::kJobsDatabase, [&db_requests](auto& j /*this jobs engine*/, const auto& jobs_items, auto& /* config */) {
             // will coalesce current requests
             auto requests = db_call(j, db_requests, jobs_items);
 
             auto jobs_requests = j.jobs_get(requests);
-            for (auto &jobs_item : jobs_requests) {
+            for (auto& jobs_item : jobs_requests) {
                 // save the response
                 auto success = impl::db_processing(j, jobs_item);
 
@@ -429,12 +429,12 @@ namespace examples::jobs_engine {
         //
         // create a cache server (with workers to simulate access to it)
         // as an external engine outside the jobs engine for demo purposes
-        small::worker_thread<std::shared_ptr<impl::JobsEng::JobsItem>> cache_server({.threads_count = 1}, [&jobs](auto &w /*this*/, const auto &items) {
+        small::worker_thread<std::shared_ptr<impl::JobsEng::JobsItem>> cache_server({.threads_count = 1}, [&jobs](auto& w /*this*/, const auto& items) {
             // simulate small time for cache server (let's say one roundtrip to the server)
             small::sleep(10);
 
-            for (auto &item : items) {
-                auto &job_id  = item->m_id;
+            for (auto& item : items) {
+                auto& job_id  = item->m_id;
                 bool  success = impl::cache_processing(jobs, item);
                 if (success) {
                     jobs.state().jobs_finished(job_id); // the data found will be returned in m_response already
@@ -446,7 +446,7 @@ namespace examples::jobs_engine {
 
         // cache may have as child the db (in POST scenario)
         // add custom children finish function to actually add the cache item into the processing cache worker
-        jobs.config_jobs_function_children_finished(impl::JobsType::kJobsCache, [&cache_server](auto &j /*this jobs engine*/, auto jobs_item /*parent*/, auto jobs_child) {
+        jobs.config_jobs_function_children_finished(impl::JobsType::kJobsCache, [&cache_server](auto& j /*this jobs engine*/, auto jobs_item /*parent*/, auto jobs_child) {
             if (jobs_child->is_state_finished()) {
                 // cache has external executors
                 cache_server.push_back(jobs_item); // when it will be finished parent POST will be automatically finished
@@ -463,7 +463,7 @@ namespace examples::jobs_engine {
         // will create 2 children (DB+CACHE) and will be finished when ALL will be finished
         // also CACHE will depend on DB and will start only after DB is finished
         //      (this is the default case for finish function AND and default for children function)
-        jobs.config_jobs_function_processing(impl::JobsType::kJobsApiPost, [&fn_print_item, &db_requests](auto &j /*this jobs engine*/, const auto &jobs_items, auto & /* config */, auto b /*extra param b*/) {
+        jobs.config_jobs_function_processing(impl::JobsType::kJobsApiPost, [&fn_print_item, &db_requests](auto& j /*this jobs engine*/, const auto& jobs_items, auto& /* config */, auto b /*extra param b*/) {
             for (auto &jobs_item : jobs_items) {
                 fn_print_item(jobs_item, "POST");
 
@@ -508,8 +508,8 @@ namespace examples::jobs_engine {
         //      unlike POST where children are chained, here there is a star topology even thou the DB will wait for cache
         //      (normally this will need 3 children if CACHE (not found) -> DB -> CACHE update)
         //
-        jobs.config_jobs_function_processing(impl::JobsType::kJobsApiGet, [&fn_print_item, &db_requests, &cache_server](auto &j /*this jobs engine*/, const auto &jobs_items, auto &jobs_config) {
-            for (auto &jobs_item : jobs_items) {
+        jobs.config_jobs_function_processing(impl::JobsType::kJobsApiGet, [&fn_print_item, &db_requests, &cache_server](auto& j /*this jobs engine*/, const auto& jobs_items, auto& jobs_config) {
+            for (auto& jobs_item : jobs_items) {
                 fn_print_item(jobs_item, "GET");
 
                 // create children
@@ -552,7 +552,7 @@ namespace examples::jobs_engine {
         });
 
         // custom children function for GET to finish the parent when at least 1 child is finished
-        jobs.config_jobs_function_children_finished(impl::JobsType::kJobsApiGet, [](auto &j /*this jobs engine*/, auto jobs_item /*parent*/, auto jobs_child) {
+        jobs.config_jobs_function_children_finished(impl::JobsType::kJobsApiGet, [](auto& j /*this jobs engine*/, auto jobs_item /*parent*/, auto jobs_child) {
             if (jobs_child->m_type == impl::JobsType::kJobsCache) {
                 std::string           response;
                 impl::JobsEng::JobsID jobs_child_db_id{};
@@ -592,8 +592,8 @@ namespace examples::jobs_engine {
         // will create 2 children (DB+CACHE)
         //  also CACHE will depend on DB and will start only after DB is finished
         //  (this will demonstrate the default case)
-        jobs.config_jobs_function_processing(impl::JobsType::kJobsApiDelete, [&fn_print_item, &db_requests](auto &j /*this jobs engine*/, const auto &jobs_items, auto &jobs_config) {
-            for (auto &jobs_item : jobs_items) {
+        jobs.config_jobs_function_processing(impl::JobsType::kJobsApiDelete, [&fn_print_item, &db_requests](auto& j /*this jobs engine*/, const auto& jobs_items, auto& jobs_config) {
+            for (auto& jobs_item : jobs_items) {
                 fn_print_item(jobs_item, "DELETE");
 
                 // create children
@@ -673,7 +673,7 @@ namespace examples::jobs_engine {
         jobs.start_threads(3);
 
         // show wait for custom promises
-        for (auto &[id, promise] : settings_promises) {
+        for (auto& [id, promise] : settings_promises) {
             auto f       = promise.get_future();
             auto success = f.get();
             std::cout << "PROMISE for jobid=" << id << " success=" << success << "\n";

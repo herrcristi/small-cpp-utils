@@ -17,7 +17,7 @@ namespace small {
         return {small::rand64(), small::rand64()};
     }
 
-    inline std::string uuid_add_hyphen(std::string &u)
+    inline std::string uuid_add_hyphen(std::string& u)
     {
         // add in reverse order
         if (u.size() > 20) {
@@ -35,14 +35,14 @@ namespace small {
         return u;
     }
 
-    inline std::string uuid_add_braces(std::string &u)
+    inline std::string uuid_add_braces(std::string& u)
     {
         u.insert(0, 1, '{');
         u.insert(u.size(), 1, '}');
         return u;
     }
 
-    inline std::string uuid_to_uppercase(std::string &u)
+    inline std::string uuid_to_uppercase(std::string& u)
     {
         return small::toUpperCase(u);
     }

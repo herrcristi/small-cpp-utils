@@ -24,22 +24,22 @@ namespace small {
         //
         // spinlock
         //
-        spinlock(const int &spin_count = 4000, const int &wait_in_micro_seconds = 1000 /*1 millisecond*/)
+        spinlock(const int& spin_count = 4000, const int& wait_in_micro_seconds = 1000 /*1 millisecond*/)
             : m_spin_count(spin_count),
               m_wait_in_microseconds(wait_in_micro_seconds)
         {
         }
 
-        spinlock(const spinlock &o) : spinlock() { operator=(o); };
-        spinlock(spinlock &&o) noexcept : spinlock() { operator=(std::move(o)); };
+        spinlock(const spinlock& o) : spinlock() { operator=(o); };
+        spinlock(spinlock&& o) noexcept : spinlock() { operator=(std::move(o)); };
 
-        spinlock &operator=(const spinlock &o)
+        spinlock& operator=(const spinlock& o)
         {
             m_spin_count           = o.m_spin_count;
             m_wait_in_microseconds = o.m_wait_in_microseconds;
             return *this;
         }
-        spinlock &operator=(spinlock &&o) noexcept
+        spinlock& operator=(spinlock&& o) noexcept
         {
             m_spin_count           = o.m_spin_count;
             m_wait_in_microseconds = o.m_wait_in_microseconds;

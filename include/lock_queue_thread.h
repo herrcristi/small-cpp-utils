@@ -19,7 +19,7 @@ namespace small {
         //
         // lock_queue_thread
         //
-        explicit lock_queue_thread(ParentCallerT &parent_caller)
+        explicit lock_queue_thread(ParentCallerT& parent_caller)
             : m_parent_caller(parent_caller)
 
         {
@@ -29,7 +29,7 @@ namespace small {
         //
         // queue
         //
-        inline small::lock_queue<T> &queue()
+        inline small::lock_queue<T>& queue()
         {
             return m_lock_queue;
         }
@@ -42,7 +42,7 @@ namespace small {
             std::unique_lock l(m_lock_queue);
 
             m_threads_futures.resize(threads_count);
-            for (auto &tf : m_threads_futures) {
+            for (auto& tf : m_threads_futures) {
                 if (!tf.valid()) {
                     tf = std::async(std::launch::async, &lock_queue_thread::thread_function, this);
                 }
@@ -55,14 +55,14 @@ namespace small {
         inline EnumLock wait()
         {
             m_lock_queue.signal_exit_when_done();
-            for (auto &th : m_threads_futures) {
+            for (auto& th : m_threads_futures) {
                 th.wait();
             }
             return small::EnumLock::kExit;
         }
 
         template <typename _Rep, typename _Period>
-        inline EnumLock wait_for(const std::chrono::duration<_Rep, _Period> &__rtime)
+        inline EnumLock wait_for(const std::chrono::duration<_Rep, _Period>& __rtime)
         {
             using __dur    = typename std::chrono::system_clock::duration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
@@ -73,11 +73,11 @@ namespace small {
         }
 
         template <typename _Clock, typename _Duration>
-        inline EnumLock wait_until(const std::chrono::time_point<_Clock, _Duration> &__atime)
+        inline EnumLock wait_until(const std::chrono::time_point<_Clock, _Duration>& __atime)
         {
             m_lock_queue.signal_exit_when_done();
 
-            for (auto &th : m_threads_futures) {
+            for (auto& th : m_threads_futures) {
                 auto ret = th.wait_until(__atime);
                 if (ret == std::future_status::timeout) {
                     return small::EnumLock::kTimeout;
@@ -112,10 +112,10 @@ namespace small {
 
     private:
         // some prevention
-        lock_queue_thread(const lock_queue_thread &)            = delete;
-        lock_queue_thread(lock_queue_thread &&)                 = delete;
-        lock_queue_thread &operator=(const lock_queue_thread &) = delete;
-        lock_queue_thread &operator=(lock_queue_thread &&__t)   = delete;
+        lock_queue_thread(const lock_queue_thread&)            = delete;
+        lock_queue_thread(lock_queue_thread&&)                 = delete;
+        lock_queue_thread& operator=(const lock_queue_thread&) = delete;
+        lock_queue_thread& operator=(lock_queue_thread&& __t)  = delete;
 
     private:
         //
@@ -123,6 +123,6 @@ namespace small {
         //
         small::lock_queue<T>           m_lock_queue;      // a time priority queue for delayed items
         std::vector<std::future<void>> m_threads_futures; // threads futures (needed to wait for)
-        ParentCallerT                 &m_parent_caller;   // active queue where to push
+        ParentCallerT&                 m_parent_caller;   // active queue where to push
     };
 } // namespace small

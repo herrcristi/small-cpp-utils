@@ -17,7 +17,7 @@ namespace {
             // clean after test
         }
 
-        const std::string m_text = "some text";
+        const std::string        m_text = "some text";
         const unsigned long long m_hash = 10048017132714414241ULL;
     };
 

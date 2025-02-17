@@ -16,7 +16,7 @@ namespace examples::lock_queue {
         using qc = std::pair<int, std::string>;
         small::lock_queue<qc> q;
 
-        std::thread t([](small::lock_queue<qc> &_q) {
+        std::thread t([](small::lock_queue<qc>& _q) {
             std::this_thread::sleep_for(std::chrono::milliseconds(300));
             std::cout << "push {1, \"A\"}" << std::endl;
             _q.push_back({1, "A"});

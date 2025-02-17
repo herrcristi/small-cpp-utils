@@ -46,17 +46,17 @@ namespace small {
         // time_queue
         //
         time_queue() = default;
-        time_queue(const time_queue &o) : time_queue() { operator=(o); };
-        time_queue(time_queue &&o) noexcept : time_queue() { operator=(std::move(o)); };
+        time_queue(const time_queue& o) : time_queue() { operator=(o); };
+        time_queue(time_queue&& o) noexcept : time_queue() { operator=(std::move(o)); };
 
-        inline time_queue &operator=(const time_queue &o)
+        inline time_queue& operator=(const time_queue& o)
         {
             std::scoped_lock l(m_wait, o.m_wait);
             m_wait  = o.m_wait;
             m_queue = o.m_queue;
             return *this;
         }
-        inline time_queue &operator=(time_queue &&o) noexcept
+        inline time_queue& operator=(time_queue&& o) noexcept
         {
             std::scoped_lock l(m_wait, o.m_wait);
             m_wait  = std::move(o.m_wait);
@@ -95,7 +95,7 @@ namespace small {
         // push_back with specific timeings
         //
         template <typename _Rep, typename _Period>
-        inline std::size_t push_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const T &elem)
+        inline std::size_t push_delay_for(const std::chrono::duration<_Rep, _Period>& __rtime, const T& elem)
         {
             using __dur    = TimeDuration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
@@ -106,7 +106,7 @@ namespace small {
         }
 
         // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
-        inline std::size_t push_delay_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, const T &elem)
+        inline std::size_t push_delay_until(const std::chrono::time_point<TimeClock, TimeDuration>& __atime, const T& elem)
         {
             if (is_exit()) {
                 return 0;
@@ -119,7 +119,7 @@ namespace small {
         }
 
         template <typename _Rep, typename _Period>
-        inline std::size_t push_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, const std::vector<T> &elems)
+        inline std::size_t push_delay_for(const std::chrono::duration<_Rep, _Period>& __rtime, const std::vector<T>& elems)
         {
             using __dur    = TimeDuration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
@@ -130,7 +130,7 @@ namespace small {
         }
 
         // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
-        inline std::size_t push_delay_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, const std::vector<T> &elems)
+        inline std::size_t push_delay_until(const std::chrono::time_point<TimeClock, TimeDuration>& __atime, const std::vector<T>& elems)
         {
             if (is_exit()) {
                 return 0;
@@ -140,7 +140,7 @@ namespace small {
             auto_notification n(this);
 
             std::size_t count = 0;
-            for (auto &elem : elems) {
+            for (auto& elem : elems) {
                 m_queue.push({__atime, elem});
                 ++count;
             }
@@ -149,7 +149,7 @@ namespace small {
 
         // push_back move semantics
         template <typename _Rep, typename _Period>
-        inline std::size_t push_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, T &&elem)
+        inline std::size_t push_delay_for(const std::chrono::duration<_Rep, _Period>& __rtime, T&& elem)
         {
             using __dur    = TimeDuration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
@@ -160,7 +160,7 @@ namespace small {
         }
 
         // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
-        inline std::size_t push_delay_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, T &&elem)
+        inline std::size_t push_delay_until(const std::chrono::time_point<TimeClock, TimeDuration>& __atime, T&& elem)
         {
             if (is_exit()) {
                 return 0;
@@ -173,7 +173,7 @@ namespace small {
         }
 
         template <typename _Rep, typename _Period>
-        inline std::size_t push_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, std::vector<T> &&elems)
+        inline std::size_t push_delay_for(const std::chrono::duration<_Rep, _Period>& __rtime, std::vector<T>&& elems)
         {
             using __dur    = TimeDuration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
@@ -184,7 +184,7 @@ namespace small {
         }
 
         // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
-        inline std::size_t push_delay_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, std::vector<T> &&elems)
+        inline std::size_t push_delay_until(const std::chrono::time_point<TimeClock, TimeDuration>& __atime, std::vector<T>&& elems)
         {
             if (is_exit()) {
                 return 0;
@@ -194,7 +194,7 @@ namespace small {
             auto_notification n(this);
 
             std::size_t count = 0;
-            for (auto &elem : elems) {
+            for (auto& elem : elems) {
                 m_queue.push({__atime, std::forward<T>(elem)});
                 ++count;
             }
@@ -203,7 +203,7 @@ namespace small {
 
         // emplace_back
         template <typename _Rep, typename _Period, typename... _Args>
-        inline std::size_t emplace_delay_for(const std::chrono::duration<_Rep, _Period> &__rtime, _Args &&...__args)
+        inline std::size_t emplace_delay_for(const std::chrono::duration<_Rep, _Period>& __rtime, _Args&&... __args)
         {
             using __dur    = TimeDuration;
             auto __reltime = std::chrono::duration_cast<__dur>(__rtime);
@@ -214,7 +214,7 @@ namespace small {
         }
 
         template </* typename _Clock, typename _Duration, */ typename... _Args> // avoid time_casting from one clock to another
-        inline std::size_t emplace_delay_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, _Args &&...__args)
+        inline std::size_t emplace_delay_until(const std::chrono::time_point<TimeClock, TimeDuration>& __atime, _Args&&... __args)
         {
             if (is_exit()) {
                 return 0;
@@ -242,38 +242,38 @@ namespace small {
         //
         // wait pop and return that element
         //
-        inline EnumLock wait_pop(T *elem)
+        inline EnumLock wait_pop(T* elem)
         {
             return m_wait.wait_pop(elem);
         }
 
-        inline EnumLock wait_pop(std::vector<T> &vec_elems, int max_count = 1)
+        inline EnumLock wait_pop(std::vector<T>& vec_elems, int max_count = 1)
         {
             return m_wait.wait_pop(vec_elems, max_count);
         }
 
         // wait pop_for and return that element
         template <typename _Rep, typename _Period>
-        inline EnumLock wait_pop_for(const std::chrono::duration<_Rep, _Period> &__rtime, T *elem)
+        inline EnumLock wait_pop_for(const std::chrono::duration<_Rep, _Period>& __rtime, T* elem)
         {
             return m_wait.wait_pop_for(__rtime, elem);
         }
 
         template <typename _Rep, typename _Period>
-        inline EnumLock wait_pop_for(const std::chrono::duration<_Rep, _Period> &__rtime, std::vector<T> &vec_elems, int max_count = 1)
+        inline EnumLock wait_pop_for(const std::chrono::duration<_Rep, _Period>& __rtime, std::vector<T>& vec_elems, int max_count = 1)
         {
             return m_wait.wait_pop_for(__rtime, vec_elems, max_count);
         }
 
         // wait until
         // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
-        inline EnumLock wait_pop_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, T *elem)
+        inline EnumLock wait_pop_until(const std::chrono::time_point<TimeClock, TimeDuration>& __atime, T* elem)
         {
             return m_wait.wait_pop_until(__atime, elem);
         }
 
         // avoid time_casting from one clock to another // template <typename _Clock, typename _Duration> //
-        inline EnumLock wait_pop_until(const std::chrono::time_point<TimeClock, TimeDuration> &__atime, std::vector<T> &vec_elems, int max_count = 1)
+        inline EnumLock wait_pop_until(const std::chrono::time_point<TimeClock, TimeDuration>& __atime, std::vector<T>& vec_elems, int max_count = 1)
         {
             return m_wait.wait_pop_until(__atime, vec_elems, max_count);
         }
@@ -287,13 +287,13 @@ namespace small {
         }
 
         template <typename _Rep, typename _Period>
-        inline EnumLock wait_for(const std::chrono::duration<_Rep, _Period> &__rtime)
+        inline EnumLock wait_for(const std::chrono::duration<_Rep, _Period>& __rtime)
         {
             return m_wait.wait_for(__rtime);
         }
 
         template <typename _Clock, typename _Duration>
-        inline EnumLock wait_until(const std::chrono::time_point<_Clock, _Duration> &__atime)
+        inline EnumLock wait_until(const std::chrono::time_point<_Clock, _Duration>& __atime)
         {
             return m_wait.wait_until(__atime);
         }
@@ -315,7 +315,7 @@ namespace small {
         }
         struct auto_notification
         {
-            explicit auto_notification(small::time_queue<T> *tq) : m_time_queue(*tq)
+            explicit auto_notification(small::time_queue<T>* tq) : m_time_queue(*tq)
             {
                 m_old_time = m_time_queue.get_next_time();
             }
@@ -327,7 +327,7 @@ namespace small {
                 }
             }
 
-            small::time_queue<T> &m_time_queue;
+            small::time_queue<T>& m_time_queue;
             TimePoint             m_old_time; // time of the first elem (if exists) or some default
         };
 
@@ -336,7 +336,7 @@ namespace small {
         //
         friend BaseQueueWait;
 
-        inline small::WaitFlags test_and_get(T *elem, typename BaseQueueWait::TimePoint *time_wait_until, bool *is_empty_after_get)
+        inline small::WaitFlags test_and_get(T* elem, typename BaseQueueWait::TimePoint* time_wait_until, bool* is_empty_after_get)
         {
             *is_empty_after_get = true;
 
@@ -383,7 +383,7 @@ namespace small {
         using PriorityQueueElemT = std::pair<TimePoint, T>;
         struct CompPriorityQueueElemT
         {
-            bool operator()(const PriorityQueueElemT &l, const PriorityQueueElemT &r) const
+            bool operator()(const PriorityQueueElemT& l, const PriorityQueueElemT& r) const
             {
                 return l.first > r.first;
             }

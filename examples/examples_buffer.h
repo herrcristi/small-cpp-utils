@@ -26,7 +26,7 @@ namespace examples::buffer {
         b.insert(2 /*from*/, "a", 1);
         std::cout << "assign insert a = " << b << "\n";
 
-        char *e = b.extract(); // extract "anab"
+        char* e = b.extract(); // extract "anab"
         std::cout << "extract = " << e << "\n";
         small::buffer::free(e);
 
@@ -35,7 +35,7 @@ namespace examples::buffer {
         b.clear();
         std::cout << "after clear = " << b << "\n";
 
-        char *e1 = b.extract(); // extract ""
+        char* e1 = b.extract(); // extract ""
         std::cout << "extracting empty = " << e1 << "\n";
         small::buffer::free(e1);
 

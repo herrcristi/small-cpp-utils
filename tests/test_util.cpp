@@ -160,9 +160,9 @@ namespace {
 
         small::sleep(100 /*ms*/);
 
-        auto timeElapsedMs = small::timeDiffMs(timeStart);
+        auto timeElapsedMs    = small::timeDiffMs(timeStart);
         auto timeElapsedMicro = small::timeDiffMicro(timeStart);
-        auto timeElapsedNano = small::timeDiffNano(timeStart);
+        auto timeElapsedNano  = small::timeDiffNano(timeStart);
 
         ASSERT_GE(timeElapsedMs, 100 - 1);             // due conversion
         ASSERT_GE(timeElapsedMicro, (100 - 1) * 1000); // due conversion
@@ -175,9 +175,9 @@ namespace {
 
         small::sleepMicro(100 /*ms*/ * 1000);
 
-        auto timeElapsedMs = small::timeDiffMs(timeStart);
+        auto timeElapsedMs    = small::timeDiffMs(timeStart);
         auto timeElapsedMicro = small::timeDiffMicro(timeStart);
-        auto timeElapsedNano = small::timeDiffNano(timeStart);
+        auto timeElapsedNano  = small::timeDiffNano(timeStart);
 
         ASSERT_GE(timeElapsedMs, 100 - 1);             // due conversion
         ASSERT_GE(timeElapsedMicro, (100 - 1) * 1000); // due conversion
@@ -186,12 +186,12 @@ namespace {
 
     TEST_F(UtilTest, time_toISOString_and_UnixTimestamp)
     {
-        std::time_t t = 0;
-        auto from = std::chrono::system_clock::from_time_t(t);
+        std::time_t t    = 0;
+        auto        from = std::chrono::system_clock::from_time_t(t);
         ASSERT_EQ(small::toISOString(from), "1970-01-01T00:00:00.000Z");
         ASSERT_EQ(small::toUnixTimestamp(from), 0);
 
-        t = 1733172168; // time_t is in seconds
+        t    = 1733172168; // time_t is in seconds
         from = std::chrono::system_clock::from_time_t(t);
         ASSERT_EQ(small::toISOString(from), "2024-12-02T20:42:48.000Z");
         ASSERT_EQ(small::toUnixTimestamp(from), 1733172168000ULL);
@@ -203,9 +203,9 @@ namespace {
 
         small::sleep(100 /*ms*/);
 
-        auto timeElapsedMs = small::htimeDiffMs(timeStart);
+        auto timeElapsedMs    = small::htimeDiffMs(timeStart);
         auto timeElapsedMicro = small::htimeDiffMicro(timeStart);
-        auto timeElapsedNano = small::htimeDiffNano(timeStart);
+        auto timeElapsedNano  = small::htimeDiffNano(timeStart);
 
         ASSERT_GE(timeElapsedMs, 100 - 1);             // due conversion
         ASSERT_GE(timeElapsedMicro, (100 - 1) * 1000); // due conversion
@@ -218,9 +218,9 @@ namespace {
 
         small::sleepMicro(100 /*ms*/ * 1000);
 
-        auto timeElapsedMs = small::htimeDiffMs(timeStart);
+        auto timeElapsedMs    = small::htimeDiffMs(timeStart);
         auto timeElapsedMicro = small::htimeDiffMicro(timeStart);
-        auto timeElapsedNano = small::htimeDiffNano(timeStart);
+        auto timeElapsedNano  = small::htimeDiffNano(timeStart);
 
         ASSERT_GE(timeElapsedMs, 100 - 1);             // due conversion
         ASSERT_GE(timeElapsedMicro, (100 - 1) * 1000); // due conversion

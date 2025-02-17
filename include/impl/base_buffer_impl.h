@@ -17,10 +17,10 @@ namespace small::bufferimpl {
     {
     protected:
         // base_buffer (allocates in chunks)
-        base_buffer()                    = default;
-        base_buffer(const base_buffer &) = delete;
-        base_buffer(base_buffer &&)      = delete;
-        virtual ~base_buffer()           = default;
+        base_buffer()                   = default;
+        base_buffer(const base_buffer&) = delete;
+        base_buffer(base_buffer&&)      = delete;
+        virtual ~base_buffer()          = default;
 
     public:
         // clang-format off
@@ -146,12 +146,12 @@ namespace small::bufferimpl {
         }
 
         // compare
-        inline bool is_equal(const char *s, std::size_t s_length) const
+        inline bool is_equal(const char* s, std::size_t s_length) const
         {
             return size() == s_length && compare(s, s_length) == 0;
         }
 
-        inline int compare(const char *s, std::size_t s_length) const
+        inline int compare(const char* s, std::size_t s_length) const
         {
             const std::size_t this_size = size();
             int               cmp       = memcmp(data(), s, std::min(this_size, s_length));
@@ -289,13 +289,13 @@ namespace small::bufferimpl {
 
     protected:
         // empty buffer
-        inline const char *get_empty_buffer() const
+        inline const char* get_empty_buffer() const
         {
             return m_empty_buffer;
         }
 
         // !! after every function call setup buffer data
-        inline void setup_buffer(char *buffer_data, std::size_t buffer_length)
+        inline void setup_buffer(char* buffer_data, std::size_t buffer_length)
         {
             m_buffer_data   = buffer_data;
             m_buffer_length = buffer_length;
@@ -317,7 +317,7 @@ namespace small::bufferimpl {
 
     protected:
         // buffer set
-        inline void buffer_set_impl(std::size_t from, const char *b, std::size_t b_length)
+        inline void buffer_set_impl(std::size_t from, const char* b, std::size_t b_length)
         {
             resize(from + b_length); // make room
 
@@ -327,7 +327,7 @@ namespace small::bufferimpl {
         }
 
         // buffer insert
-        inline void buffer_insert_impl(std::size_t from /*= 0*/, const char *b, std::size_t b_length)
+        inline void buffer_insert_impl(std::size_t from /*= 0*/, const char* b, std::size_t b_length)
         {
             std::size_t initial_length = size();
             resize(from <= initial_length ? initial_length + b_length : from + b_length);
@@ -453,7 +453,7 @@ namespace small::bufferimpl {
         // base_buffer empty
         char m_empty_buffer[1]{'\0'};
         // base_buffer use char* instead of vector<char> because it is much faster
-        char       *m_buffer_data{nullptr};
+        char*       m_buffer_data{nullptr};
         std::size_t m_buffer_length{0};
     };
 

@@ -31,7 +31,7 @@ namespace {
         std::latch sync_main{1};
 
         // create thread
-        auto thread = std::jthread([](small::lock_queue<int> &_q, std::latch &sync_thread, std::latch &sync_main) {
+        auto thread = std::jthread([](small::lock_queue<int>& _q, std::latch& sync_thread, std::latch& sync_main) {
             std::unique_lock lock(_q);
             sync_thread.count_down(); // signal that thread is started (and also locked is acquired)
             sync_main.wait();         // wait that the main finished executing test to proceed further
@@ -74,7 +74,7 @@ namespace {
         auto timeStart = small::timeNow();
 
         // create workers
-        small::worker_thread<int> workers({.threads_count = 0 /*no threads*/, .bulk_count = 2}, [](auto &w /*this*/, const auto &items, auto b /*extra param b*/) {
+        small::worker_thread<int> workers({.threads_count = 0 /*no threads*/, .bulk_count = 2}, [](auto& w /*this*/, const auto& items, auto b /*extra param b*/) {
             small::sleep(300);
             // process item using the workers lock (not recommended)
         },
@@ -112,7 +112,7 @@ namespace {
         int processing_count = 0;
 
         // create workers
-        small::worker_thread<int> workers({.threads_count = 0 /*no threads*/, .bulk_count = 2}, [&processing_count](auto &w /*this*/, const auto &items) {
+        small::worker_thread<int> workers({.threads_count = 0 /*no threads*/, .bulk_count = 2}, [&processing_count](auto& w /*this*/, const auto& items) {
             processing_count++;
         });
 
@@ -142,7 +142,7 @@ namespace {
 
         struct WorkerThreadFunction
         {
-            void operator()(small::worker_thread<int> &w /*worker_thread*/, [[maybe_unused]] const std::vector<int> &items, [[maybe_unused]] int b /*extra param*/)
+            void operator()(small::worker_thread<int>& w /*worker_thread*/, [[maybe_unused]] const std::vector<int>& items, [[maybe_unused]] int b /*extra param*/)
             {
                 small::sleep(300);
                 if (w.is_exit()) {
