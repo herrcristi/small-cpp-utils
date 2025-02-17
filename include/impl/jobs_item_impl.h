@@ -106,10 +106,10 @@ namespace small::jobsimpl {
         inline void set_state_failed        () { set_state(EnumJobsState::kFailed); }
         inline void set_state_cancelled     () { set_state(EnumJobsState::kCancelled); }
         
-        static bool is_state_complete       (const EnumJobsState &state) { return state >= EnumJobsState::kFinished; }
+        static bool is_state_complete       (const EnumJobsState& state) { return state >= EnumJobsState::kFinished; }
 
         inline EnumJobsState get_state      () const { return m_state.load(); }
-        inline bool is_state                (const EnumJobsState &state) const { return get_state() == state; }
+        inline bool is_state                (const EnumJobsState& state) const { return get_state() == state; }
         inline bool is_complete             () const { return is_state_complete(get_state()); }
 
         inline bool is_state_inprogress     () const { return is_state(EnumJobsState::kInProgress); }

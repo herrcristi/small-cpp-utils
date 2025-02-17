@@ -243,7 +243,7 @@ namespace small {
         //
         // add items to jobs queue
         //
-        inline JobsQueue &queue() { return m_queue; }
+        inline JobsQueue& queue() { return m_queue; }
 
         // and some helper functions
         inline std::size_t jobs_start(const JobsPrioT& priority, const JobsID& jobs_id)                 { return queue().jobs_start(priority, jobs_id); }
@@ -252,7 +252,7 @@ namespace small {
         inline std::shared_ptr<JobsItem>              jobs_get(const JobsID& jobs_id)                   { return queue().jobs_get(jobs_id); }
         inline std::vector<std::shared_ptr<JobsItem>> jobs_get(const std::vector<JobsID>& jobs_ids)     { return queue().jobs_get(jobs_ids); }
 
-        inline std::size_t jobs_parent_child(const JobsID &parent_jobs_id, const JobsID& child_jobs_id) { return queue().jobs_parent_child(parent_jobs_id, child_jobs_id); }
+        inline std::size_t jobs_parent_child(const JobsID& parent_jobs_id, const JobsID& child_jobs_id) { return queue().jobs_parent_child(parent_jobs_id, child_jobs_id); }
         inline std::size_t jobs_parent_child(std::shared_ptr<JobsItem> parent_jobs_item, std::shared_ptr<JobsItem> child_jobs_item) { return queue().jobs_parent_child(parent_jobs_item, child_jobs_item); }
         // clang-format on
 

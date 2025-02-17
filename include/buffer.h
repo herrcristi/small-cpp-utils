@@ -57,7 +57,7 @@ namespace small {
     {
     public:
         // buffer (allocates in chunks)
-        buffer(const config_buffer config = {}) : m_config(config)
+        buffer(const config_buffer& config = {}) : m_config(config)
         {
             init();
         }
@@ -77,19 +77,17 @@ namespace small {
         // clang-format off
         // from char*
         buffer(const char c) noexcept                           : buffer() { base_buffer::operator=(c); }
-        buffer(const char *s) noexcept                          : buffer() { base_buffer::operator=(s); }
-        buffer(const char *s, std::size_t s_length) noexcept    : buffer() { set(0 /*from*/, s, s_length); }
+        buffer(const char* s, std::size_t s_length) noexcept    : buffer() { set(0 /*from*/, s, s_length); }
         buffer(const std::string s) noexcept                    : buffer() { base_buffer::operator=(s); }
         buffer(const std::string_view s) noexcept               : buffer() { base_buffer::operator=(s); }
-        buffer(const std::vector<char> &v) noexcept             : buffer() { base_buffer::operator=(v); }
+        buffer(const std::vector<char>& v) noexcept             : buffer() { base_buffer::operator=(v); }
 
         // from char*
-        buffer(const config_buffer config, const char c) noexcept                          : buffer(config) { base_buffer::operator=(c); }
-        buffer(const config_buffer config, const char *s) noexcept                         : buffer(config) { base_buffer::operator=(s); }
-        buffer(const config_buffer config, const char *s, std::size_t s_length) noexcept   : buffer(config) { set(0 /*from*/, s, s_length); }
-        buffer(const config_buffer config, const std::string &s) noexcept                  : buffer(config) { base_buffer::operator=(s); }
-        buffer(const config_buffer config, const std::string_view s) noexcept              : buffer(config) { base_buffer::operator=(s); }
-        buffer(const config_buffer config, const std::vector<char> &v) noexcept            : buffer(config) { base_buffer::operator=(v); }
+        buffer(const config_buffer& config, const char c) noexcept                          : buffer(config) { base_buffer::operator=(c); }
+        buffer(const config_buffer& config, const char* s, std::size_t s_length) noexcept   : buffer(config) { set(0 /*from*/, s, s_length); }
+        buffer(const config_buffer& config, const std::string& s) noexcept                  : buffer(config) { base_buffer::operator=(s); }
+        buffer(const config_buffer& config, const std::string_view s) noexcept              : buffer(config) { base_buffer::operator=(s); }
+        buffer(const config_buffer& config, const std::vector<char>& v) noexcept            : buffer(config) { base_buffer::operator=(v); }
         // clang-format on
 
         // destructor
@@ -280,18 +278,16 @@ namespace small {
 
         // clang-format off
         // +
-        friend inline buffer operator+  (const buffer &b, const base_buffer &b2)    { buffer br = b; br.append(b2); return br; }
-        friend inline buffer operator+  (const base_buffer &b2, const buffer &b)    { buffer br = b; br.append(b2); return br; }
-        friend inline buffer operator+  (const buffer &b, const char c)             { buffer br = b; br.append(c);  return br; }
-        friend inline buffer operator+  (const buffer &b, const char *s)            { buffer br = b; br.append(s);  return br; }
-        friend inline buffer operator+  (const buffer &b, const std::string_view s) { buffer br = b; br.append(s);  return br; }
-        friend inline buffer operator+  (const buffer &b, const std::vector<char> &v){buffer br = b; br.append(v);  return br; }
+        friend inline buffer operator+  (const buffer& b, const base_buffer& b2)    { buffer br = b; br.append(b2); return br; }
+        friend inline buffer operator+  (const base_buffer& b2, const buffer& b)    { buffer br = b; br.append(b2); return br; }
+        friend inline buffer operator+  (const buffer& b, const char c)             { buffer br = b; br.append(c);  return br; }
+        friend inline buffer operator+  (const buffer& b, const std::string_view s) { buffer br = b; br.append(s);  return br; }
+        friend inline buffer operator+  (const buffer& b, const std::vector<char>& v){buffer br = b; br.append(v);  return br; }
 
         // +
-        friend inline buffer operator+  (const char c, const buffer &b)             { buffer br(b.get_chunk_size()); br.append(c); br += b; return br; }
-        friend inline buffer operator+  (const char *s, const buffer &b)            { buffer br(b.get_chunk_size()); br.append(s); br += b; return br; }
-        friend inline buffer operator+  (const std::string_view s, const buffer &b) { buffer br(b.get_chunk_size()); br.append(s); br += b; return br; }
-        friend inline buffer operator+  (const std::vector<char> &v, const buffer &b){buffer br(b.get_chunk_size()); br.append(v); br += b; return br; }
+        friend inline buffer operator+  (const char c, const buffer& b)             { buffer br(b.get_chunk_size()); br.append(c); br += b; return br; }
+        friend inline buffer operator+  (const std::string_view s, const buffer& b) { buffer br(b.get_chunk_size()); br.append(s); br += b; return br; }
+        friend inline buffer operator+  (const std::vector<char>& v, const buffer& b){buffer br(b.get_chunk_size()); br.append(v); br += b; return br; }
         // clang-format on
 
     private:
