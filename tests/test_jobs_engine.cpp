@@ -11,9 +11,56 @@ namespace {
     protected:
         JobsEngineTest() = default;
 
+        // same as in examples_jobs_engine.h
+        enum class JobsType
+        {
+            kJobsNone = 0,
+            kJobsSettings,
+            kJobsApiPost,
+            kJobsApiGet,
+            kJobsApiDelete,
+            kJobsDatabase,
+            kJobsCache,
+        };
+
+        enum class JobsGroupType
+        {
+            kJobsGroupDefault,
+            kJobsGroupApi,
+            kJobsGroupDatabase,
+            kJobsGroupCache,
+        };
+
+        using WebID       = int;
+        using WebData     = std::string;
+        using WebRequest  = std::tuple<JobsType, WebID, WebData>;
+        using WebResponse = WebData;
+        using JobsEng     = small::jobs_engine<JobsType, WebRequest, WebResponse, JobsGroupType>;
+
+        JobsEng::JobsConfig m_default_config;
+
         void SetUp() override
         {
-            // setup before test
+            m_default_config = {
+                .m_engine = {.m_threads_count = 0, // dont start any thread yet
+                             .m_config_prio   = {.priorities = {{small::EnumPriorities::kHighest, 2},
+                                                                {small::EnumPriorities::kHigh, 2},
+                                                                {small::EnumPriorities::kNormal, 2},
+                                                                {small::EnumPriorities::kLow, 1}}}}, // overall config with default priorities
+
+                // config by jobs group
+                .m_groups = {{JobsGroupType::kJobsGroupDefault, {.m_threads_count = 1}},
+                             {JobsGroupType::kJobsGroupApi, {.m_threads_count = 1}},
+                             {JobsGroupType::kJobsGroupDatabase, {.m_threads_count = 1}},
+                             {JobsGroupType::kJobsGroupCache, {.m_threads_count = 0}}}, // no threads
+
+                // config by jobs type
+                .m_types = {{JobsType::kJobsSettings, {.m_group = JobsGroupType::kJobsGroupDefault}},
+                            {JobsType::kJobsApiPost, {.m_group = JobsGroupType::kJobsGroupApi}},
+                            {JobsType::kJobsApiGet, {.m_group = JobsGroupType::kJobsGroupApi}},
+                            {JobsType::kJobsApiDelete, {.m_group = JobsGroupType::kJobsGroupApi}},
+                            {JobsType::kJobsDatabase, {.m_group = JobsGroupType::kJobsGroupDatabase}},
+                            {JobsType::kJobsCache, {.m_group = JobsGroupType::kJobsGroupCache}}}};
         }
         void TearDown() override
         {
@@ -25,27 +72,28 @@ namespace {
     //
     TEST_F(JobsEngineTest, Lock)
     {
-        small::lock_queue<int> q;
+        JobsEng::JobsConfig config = m_default_config;
+        JobsEng             j(config);
 
         std::latch sync_thread{1};
         std::latch sync_main{1};
 
         // create thread
-        auto thread = std::jthread([](small::lock_queue<int>& _q, std::latch& sync_thread, std::latch& sync_main) {
-            std::unique_lock lock(_q);
-            sync_thread.count_down(); // signal that thread is started (and also locked is acquired)
-            sync_main.wait();         // wait that the main finished executing test to proceed further
-            _q.lock();                // locked again on same thread
-            small::sleep(300);        // sleep inside lock
-            _q.unlock();
+        auto thread = std::jthread([](JobsEng& _j, std::latch& _sync_thread, std::latch& _sync_main) {
+            std::unique_lock lock(_j);
+            _sync_thread.count_down(); // signal that thread is started (and also locked is acquired)
+            _sync_main.wait();         // wait that the main finished executing test to proceed further
+            _j.lock();                 // locked again on same thread
+            small::sleep(300);         // sleep inside lock
+            _j.unlock();
         },
-                                   std::ref(q), std::ref(sync_thread), std::ref(sync_main));
+                                   std::ref(j), std::ref(sync_thread), std::ref(sync_main));
 
         // wait for the thread to start
         sync_thread.wait();
 
         // try to lock and it wont succeed
-        auto locked = q.try_lock();
+        auto locked = j.try_lock();
         ASSERT_FALSE(locked);
 
         // signal thread to proceed further
@@ -55,12 +103,12 @@ namespace {
         // wait for the thread to stop
         while (!locked) {
             small::sleep(1);
-            locked = q.try_lock();
+            locked = j.try_lock();
         }
         ASSERT_TRUE(locked);
 
         // unlock
-        q.unlock();
+        j.unlock();
 
         auto elapsed = small::timeDiffMs(timeStart);
         ASSERT_GE(elapsed, 300 - 1);
