@@ -282,8 +282,6 @@ namespace small {
             // first wait for queue items to finish
             m_queue.wait();
 
-            // TODO wait for not finished items to be finished (some are finished by external)
-
             // only now can signal exit when done for workers (when no more items exists)
             m_thread_pool.wait();
 
@@ -317,8 +315,6 @@ namespace small {
             if (delayed_status == small::EnumLock::kTimeout) {
                 return small::EnumLock::kTimeout;
             }
-
-            // TODO wait for not finished items to be finished (some are finished by external)
 
             // only now can signal exit when done for workers  (when no more items exists)
             delayed_status = m_thread_pool.wait_until(__atime);

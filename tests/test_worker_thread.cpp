@@ -25,27 +25,27 @@ namespace {
     //
     TEST_F(WorkerThreadTest, Lock)
     {
-        small::lock_queue<int> q;
+        small::worker_thread<int> w({.threads_count = 0 /*no threads*/}, [](auto& /*this*/, const auto&) {});
 
         std::latch sync_thread{1};
         std::latch sync_main{1};
 
         // create thread
-        auto thread = std::jthread([](small::lock_queue<int>& _q, std::latch& sync_thread, std::latch& sync_main) {
-            std::unique_lock lock(_q);
-            sync_thread.count_down(); // signal that thread is started (and also locked is acquired)
-            sync_main.wait();         // wait that the main finished executing test to proceed further
-            _q.lock();                // locked again on same thread
-            small::sleep(300);        // sleep inside lock
-            _q.unlock();
+        auto thread = std::jthread([](small::worker_thread<int>& _w, std::latch& _sync_thread, std::latch& _sync_main) {
+            std::unique_lock lock(_w);
+            _sync_thread.count_down(); // signal that thread is started (and also locked is acquired)
+            _sync_main.wait();         // wait that the main finished executing test to proceed further
+            _w.lock();                 // locked again on same thread
+            small::sleep(300);         // sleep inside lock
+            _w.unlock();
         },
-                                   std::ref(q), std::ref(sync_thread), std::ref(sync_main));
+                                   std::ref(w), std::ref(sync_thread), std::ref(sync_main));
 
         // wait for the thread to start
         sync_thread.wait();
 
         // try to lock and it wont succeed
-        auto locked = q.try_lock();
+        auto locked = w.try_lock();
         ASSERT_FALSE(locked);
 
         // signal thread to proceed further
@@ -55,12 +55,12 @@ namespace {
         // wait for the thread to stop
         while (!locked) {
             small::sleep(1);
-            locked = q.try_lock();
+            locked = w.try_lock();
         }
         ASSERT_TRUE(locked);
 
         // unlock
-        q.unlock();
+        w.unlock();
 
         auto elapsed = small::timeDiffMs(timeStart);
         ASSERT_GE(elapsed, 300 - 1);

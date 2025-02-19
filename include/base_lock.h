@@ -82,6 +82,11 @@ namespace small {
             return m_is_exit_when_done.load() == true;
         }
 
+        inline bool is_exit()
+        {
+            return is_exit_force() || is_exit_when_done();
+        }
+
         //
         // notify
         //

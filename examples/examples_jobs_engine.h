@@ -672,6 +672,13 @@ namespace examples::jobs_engine {
         // manual start threads
         jobs.start_threads(3);
 
+        // wait here for jobs to finish due to exit flag
+        // show wait for with timeout
+        auto ret = jobs.wait_for(std::chrono::milliseconds(0)); // wait to finished
+        std::cout << impl::color::yellow
+                  << "TESTING wait for with timeout, ret = " << static_cast<int>(ret) << " as timeout\n"
+                  << impl::color::reset;
+
         // show wait for custom promises
         for (auto& [id, promise] : settings_promises) {
             auto f       = promise.get_future();
@@ -681,12 +688,10 @@ namespace examples::jobs_engine {
                       << impl::color::reset;
         }
 
-        // wait here for jobs to finish due to exit flag
-        small::sleep(20'000); // TODO implement wait for jobs to finish
-        // show wait for with timeout
-        auto ret = jobs.wait_for(std::chrono::milliseconds(100)); // wait to finished
-        std::cout << "TESTING wait for with timeout, ret = " << static_cast<int>(ret) << " as timeout\n";
         jobs.wait();
+        std::cout << impl::color::yellow
+                  << "FINISH wait\n"
+                  << impl::color::reset;
 
         // cache should exit immediately after all jobs are finished
         cache_server.signal_exit_force();

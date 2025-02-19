@@ -75,7 +75,7 @@ namespace small {
         // worker_thread
         //
         template <typename _Callable, typename... Args>
-        worker_thread(const config_worker_thread config, _Callable function, Args... extra_parameters)
+        worker_thread(const config_worker_thread& config, _Callable function, Args... extra_parameters)
             : m_config(config),
               m_function_processing(std::bind(std::forward<_Callable>(function), std::ref(*this), std::placeholders::_1 /*item*/, std::forward<Args>(extra_parameters)...))
         {
