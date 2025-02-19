@@ -374,10 +374,20 @@ workers.signal_exit_force(); // workers.signal_exit_when_done();
 
 A class that process different jobs type using the same thread pool
 
-Every job is defined by type, group, priority and request.
-Multiple job type can be grouped together under one group (if 1 thread will serve that group all that job type requests will actually behave like serialized.)
+Every job is defined by
 
-Every group has a config associated specifying how many threads to use from the pool, how many for bulk processing, etc
+-   id
+-   type
+    -   for each type multiple callback functions can be defined for processing, finishing, child finished
+    -   timeout can be setup after which the job is cancelled
+-   group
+    -   multiple jobs type can be grouped to use same threads, this is configurable (if 1 thread is setup for a group all that job type requests will actually behave like serialized., if 0 threads will mean that some processing will be done outside the jobs engine)
+    -   delay between requests (to have throttle) - this can be override in the processing function
+-   priority inside a group (high, normal, etc)
+-   request / response
+-   relationship - one job can be parent for another child job, and by default will be finished when all children are finished (this behaviour can be overriden usign the callbacks)
+-   state (in progress, finished, failed, timeout, cancelled, etc)
+-   progress
 
 The following functions are available
 
@@ -385,9 +395,24 @@ For data
 
 `size, empty, clear`
 
-`push_back`
+`set_config`
+
+`config_default_function_processing, config_default_function_children_finished, config_default_function_finished`
+
+`config_jobs_function_processing, config_jobs_function_children_finished, config_jobs_function_finished`
+
+`queue().push_back_and_start, queue().push_back_and_start_child`
+
+`queue().push_back, queue().push_back_child` <- requires manual start
+
+`queue().push_back_and_start_delay_for, queue().push_back_and_start_delay_until`
+`queue().jobs_start_delay_for, queue().jobs_start_delay_until`
+
+`queue().jobs_start, queue().jobs_get`
 
 `push_back_delay_for, push_back_delay_until`
+
+`jobs_parent_child`
 
 To use it as a locker
 
@@ -398,6 +423,8 @@ Signal exit when we no longer want to use it,
 `signal_exit_force, is_exit`
 
 `signal_exit_when_done`
+
+`wait, wait_for, wait_until`
 
 Use it like this (for a more complete example see the [example](examples/examples_jobs_engine.h) )
 
