@@ -31,12 +31,12 @@ namespace {
         std::latch sync_main{1};
 
         // create thread
-        auto thread = std::jthread([](small::lock_queue<int>& _q, std::latch& sync_thread, std::latch& sync_main) {
+        auto thread = std::jthread([](small::lock_queue<int>& _q, std::latch& _sync_thread, std::latch& _sync_main) {
             std::unique_lock lock(_q);
-            sync_thread.count_down(); // signal that thread is started (and also locked is acquired)
-            sync_main.wait();         // wait that the main finished executing test to proceed further
-            _q.lock();                // locked again on same thread
-            small::sleep(300);        // sleep inside lock
+            _sync_thread.count_down(); // signal that thread is started (and also locked is acquired)
+            _sync_main.wait();         // wait that the main finished executing test to proceed further
+            _q.lock();                 // locked again on same thread
+            small::sleep(300);         // sleep inside lock
             _q.unlock();
         },
                                    std::ref(q), std::ref(sync_thread), std::ref(sync_main));

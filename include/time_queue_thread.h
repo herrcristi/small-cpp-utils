@@ -6,6 +6,7 @@
 #include <queue>
 
 #include "time_queue.h"
+#include "util_time.h"
 
 namespace small {
 
