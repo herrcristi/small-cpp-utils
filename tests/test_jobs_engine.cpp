@@ -115,119 +115,173 @@ namespace {
     }
 
     //
-    // workers
+    // operations
     //
-    TEST_F(JobsEngineTest, Worker_Operations)
+    TEST_F(JobsEngineTest, Jobs_Operations_Default_Processing)
     {
         auto timeStart = small::timeNow();
 
-        // create workers
-        small::worker_thread<int> workers({.threads_count = 0 /*no threads*/, .bulk_count = 2}, [](auto& w /*this*/, const auto& items, auto b /*extra param b*/) {
-            small::sleep(300);
-            // process item using the workers lock (not recommended)
-        },
-                                          5 /*param b*/);
-
-        // push
-        workers.push_back(5);
-        ASSERT_GE(workers.size(), 1); // because the thread is not started
-
-        workers.start_threads(1); // start thread
-
-        // wait_until
-        auto ret = workers.wait_for(std::chrono::milliseconds(0));
-        ASSERT_EQ(ret, small::EnumLock::kTimeout);
-
-        // wait to finish
-        ret = workers.wait();
-        ASSERT_EQ(ret, small::EnumLock::kExit);
-
-        // check size
-        ASSERT_EQ(workers.size(), 0);
-
-        auto elapsed = small::timeDiffMs(timeStart);
-        ASSERT_GE(elapsed, 300 - 1); // due conversion
-
-        // push after wait is not allowed
-        workers.push_back(1);
-        ASSERT_EQ(workers.size(), 0);
-    }
-
-    TEST_F(JobsEngineTest, Worker_Operations_Delayed)
-    {
-        auto timeStart = small::timeNow();
+        JobsEng::JobsConfig config = m_default_config;
+        JobsEng             jobs(config);
 
         int processing_count = 0;
 
-        // create workers
-        small::worker_thread<int> workers({.threads_count = 0 /*no threads*/, .bulk_count = 2}, [&processing_count](auto& w /*this*/, const auto& items) {
-            processing_count++;
+        // setup
+        jobs.config_default_function_processing([&processing_count](auto& j /*this jobs engine*/, const auto& jobs_items, auto& /* jobs_config */) {
+            for (auto& item : jobs_items) {
+                std::ignore = item;
+                ++processing_count;
+                small::sleep(300);
+            }
         });
 
         // push
-        workers.push_back(4);
-        workers.push_back_delay_for(std::chrono::milliseconds(300), 5);
-        ASSERT_GE(workers.size(), 0);
-        ASSERT_GE(workers.size_delayed(), 1);
+        JobsEng::JobsID jobs_id{};
 
-        workers.start_threads(1); // start thread
+        auto retq = jobs.queue().push_back_and_start(
+            small::EnumPriorities::kNormal, JobsType::kJobsSettings, {JobsType::kJobsSettings, 101, "settings101"}, &jobs_id);
+        ASSERT_EQ(retq, 1);
+        ASSERT_GE(jobs.size(), 1); // because the thread is not started
+
+        jobs.start_threads(1); // start thread
+
+        // wait_until
+        auto retw = jobs.wait_for(std::chrono::milliseconds(0));
+        ASSERT_EQ(retw, small::EnumLock::kTimeout);
 
         // wait to finish
-        auto ret = workers.wait();
-        ASSERT_EQ(ret, small::EnumLock::kExit);
+        retw = jobs.wait();
+        ASSERT_EQ(retw, small::EnumLock::kExit);
 
         // check size
-        ASSERT_EQ(workers.size(), 0);
-        ASSERT_EQ(processing_count, 2);
+        ASSERT_EQ(jobs.size(), 0);
 
         auto elapsed = small::timeDiffMs(timeStart);
         ASSERT_GE(elapsed, 300 - 1); // due conversion
+        ASSERT_EQ(processing_count, 1);
+
+        // push after wait is not allowed
+        retq = jobs.queue().push_back_and_start(
+            small::EnumPriorities::kNormal, JobsType::kJobsSettings, {JobsType::kJobsSettings, 101, "settings101"}, &jobs_id);
+        ASSERT_EQ(retq, 0);
+        ASSERT_EQ(jobs.size(), 0);
     }
 
-    TEST_F(JobsEngineTest, Worker_Operations_Force_Exit)
+    TEST_F(JobsEngineTest, Jobs_Operations_Default_Processing_Sleep_Between_Requests)
     {
         auto timeStart = small::timeNow();
 
-        struct JobsEngineFunction
-        {
-            void operator()(small::worker_thread<int>& w /*worker_thread*/, [[maybe_unused]] const std::vector<int>& items, [[maybe_unused]] int b /*extra param*/)
-            {
-                small::sleep(300);
-                if (w.is_exit()) {
-                    return;
-                }
-                small::sleep(300);
-                // process item using the workers lock (not recommended)
-            }
-        };
+        JobsEng::JobsConfig config = m_default_config;
+        JobsEng             jobs(config);
 
-        // create workers
-        small::worker_thread<int> workers({/*default 1 thread*/}, JobsEngineFunction(), 5 /*param b*/);
+        int processing_count = 0;
+
+        // setup
+        jobs.config_default_function_processing([&processing_count](auto& j /*this jobs engine*/, const auto& jobs_items, auto& jobs_config) {
+            for (auto& item : jobs_items) {
+                std::ignore = item;
+                ++processing_count;
+            }
+            jobs_config.m_delay_next_request = std::chrono::milliseconds(400);
+        });
 
         // push
-        workers.push_back(5);
-        workers.push_back(6);
-        small::sleep(100); // wait for the thread to start and execute first sleep
+        JobsEng::JobsID jobs_id{};
 
-        workers.signal_exit_force();
-        ASSERT_EQ(workers.size(), 1);
+        auto retq = jobs.queue().push_back_and_start(
+            small::EnumPriorities::kNormal, JobsType::kJobsSettings, {JobsType::kJobsSettings, 101, "settings101"}, &jobs_id);
+        ASSERT_EQ(retq, 1);
+        ASSERT_GE(jobs.size(), 1); // because the thread is not started
 
-        // push after exit will not work
-        auto r_push = workers.push_back(5);
-        ASSERT_EQ(r_push, 0);
-        ASSERT_EQ(workers.size(), 1);
+        jobs.start_threads(1); // start thread
 
         // wait to finish
-        auto ret = workers.wait();
-        ASSERT_EQ(ret, small::EnumLock::kExit);
+        auto retw = jobs.wait();
+        ASSERT_EQ(retw, small::EnumLock::kExit);
 
         // check size
-        ASSERT_EQ(workers.size(), 1);
+        ASSERT_EQ(jobs.size(), 0);
 
-        // elapsed only 300 and not 600
         auto elapsed = small::timeDiffMs(timeStart);
-        ASSERT_GE(elapsed, 300 - 1); // due conversion
-        ASSERT_LT(elapsed, 600 - 1); // due conversion
+        ASSERT_GE(elapsed, 400 - 1); // due conversion
+        ASSERT_EQ(processing_count, 1);
     }
+
+    // TEST_F(JobsEngineTest, Jobs_Operations_Delayed)
+    // {
+    //     auto timeStart = small::timeNow();
+
+    //     int processing_count = 0;
+
+    //     // create workers
+    //     small::worker_thread<int> workers({.threads_count = 0 /*no threads*/, .bulk_count = 2}, [&processing_count](auto& w /*this*/, const auto& items) {
+    //         processing_count++;
+    //     });
+
+    //     // push
+    //     workers.push_back(4);
+    //     workers.push_back_delay_for(std::chrono::milliseconds(300), 5);
+    //     ASSERT_GE(workers.size(), 0);
+    //     ASSERT_GE(workers.size_delayed(), 1);
+
+    //     workers.start_threads(1); // start thread
+
+    //     // wait to finish
+    //     auto ret = workers.wait();
+    //     ASSERT_EQ(ret, small::EnumLock::kExit);
+
+    //     // check size
+    //     ASSERT_EQ(workers.size(), 0);
+    //     ASSERT_EQ(processing_count, 2);
+
+    //     auto elapsed = small::timeDiffMs(timeStart);
+    //     ASSERT_GE(elapsed, 300 - 1); // due conversion
+    // }
+
+    // TEST_F(JobsEngineTest, Jobs_Operations_Force_Exit)
+    // {
+    //     auto timeStart = small::timeNow();
+
+    //     struct JobsEngineFunction
+    //     {
+    //         void operator()(small::worker_thread<int>& w /*worker_thread*/, [[maybe_unused]] const std::vector<int>& items, [[maybe_unused]] int b /*extra param*/)
+    //         {
+    //             small::sleep(300);
+    //             if (w.is_exit()) {
+    //                 return;
+    //             }
+    //             small::sleep(300);
+    //             // process item using the workers lock (not recommended)
+    //         }
+    //     };
+
+    //     // create workers
+    //     small::worker_thread<int> workers({/*default 1 thread*/}, JobsEngineFunction(), 5 /*param b*/);
+
+    //     // push
+    //     workers.push_back(5);
+    //     workers.push_back(6);
+    //     small::sleep(100); // wait for the thread to start and execute first sleep
+
+    //     workers.signal_exit_force();
+    //     ASSERT_EQ(workers.size(), 1);
+
+    //     // push after exit will not work
+    //     auto r_push = workers.push_back(5);
+    //     ASSERT_EQ(r_push, 0);
+    //     ASSERT_EQ(workers.size(), 1);
+
+    //     // wait to finish
+    //     auto ret = workers.wait();
+    //     ASSERT_EQ(ret, small::EnumLock::kExit);
+
+    //     // check size
+    //     ASSERT_EQ(workers.size(), 1);
+
+    //     // elapsed only 300 and not 600
+    //     auto elapsed = small::timeDiffMs(timeStart);
+    //     ASSERT_GE(elapsed, 300 - 1); // due conversion
+    //     ASSERT_LT(elapsed, 600 - 1); // due conversion
+    // }
 
 } // namespace

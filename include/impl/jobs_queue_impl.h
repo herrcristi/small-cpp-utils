@@ -49,6 +49,7 @@ namespace small::jobsimpl {
         {
             std::unique_lock l(m_lock);
             m_jobs.clear();
+            m_lock.notify_all();
 
             m_delayed_items.clear();
 
@@ -121,17 +122,8 @@ namespace small::jobsimpl {
 
         inline std::size_t push_back(std::shared_ptr<JobsItem> jobs_item, JobsID* jobs_id)
         {
-            if (is_exit()) {
-                return 0;
-            }
-
             // this job should be manually started by calling jobs_start
-            auto id = jobs_add(jobs_item);
-            if (jobs_id) {
-                *jobs_id = id;
-            }
-
-            return 1;
+            return jobs_add(jobs_item, jobs_id);
         }
 
         inline std::size_t push_back(const std::vector<std::shared_ptr<JobsItem>>& jobs_items, std::vector<JobsID>* jobs_ids)
@@ -375,11 +367,12 @@ namespace small::jobsimpl {
         template <typename _Rep, typename _Period>
         inline std::size_t push_back_and_start_delay_for(const std::chrono::duration<_Rep, _Period>& __rtime, const JobsPrioT& priority, std::shared_ptr<JobsItem> jobs_item, JobsID* jobs_id = nullptr)
         {
-            if (is_exit()) {
-                return 0;
+            JobsID id{};
+            auto   ret = jobs_add(jobs_item, &id);
+            if (!ret) {
+                return ret;
             }
 
-            auto id = jobs_add(jobs_item);
             if (jobs_id) {
                 *jobs_id = id;
             }
@@ -400,11 +393,12 @@ namespace small::jobsimpl {
 
         inline std::size_t push_back_and_start_delay_until(const std::chrono::time_point<TimeClock, TimeDuration>& __atime, const JobsPrioT& priority, std::shared_ptr<JobsItem> jobs_item, JobsID* jobs_id = nullptr)
         {
-            if (is_exit()) {
-                return 0;
+            JobsID id{};
+            auto   ret = jobs_add(jobs_item, &id);
+            if (!ret) {
+                return ret;
             }
 
-            auto id = jobs_add(jobs_item);
             if (jobs_id) {
                 *jobs_id = id;
             }
@@ -452,10 +446,10 @@ namespace small::jobsimpl {
                 q.signal_exit_force();
             }
         }
-        inline void signal_exit_when_done   ()  { m_delayed_items.queue().signal_exit_when_done(); /*when the delayed will be finished will signal the active queue items to exit when done*/ }
+        inline void signal_exit_when_done   ()  { /*to exit when done*/ }
         
         // to be used in processing function
-        inline bool is_exit                 ()  { return m_delayed_items.queue().is_exit_force(); }
+        inline bool is_exit                 ()  { return m_lock.is_exit_force(); }
         // clang-format on
 
         //
@@ -465,10 +459,17 @@ namespace small::jobsimpl {
         {
             signal_exit_when_done();
 
-            // first wait for delayed items to finish
+            // wait for jobs to finish (because jobs may create children)
+            {
+                std::unique_lock l(m_lock);
+                m_lock.wait(l, [&]() { return m_jobs.empty(); });
+                m_lock.signal_exit_when_done();
+            }
+
+            // wait for delayed items to finish
             m_delayed_items.wait();
 
-            // only now can signal exit when done for all queues (when no more delayed items can be pushed)
+            // signal exit when done for all queues (when no more delayed items can be pushed)
             for (auto& [group, q] : m_groups_queues) {
                 q.signal_exit_when_done();
             }
@@ -497,7 +498,17 @@ namespace small::jobsimpl {
         {
             signal_exit_when_done();
 
-            // first wait for delayed items to finish
+            {
+                std::unique_lock l(m_lock);
+
+                auto delayed_status = m_lock.wait_until(l, __atime, [&]() { return m_jobs.empty(); });
+                if (delayed_status == small::EnumLock::kTimeout) {
+                    return small::EnumLock::kTimeout;
+                }
+                m_lock.signal_exit_when_done();
+            }
+
+            // wait for delayed items to finish
             auto delayed_status = m_delayed_items.wait_until(__atime);
             if (delayed_status == small::EnumLock::kTimeout) {
                 return small::EnumLock::kTimeout;
@@ -573,20 +584,34 @@ namespace small::jobsimpl {
         //
         // add jobs item
         //
-        inline JobsID jobs_add(std::shared_ptr<JobsItem> jobs_item)
+        inline JobsID jobs_add(std::shared_ptr<JobsItem> jobs_item, JobsID* jobs_id)
         {
+            if (is_exit()) {
+                return 0;
+            }
+
             std::unique_lock l(m_lock);
+
+            // check under lock
+            if (m_lock.is_exit()) {
+                return 0;
+            }
 
             ++m_jobs_seq_id;
 
             JobsID id       = m_jobs_seq_id;
             jobs_item->m_id = id;
             m_jobs.emplace(id, jobs_item);
+            m_lock.notify_all();
+
+            if (jobs_id) {
+                *jobs_id = id;
+            }
 
             // call parent for extra processing
             m_parent_caller.jobs_add(jobs_item);
 
-            return id;
+            return 1;
         }
 
         //
@@ -657,6 +682,7 @@ namespace small::jobsimpl {
             }
 
             m_jobs.erase(jobs_id);
+            m_lock.notify_all();
 
             // recursive delete all children
             for (auto& child_jobs_id : jobs_item->m_childrenIDs) {
