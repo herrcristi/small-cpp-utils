@@ -36,12 +36,12 @@ namespace small::jobsimpl {
         //
         // set jobs progress
         //
-        inline bool jobs_progress(const JobsID& jobs_id, const int& progress)
+        inline bool jobs_progress(const JobsID& jobs_id, const int& progress, const bool update_parent = true)
         {
-            return jobs_progress(jobs_get(jobs_id), progress);
+            return jobs_progress(jobs_get(jobs_id), progress, update_parent);
         }
 
-        inline bool jobs_progress(std::shared_ptr<JobsItem> jobs_item, const int& progress)
+        inline bool jobs_progress(std::shared_ptr<JobsItem> jobs_item, const int& progress, const bool update_parent = true)
         {
             if (!jobs_item) {
                 return false;
@@ -50,8 +50,29 @@ namespace small::jobsimpl {
                 return false;
             }
             if (progress == 100) {
-                jobs_state(jobs_item, small::jobsimpl::EnumJobsState::kFinished);
+                jobs_state(jobs_item, small::jobsimpl::EnumJobsState::kFinished); // callback will take care of parent progress
+            } else {
+                // recursively update parents
+                if (update_parent && jobs_item->has_parents()) {
+                    std::vector<std::shared_ptr<JobsItem>> jobs_parents;
+                    {
+                        std::unique_lock l(*this);
+                        jobs_parents = jobs_get(jobs_item->m_parentIDs);
+                    }
+                    for (auto& jobs_parent : jobs_parents) {
+                        if (!jobs_parent) {
+                            continue;
+                        }
+
+                        int                            jobs_parent_progress = 0;
+                        small::jobsimpl::EnumJobsState jobs_parent_state    = small::jobsimpl::EnumJobsState::kInProgress;
+
+                        get_children_states(jobs_parent, &jobs_parent_state, &jobs_parent_progress);
+                        jobs_progress(jobs_parent, jobs_parent_progress);
+                    }
+                }
             }
+
             return true;
         }
 
@@ -264,7 +285,11 @@ namespace small::jobsimpl {
         inline void get_children_states(std::shared_ptr<JobsItem> jobs_parent, small::jobsimpl::EnumJobsState* jobs_state, int* jobs_progress)
         {
             // get all children
-            auto all_children = jobs_get(jobs_parent->m_childrenIDs);
+            std::vector<std::shared_ptr<JobsItem>> all_children;
+            {
+                std::unique_lock l(m_lock);
+                all_children = jobs_get(jobs_parent->m_childrenIDs);
+            }
 
             // compute state & progress
             std::size_t count_progress           = 0;

@@ -529,9 +529,13 @@ namespace small {
                 // progress 100 will make the state be finished
                 // but since the state can only increase
                 // the completed callback will not be called again because the state will not change
-                state().jobs_progress(jobs_item, 100);
+                state().jobs_progress(jobs_item, 100, false /*not recursive*/);
 
-                auto jobs_parents = jobs_get(jobs_item->m_parentIDs);
+                std::vector<std::shared_ptr<JobsItem>> jobs_parents;
+                {
+                    std::unique_lock l(*this);
+                    jobs_parents = jobs_get(jobs_item->m_parentIDs);
+                }
                 for (auto& jobs_parent : jobs_parents) {
                     m_config.m_types[jobs_parent->m_type].m_function_children_finished(jobs_parent, jobs_item /*child*/);
                 }
@@ -585,7 +589,7 @@ namespace small {
                 // then advance to finish
                 state().jobs_state(jobs_parent, jobs_state);
             } else {
-                state().jobs_progress(jobs_parent, jobs_progress); // TODO this should be recursive child->parent->grand parent (taking into account state)
+                state().jobs_progress(jobs_parent, jobs_progress);
             }
         }
 
