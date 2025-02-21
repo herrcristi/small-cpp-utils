@@ -287,7 +287,7 @@ namespace small::jobsimpl {
             // get all children
             std::vector<std::shared_ptr<JobsItem>> all_children;
             {
-                std::unique_lock l(m_lock);
+                std::unique_lock l(*this);
                 all_children = jobs_get(jobs_parent->m_childrenIDs);
             }
 
