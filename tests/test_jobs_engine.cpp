@@ -115,7 +115,7 @@ namespace {
     }
 
     //
-    // operations
+    // operations with default processing function
     //
     TEST_F(JobsEngineTest, Jobs_Operations_Default_Processing)
     {
@@ -141,7 +141,13 @@ namespace {
         auto retq = jobs.queue().push_back_and_start(
             small::EnumPriorities::kNormal, JobsType::kJobsSettings, {JobsType::kJobsSettings, 101, "settings101"}, &jobs_id);
         ASSERT_EQ(retq, 1);
-        ASSERT_GE(jobs.size(), 1); // because the thread is not started
+
+        retq = jobs.queue().push_back(JobsType::kJobsSettings, {JobsType::kJobsSettings, 101, "settings101"}, &jobs_id);
+        ASSERT_EQ(retq, 1);
+        retq = jobs.queue().jobs_start(small::EnumPriorities::kNormal, jobs_id);
+        ASSERT_EQ(retq, 1);
+
+        ASSERT_GE(jobs.size(), 2); // because the thread is not started
 
         jobs.start_threads(1); // start thread
 
@@ -158,7 +164,7 @@ namespace {
 
         auto elapsed = small::timeDiffMs(timeStart);
         ASSERT_GE(elapsed, 300 - 1); // due conversion
-        ASSERT_EQ(processing_count, 1);
+        ASSERT_EQ(processing_count, 2);
 
         // push after wait is not allowed
         retq = jobs.queue().push_back_and_start(
@@ -167,7 +173,10 @@ namespace {
         ASSERT_EQ(jobs.size(), 0);
     }
 
-    TEST_F(JobsEngineTest, Jobs_Operations_Default_Processing_Sleep_Between_Requests)
+    //
+    // operations with default processing function and throtelling (sleep between requests)
+    //
+    TEST_F(JobsEngineTest, Jobs_Default_Processing_Sleep_Between_Requests)
     {
         auto timeStart = small::timeNow();
 
@@ -207,81 +216,513 @@ namespace {
         ASSERT_EQ(processing_count, 1);
     }
 
-    // TEST_F(JobsEngineTest, Jobs_Operations_Delayed)
-    // {
-    //     auto timeStart = small::timeNow();
+    //
+    // operations with default processing function and delayed request
+    //
+    TEST_F(JobsEngineTest, Jobs_Default_Processing_Delay_Request)
+    {
+        auto timeStart = small::timeNow();
 
-    //     int processing_count = 0;
+        JobsEng::JobsConfig config = m_default_config;
+        JobsEng             jobs(config);
 
-    //     // create workers
-    //     small::worker_thread<int> workers({.threads_count = 0 /*no threads*/, .bulk_count = 2}, [&processing_count](auto& w /*this*/, const auto& items) {
-    //         processing_count++;
-    //     });
+        int processing_count = 0;
 
-    //     // push
-    //     workers.push_back(4);
-    //     workers.push_back_delay_for(std::chrono::milliseconds(300), 5);
-    //     ASSERT_GE(workers.size(), 0);
-    //     ASSERT_GE(workers.size_delayed(), 1);
+        // setup
+        jobs.config_default_function_processing([&processing_count](auto& j /*this jobs engine*/, const auto& jobs_items, auto& jobs_config) {
+            for (auto& item : jobs_items) {
+                std::ignore = item;
+                ++processing_count;
+            }
+        });
 
-    //     workers.start_threads(1); // start thread
+        // push
+        JobsEng::JobsID jobs_id{};
 
-    //     // wait to finish
-    //     auto ret = workers.wait();
-    //     ASSERT_EQ(ret, small::EnumLock::kExit);
+        auto retq = jobs.queue().push_back_and_start_delay_for(
+            std::chrono::milliseconds(300),
+            small::EnumPriorities::kNormal, JobsType::kJobsSettings, {JobsType::kJobsSettings, 101, "settings101"}, &jobs_id);
+        ASSERT_EQ(retq, 1);
 
-    //     // check size
-    //     ASSERT_EQ(workers.size(), 0);
-    //     ASSERT_EQ(processing_count, 2);
+        // push back but dont start
+        retq = jobs.queue().push_back(JobsType::kJobsSettings, {JobsType::kJobsSettings, 101, "settings101"}, &jobs_id);
+        ASSERT_EQ(retq, 1);
+        retq = jobs.queue().jobs_start_delay_for(std::chrono::milliseconds(300), small::EnumPriorities::kNormal, jobs_id);
+        ASSERT_EQ(retq, 1);
 
-    //     auto elapsed = small::timeDiffMs(timeStart);
-    //     ASSERT_GE(elapsed, 300 - 1); // due conversion
-    // }
+        ASSERT_GE(jobs.size(), 2); // because the thread is not started
 
-    // TEST_F(JobsEngineTest, Jobs_Operations_Force_Exit)
-    // {
-    //     auto timeStart = small::timeNow();
+        jobs.start_threads(1); // start thread
 
-    //     struct JobsEngineFunction
-    //     {
-    //         void operator()(small::worker_thread<int>& w /*worker_thread*/, [[maybe_unused]] const std::vector<int>& items, [[maybe_unused]] int b /*extra param*/)
-    //         {
-    //             small::sleep(300);
-    //             if (w.is_exit()) {
-    //                 return;
-    //             }
-    //             small::sleep(300);
-    //             // process item using the workers lock (not recommended)
-    //         }
-    //     };
+        // wait to finish
+        auto retw = jobs.wait();
+        ASSERT_EQ(retw, small::EnumLock::kExit);
 
-    //     // create workers
-    //     small::worker_thread<int> workers({/*default 1 thread*/}, JobsEngineFunction(), 5 /*param b*/);
+        // check size
+        ASSERT_EQ(jobs.size(), 0);
 
-    //     // push
-    //     workers.push_back(5);
-    //     workers.push_back(6);
-    //     small::sleep(100); // wait for the thread to start and execute first sleep
+        auto elapsed = small::timeDiffMs(timeStart);
+        ASSERT_GE(elapsed, 300 - 1); // due conversion
+        ASSERT_EQ(processing_count, 2);
+    }
 
-    //     workers.signal_exit_force();
-    //     ASSERT_EQ(workers.size(), 1);
+    //
+    // operations with default processing function and timeout request
+    //
+    TEST_F(JobsEngineTest, Jobs_Default_Processing_Timeout_Request)
+    {
+        auto timeStart = small::timeNow();
 
-    //     // push after exit will not work
-    //     auto r_push = workers.push_back(5);
-    //     ASSERT_EQ(r_push, 0);
-    //     ASSERT_EQ(workers.size(), 1);
+        JobsEng::JobsConfig config = m_default_config;
+        // set timeout to 300ms
+        config.m_types[JobsType::kJobsSettings].m_timeout = std::chrono::milliseconds(300);
 
-    //     // wait to finish
-    //     auto ret = workers.wait();
-    //     ASSERT_EQ(ret, small::EnumLock::kExit);
+        JobsEng jobs(config);
 
-    //     // check size
-    //     ASSERT_EQ(workers.size(), 1);
+        int  processing_count = 0;
+        int  finished_count   = 0;
+        bool state_is_timeout = false;
 
-    //     // elapsed only 300 and not 600
-    //     auto elapsed = small::timeDiffMs(timeStart);
-    //     ASSERT_GE(elapsed, 300 - 1); // due conversion
-    //     ASSERT_LT(elapsed, 600 - 1); // due conversion
-    // }
+        // setup
+        jobs.config_default_function_processing([&processing_count](auto& j /*this jobs engine*/, const auto& jobs_items, auto& jobs_config) {
+            for (auto& item : jobs_items) {
+                std::ignore = item;
+                ++processing_count;
+            }
+        });
+
+        jobs.config_default_function_finished(
+            [&finished_count, &state_is_timeout](auto& j /*this jobs engine*/, const auto& jobs_items) {
+                for (auto& item : jobs_items) {
+                    state_is_timeout = item->is_state_timeout();
+                    ++finished_count;
+                }
+            });
+
+        // push back but dont start
+        JobsEng::JobsID jobs_id{};
+
+        auto retq = jobs.queue().push_back(JobsType::kJobsSettings, {JobsType::kJobsSettings, 101, "settings101"}, &jobs_id);
+        ASSERT_EQ(retq, 1);
+
+        ASSERT_GE(jobs.size(), 1); // because the thread is not started
+
+        jobs.start_threads(1); // start thread
+
+        // wait to finish
+        auto retw = jobs.wait();
+        ASSERT_EQ(retw, small::EnumLock::kExit);
+
+        // check size
+        ASSERT_EQ(jobs.size(), 0);
+
+        auto elapsed = small::timeDiffMs(timeStart);
+        ASSERT_GE(elapsed, 300 - 1); // due conversion
+        ASSERT_EQ(processing_count, 0);
+        ASSERT_EQ(state_is_timeout, true);
+    }
+
+    //
+    // operations with jobs specific functions
+    //
+    TEST_F(JobsEngineTest, Jobs_Functions)
+    {
+        JobsEng::JobsConfig config = m_default_config;
+        JobsEng             jobs(config);
+
+        int processing_count = 0;
+        int finished_count   = 0;
+
+        // setup
+        jobs.config_jobs_function_processing(
+            JobsType::kJobsSettings,
+            [&processing_count](auto& j /*this jobs engine*/, const auto& jobs_items, auto& /* jobs_config */) {
+                for (auto& item : jobs_items) {
+                    std::ignore = item;
+                    ++processing_count;
+                }
+            });
+
+        jobs.config_jobs_function_finished(
+            JobsType::kJobsSettings,
+            [&finished_count](auto& j /*this jobs engine*/, const auto& jobs_items) {
+                for (auto& item : jobs_items) {
+                    std::ignore = item;
+                    ++finished_count;
+                }
+            });
+
+        // push
+        JobsEng::JobsID jobs_id{};
+
+        auto retq = jobs.queue().push_back_and_start(
+            small::EnumPriorities::kNormal, JobsType::kJobsSettings, {JobsType::kJobsSettings, 101, "settings101"}, &jobs_id);
+        ASSERT_EQ(retq, 1);
+        ASSERT_GE(jobs.size(), 1); // because the thread is not started
+
+        jobs.start_threads(1); // start thread
+
+        // wait to finish
+        auto retw = jobs.wait();
+        ASSERT_EQ(retw, small::EnumLock::kExit);
+
+        // check size
+        ASSERT_EQ(jobs.size(), 0);
+
+        ASSERT_EQ(processing_count, 1);
+        ASSERT_EQ(finished_count, 1);
+    }
+
+    //
+    // operations with priority
+    //
+    TEST_F(JobsEngineTest, Jobs_Priority)
+    {
+        JobsEng::JobsConfig config = m_default_config;
+        JobsEng             jobs(config);
+
+        int                processing_count = 0;
+        std::vector<WebID> processed_web_ids;
+
+        // setup
+        jobs.config_jobs_function_processing(
+            JobsType::kJobsSettings,
+            [&processing_count, &processed_web_ids](auto& j /*this jobs engine*/, const auto& jobs_items, auto& /* jobs_config */) {
+                for (auto& item : jobs_items) {
+                    auto& [jobs_type, web_id, web_data] = item->m_request;
+                    processed_web_ids.push_back(web_id);
+                    ++processing_count;
+                }
+            });
+
+        // push
+        JobsEng::JobsID jobs_id{};
+
+        auto retq = jobs.queue().push_back_and_start(
+            small::EnumPriorities::kNormal, JobsType::kJobsSettings, {JobsType::kJobsSettings, 101, "settings101"}, &jobs_id);
+        ASSERT_EQ(retq, 1);
+
+        retq = jobs.queue().push_back_and_start(
+            small::EnumPriorities::kHigh, JobsType::kJobsSettings, {JobsType::kJobsSettings, 102, "settings102"}, &jobs_id);
+        ASSERT_EQ(retq, 1);
+
+        ASSERT_GE(jobs.size(), 2); // because the thread is not started
+
+        jobs.start_threads(1); // start thread
+
+        // wait to finish
+        auto retw = jobs.wait();
+        ASSERT_EQ(retw, small::EnumLock::kExit);
+
+        // check size
+        ASSERT_EQ(jobs.size(), 0);
+
+        ASSERT_EQ(processing_count, 2);
+        ASSERT_EQ(processed_web_ids.size(), 2);
+        ASSERT_EQ(processed_web_ids[0], 102); // high priority first
+        ASSERT_EQ(processed_web_ids[1], 101); // normal priority second
+    }
+
+    //
+    // parent-child relationship start parent and children execute first
+    //
+    TEST_F(JobsEngineTest, Jobs_Relations_Parent_Start_Children_High)
+    {
+        JobsEng::JobsConfig config = m_default_config;
+        JobsEng             jobs(config);
+
+        int                processing_count = 0;
+        std::vector<WebID> processed_web_ids;
+        int                finished_count = 0;
+
+        // setup
+        jobs.config_jobs_function_processing(
+            JobsType::kJobsSettings,
+            [&processing_count, &processed_web_ids](auto& j /*this jobs engine*/, const auto& jobs_items, auto& /* jobs_config */) {
+                for (auto& item : jobs_items) {
+                    auto& [jobs_type, web_id, web_data] = item->m_request;
+                    processed_web_ids.push_back(web_id);
+                    ++processing_count;
+                }
+            });
+
+        jobs.config_jobs_function_finished(
+            JobsType::kJobsSettings,
+            [&finished_count](auto& j /*this jobs engine*/, const auto& jobs_items) {
+                for (auto& item : jobs_items) {
+                    std::ignore = item;
+                    ++finished_count;
+                }
+            });
+
+        // push
+        JobsEng::JobsID jobs_id{};
+
+        auto retq = jobs.queue().push_back_and_start(
+            small::EnumPriorities::kNormal, JobsType::kJobsSettings, {JobsType::kJobsSettings, 101, "settings101"}, &jobs_id);
+        ASSERT_EQ(retq, 1);
+
+        // high priority for child to execute first
+        retq = jobs.queue().push_back_and_start_child(
+            jobs_id, small::EnumPriorities::kHigh, JobsType::kJobsSettings, {JobsType::kJobsSettings, 102, "settings102"}, &jobs_id);
+        ASSERT_EQ(retq, 1);
+
+        ASSERT_GE(jobs.size(), 2); // because the thread is not started
+
+        jobs.start_threads(1); // start thread
+
+        // wait to finish
+        auto retw = jobs.wait();
+        ASSERT_EQ(retw, small::EnumLock::kExit);
+
+        // check size
+        ASSERT_EQ(jobs.size(), 0);
+
+        ASSERT_EQ(processing_count, 2);
+        ASSERT_EQ(processed_web_ids.size(), 2);
+        ASSERT_EQ(processed_web_ids[0], 102); // children first
+        ASSERT_EQ(processed_web_ids[1], 101); // parent second
+
+        ASSERT_EQ(finished_count, 2);
+    }
+
+    TEST_F(JobsEngineTest, Jobs_Relations_Parent_Start_Children_Low)
+    {
+        JobsEng::JobsConfig config = m_default_config;
+        JobsEng             jobs(config);
+
+        int                processing_count = 0;
+        std::vector<WebID> processed_web_ids;
+        int                finished_count = 0;
+
+        // setup
+        jobs.config_jobs_function_processing(
+            JobsType::kJobsSettings,
+            [&processing_count, &processed_web_ids](auto& j /*this jobs engine*/, const auto& jobs_items, auto& /* jobs_config */) {
+                for (auto& item : jobs_items) {
+                    auto& [jobs_type, web_id, web_data] = item->m_request;
+                    processed_web_ids.push_back(web_id);
+                    ++processing_count;
+                }
+            });
+
+        jobs.config_jobs_function_finished(
+            JobsType::kJobsSettings,
+            [&finished_count](auto& j /*this jobs engine*/, const auto& jobs_items) {
+                for (auto& item : jobs_items) {
+                    std::ignore = item;
+                    ++finished_count;
+                }
+            });
+
+        // push
+        JobsEng::JobsID jobs_id{};
+
+        auto retq = jobs.queue().push_back_and_start(
+            small::EnumPriorities::kNormal, JobsType::kJobsSettings, {JobsType::kJobsSettings, 101, "settings101"}, &jobs_id);
+        ASSERT_EQ(retq, 1);
+
+        // low priority for child to execute after the parent
+        retq = jobs.queue().push_back_and_start_child(
+            jobs_id, small::EnumPriorities::kLow, JobsType::kJobsSettings, {JobsType::kJobsSettings, 102, "settings102"}, &jobs_id);
+        ASSERT_EQ(retq, 1);
+
+        ASSERT_GE(jobs.size(), 2); // because the thread is not started
+
+        jobs.start_threads(1); // start thread
+
+        // wait to finish
+        auto retw = jobs.wait();
+        ASSERT_EQ(retw, small::EnumLock::kExit);
+
+        // check size
+        ASSERT_EQ(jobs.size(), 0);
+
+        ASSERT_EQ(processing_count, 2);
+        ASSERT_EQ(processed_web_ids.size(), 2);
+        ASSERT_EQ(processed_web_ids[0], 101); // parent first
+        ASSERT_EQ(processed_web_ids[1], 102); // child second
+
+        ASSERT_EQ(finished_count, 2);
+    }
+
+    //
+    // parent-child relationship parent not started and children
+    //
+    TEST_F(JobsEngineTest, Jobs_Relations_Parent_NoStart_Children)
+    {
+        JobsEng::JobsConfig config = m_default_config;
+        JobsEng             jobs(config);
+
+        int                processing_count = 0;
+        std::vector<WebID> processed_web_ids;
+        int                finished_count = 0;
+
+        // setup
+        jobs.config_jobs_function_processing(
+            JobsType::kJobsSettings,
+            [&processing_count, &processed_web_ids](auto& j /*this jobs engine*/, const auto& jobs_items, auto& /* jobs_config */) {
+                for (auto& item : jobs_items) {
+                    auto& [jobs_type, web_id, web_data] = item->m_request;
+                    processed_web_ids.push_back(web_id);
+                    ++processing_count;
+                }
+            });
+
+        jobs.config_jobs_function_finished(
+            JobsType::kJobsSettings,
+            [&finished_count](auto& j /*this jobs engine*/, const auto& jobs_items) {
+                for (auto& item : jobs_items) {
+                    std::ignore = item;
+                    ++finished_count;
+                }
+            });
+
+        // push
+        JobsEng::JobsID jobs_id{};
+
+        // parent dont start
+        auto retq = jobs.queue().push_back(JobsType::kJobsSettings, {JobsType::kJobsSettings, 101, "settings101"}, &jobs_id);
+        ASSERT_EQ(retq, 1);
+
+        // child
+        retq = jobs.queue().push_back_and_start_child(
+            jobs_id, small::EnumPriorities::kNormal, JobsType::kJobsSettings, {JobsType::kJobsSettings, 102, "settings102"}, &jobs_id);
+        ASSERT_EQ(retq, 1);
+
+        ASSERT_GE(jobs.size(), 2); // because the thread is not started
+
+        jobs.start_threads(1); // start thread
+
+        // wait to finish
+        auto retw = jobs.wait();
+        ASSERT_EQ(retw, small::EnumLock::kExit);
+
+        // check size
+        ASSERT_EQ(jobs.size(), 0);
+
+        ASSERT_EQ(processing_count, 2);
+        ASSERT_EQ(processed_web_ids.size(), 2);
+        ASSERT_EQ(processed_web_ids[0], 102); // children first
+        ASSERT_EQ(processed_web_ids[1], 101); // parent second
+
+        ASSERT_EQ(finished_count, 2);
+    }
+
+    //
+    // parent-child relationship parent with children created in the processing function
+    //
+    TEST_F(JobsEngineTest, Jobs_Relations_Parent_Create_Children_In_Processing)
+    {
+        JobsEng::JobsConfig config = m_default_config;
+        JobsEng             jobs(config);
+
+        std::atomic<int> processing_count{};
+        int              finished_count = 0;
+
+        // setup
+        jobs.config_default_function_processing(
+            [&processing_count](auto& j /*this jobs engine*/, const auto& jobs_items, auto& /* jobs_config */) {
+                for (auto& item : jobs_items) {
+                    std::ignore = item;
+                    ++processing_count;
+                }
+            });
+
+        jobs.config_jobs_function_processing(
+            JobsType::kJobsApiPost,
+            [&processing_count](auto& j /*this jobs engine*/, const auto& jobs_items, auto& /* jobs_config */) {
+                for (auto& item : jobs_items) {
+                    auto& [jobs_type, web_id, web_data] = item->m_request;
+
+                    j.queue().push_back_and_start_child(
+                        item->m_id, small::EnumPriorities::kNormal, JobsType::kJobsDatabase, {JobsType::kJobsDatabase, web_id, web_data});
+
+                    ++processing_count;
+                }
+            });
+
+        jobs.config_default_function_finished(
+            [&finished_count](auto& j /*this jobs engine*/, const auto& jobs_items) {
+                for (auto& item : jobs_items) {
+                    std::ignore = item;
+                    ++finished_count;
+                }
+            });
+
+        // push
+        JobsEng::JobsID jobs_id{};
+
+        // parent start
+        auto retq = jobs.queue().push_back_and_start(
+            small::EnumPriorities::kNormal, JobsType::kJobsApiPost, {JobsType::kJobsApiPost, 101, "settings101"}, &jobs_id);
+        ASSERT_EQ(retq, 1);
+
+        ASSERT_GE(jobs.size(), 1); // because the thread is not started and child is not created yet
+
+        jobs.start_threads(1); // start thread
+
+        // wait to finish
+        auto retw = jobs.wait();
+        ASSERT_EQ(retw, small::EnumLock::kExit);
+
+        // check size
+        ASSERT_EQ(jobs.size(), 0);
+
+        ASSERT_EQ(processing_count, 2);
+        ASSERT_EQ(finished_count, 2);
+    }
+
+    //
+    // force exit
+    //
+    TEST_F(JobsEngineTest, Jobs_Operations_Force_Exit)
+    {
+        auto timeStart = small::timeNow();
+
+        JobsEng::JobsConfig config = m_default_config;
+        JobsEng             jobs(config);
+
+        int processing_count = 0;
+
+        // setup
+        jobs.config_default_function_processing([&processing_count](auto& j /*this jobs engine*/, const auto& jobs_items, auto& jobs_config) {
+            for (auto& item : jobs_items) {
+                std::ignore = item;
+                ++processing_count;
+            }
+        });
+
+        // push back but dont start
+        JobsEng::JobsID jobs_id{};
+
+        auto retq = jobs.queue().push_back(JobsType::kJobsSettings, {JobsType::kJobsSettings, 101, "settings101"}, &jobs_id);
+        ASSERT_EQ(retq, 1);
+
+        ASSERT_GE(jobs.size(), 1); // because the thread is not started
+
+        jobs.start_threads(1); // start thread
+
+        // wait with timeout
+        auto retw = jobs.wait_for(std::chrono::milliseconds(300));
+        ASSERT_EQ(retw, small::EnumLock::kTimeout);
+
+        // check size
+        ASSERT_EQ(jobs.size(), 1);
+
+        auto elapsed = small::timeDiffMs(timeStart);
+        ASSERT_GE(elapsed, 300 - 1); // due conversion
+        ASSERT_EQ(processing_count, 0);
+
+        // signal force exit
+        timeStart = small::timeNow();
+
+        jobs.signal_exit_force();
+        retw = jobs.wait();
+        ASSERT_EQ(retw, small::EnumLock::kExit);
+
+        elapsed = small::timeDiffMs(timeStart);
+        ASSERT_LE(elapsed, 100);
+    }
 
 } // namespace
