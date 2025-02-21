@@ -46,7 +46,9 @@ namespace small::jobsimpl {
             if (!jobs_item) {
                 return false;
             }
-            jobs_item->set_progress(progress);
+            if (!jobs_item->set_progress(progress)) {
+                return false;
+            }
             if (progress == 100) {
                 jobs_state(jobs_item, small::jobsimpl::EnumJobsState::kFinished);
             }
