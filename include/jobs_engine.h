@@ -421,11 +421,9 @@ namespace small {
                 for (auto& jobs_item : jobs_items) {
                     jobs_in_progress_by_type[jobs_item->m_type].reserve(jobs_items.size());
 
-                    // mark the item as in progress
-                    jobs_item->set_state_inprogress();
-                    // execute if it is still in progress
+                    // mark the item as in progress and execute
                     // (may be moved to higher states due to external factors like cancel, timeout, finish early due to other job, etc)
-                    if (jobs_item->is_state_inprogress()) {
+                    if (jobs_item->set_state_inprogress()) {
                         jobs_in_progress_by_type[jobs_item->m_type].push_back(jobs_item);
                     }
                 }
@@ -577,6 +575,14 @@ namespace small {
             state().get_children_states(jobs_parent, &jobs_state, &jobs_progress);
 
             if (JobsItem::is_state_complete(jobs_state)) {
+                // call the processing function for parent if not already (only if children finished with success)
+                if (jobs_state == small::jobsimpl::EnumJobsState::kFinished) {
+                    if (jobs_parent->set_state_inprogress()) {
+                        typename JobsConfig::ConfigProcessing type_config{};
+                        m_config.m_types[jobs_parent->m_type].m_function_processing({jobs_parent}, type_config);
+                    }
+                }
+                // then advance to finish
                 state().jobs_state(jobs_parent, jobs_state);
             } else {
                 state().jobs_progress(jobs_parent, jobs_progress); // TODO this should be recursive child->parent->grand parent (taking into account state)

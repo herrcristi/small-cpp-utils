@@ -85,26 +85,27 @@ namespace small::jobsimpl {
         //
         // set job state (can only go from lower to upper state)
         //
-        inline void set_state(const EnumJobsState& new_state)
+        inline bool set_state(const EnumJobsState& new_state)
         {
             for (;;) {
                 EnumJobsState current_state = m_state.load();
                 if (current_state >= new_state) {
-                    return;
+                    return false;
                 }
                 if (m_state.compare_exchange_weak(current_state, new_state)) {
-                    return;
+                    return true;
                 }
             }
         }
 
         // clang-format off
-        inline void set_state_inprogress    () { set_state(EnumJobsState::kInProgress); }
-        inline void set_state_waitchildren  () { set_state(EnumJobsState::kWaitChildren); }
-        inline void set_state_finished      () { set_state(EnumJobsState::kFinished); }
-        inline void set_state_timeout       () { set_state(EnumJobsState::kTimeout); }
-        inline void set_state_failed        () { set_state(EnumJobsState::kFailed); }
-        inline void set_state_cancelled     () { set_state(EnumJobsState::kCancelled); }
+        inline bool set_state_none          () { return set_state(EnumJobsState::kNone); }
+        inline bool set_state_inprogress    () { return set_state(EnumJobsState::kInProgress); }
+        inline bool set_state_waitchildren  () { return set_state(EnumJobsState::kWaitChildren); }
+        inline bool set_state_finished      () { return set_state(EnumJobsState::kFinished); }
+        inline bool set_state_timeout       () { return set_state(EnumJobsState::kTimeout); }
+        inline bool set_state_failed        () { return set_state(EnumJobsState::kFailed); }
+        inline bool set_state_cancelled     () { return set_state(EnumJobsState::kCancelled); }
         
         static bool is_state_complete       (const EnumJobsState& state) { return state >= EnumJobsState::kFinished; }
 
@@ -112,6 +113,7 @@ namespace small::jobsimpl {
         inline bool is_state                (const EnumJobsState& state) const { return get_state() == state; }
         inline bool is_complete             () const { return is_state_complete(get_state()); }
 
+        inline bool is_state_none           () const { return is_state(EnumJobsState::kNone); }
         inline bool is_state_inprogress     () const { return is_state(EnumJobsState::kInProgress); }
         inline void is_state_waitchildren   () const { return is_state(EnumJobsState::kWaitChildren); }
         inline bool is_state_finished       () const { return is_state(EnumJobsState::kFinished); }
@@ -123,15 +125,15 @@ namespace small::jobsimpl {
         //
         // set job progress (can only increase)
         //
-        inline void set_progress(const int& new_progress)
+        inline bool set_progress(const int& new_progress)
         {
             for (;;) {
                 int current_progress = m_progress.load();
                 if (current_progress >= new_progress) {
-                    return;
+                    return false;
                 }
                 if (m_progress.compare_exchange_weak(current_progress, new_progress)) {
-                    return;
+                    return true;
                 }
             }
         }

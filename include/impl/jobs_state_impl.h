@@ -328,18 +328,12 @@ namespace small::jobsimpl {
                 *jobs_set_state = small::jobsimpl::EnumJobsState::kFinished;
             }
 
-            // state is already the same
-            if (jobs_item->is_state(*jobs_set_state)) {
-                return false;
-            }
-
             // set the jobs as timeout only if it is not finished until now
             if (*jobs_set_state == small::jobsimpl::EnumJobsState::kTimeout && jobs_item->is_state_finished()) {
                 return false;
             }
 
-            jobs_item->set_state(*jobs_set_state);
-            return jobs_item->is_state(*jobs_set_state);
+            return jobs_item->set_state(*jobs_set_state);
         }
 
         //
