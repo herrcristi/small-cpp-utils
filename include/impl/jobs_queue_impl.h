@@ -411,8 +411,17 @@ namespace small::jobsimpl {
         }
 
         //
-        // jobs start with specific timeings
+        // jobs start
         //
+        inline std::size_t jobs_start(const JobsPrioT& priority, const JobsID& jobs_id)
+        {
+            auto jobs_item = jobs_get(jobs_id);
+            if (!jobs_item) {
+                return 0;
+            }
+            return jobs_start(priority, jobs_item);
+        }
+
         template <typename _Rep, typename _Period>
         inline std::size_t jobs_start_delay_for(const std::chrono::duration<_Rep, _Period>& __rtime, const JobsPrioT& priority, const JobsID& jobs_id)
         {
@@ -617,15 +626,6 @@ namespace small::jobsimpl {
         //
         // start the jobs
         //
-        inline std::size_t jobs_start(const JobsPrioT& priority, const JobsID& jobs_id)
-        {
-            auto jobs_item = jobs_get(jobs_id);
-            if (!jobs_item) {
-                return 0;
-            }
-            return jobs_start(priority, jobs_item);
-        }
-
         inline std::size_t jobs_start(const JobsPrioT& priority, std::shared_ptr<JobsItem> jobs_item)
         {
             std::size_t ret = 0;

@@ -115,7 +115,7 @@ namespace {
     }
 
     //
-    // operations
+    // operations with default processing function
     //
     TEST_F(JobsEngineTest, Jobs_Operations_Default_Processing)
     {
@@ -141,7 +141,13 @@ namespace {
         auto retq = jobs.queue().push_back_and_start(
             small::EnumPriorities::kNormal, JobsType::kJobsSettings, {JobsType::kJobsSettings, 101, "settings101"}, &jobs_id);
         ASSERT_EQ(retq, 1);
-        ASSERT_GE(jobs.size(), 1); // because the thread is not started
+
+        retq = jobs.queue().push_back(JobsType::kJobsSettings, {JobsType::kJobsSettings, 101, "settings101"}, &jobs_id);
+        ASSERT_EQ(retq, 1);
+        retq = jobs.queue().jobs_start(small::EnumPriorities::kNormal, jobs_id);
+        ASSERT_EQ(retq, 1);
+
+        ASSERT_GE(jobs.size(), 2); // because the thread is not started
 
         jobs.start_threads(1); // start thread
 
@@ -158,7 +164,7 @@ namespace {
 
         auto elapsed = small::timeDiffMs(timeStart);
         ASSERT_GE(elapsed, 300 - 1); // due conversion
-        ASSERT_EQ(processing_count, 1);
+        ASSERT_EQ(processing_count, 2);
 
         // push after wait is not allowed
         retq = jobs.queue().push_back_and_start(
@@ -167,6 +173,9 @@ namespace {
         ASSERT_EQ(jobs.size(), 0);
     }
 
+    //
+    // operations with default processing function and throtelling (sleep between requests)
+    //
     TEST_F(JobsEngineTest, Jobs_Operations_Default_Processing_Sleep_Between_Requests)
     {
         auto timeStart = small::timeNow();
@@ -207,36 +216,162 @@ namespace {
         ASSERT_EQ(processing_count, 1);
     }
 
-    // TEST_F(JobsEngineTest, Jobs_Operations_Delayed)
-    // {
-    //     auto timeStart = small::timeNow();
+    //
+    // operations with default processing function and delayed request
+    //
+    TEST_F(JobsEngineTest, Jobs_Operations_Default_Processing_Delay_Request)
+    {
+        auto timeStart = small::timeNow();
 
-    //     int processing_count = 0;
+        JobsEng::JobsConfig config = m_default_config;
+        JobsEng             jobs(config);
 
-    //     // create workers
-    //     small::worker_thread<int> workers({.threads_count = 0 /*no threads*/, .bulk_count = 2}, [&processing_count](auto& w /*this*/, const auto& items) {
-    //         processing_count++;
-    //     });
+        int processing_count = 0;
 
-    //     // push
-    //     workers.push_back(4);
-    //     workers.push_back_delay_for(std::chrono::milliseconds(300), 5);
-    //     ASSERT_GE(workers.size(), 0);
-    //     ASSERT_GE(workers.size_delayed(), 1);
+        // setup
+        jobs.config_default_function_processing([&processing_count](auto& j /*this jobs engine*/, const auto& jobs_items, auto& jobs_config) {
+            for (auto& item : jobs_items) {
+                std::ignore = item;
+                ++processing_count;
+            }
+        });
 
-    //     workers.start_threads(1); // start thread
+        // push
+        JobsEng::JobsID jobs_id{};
 
-    //     // wait to finish
-    //     auto ret = workers.wait();
-    //     ASSERT_EQ(ret, small::EnumLock::kExit);
+        auto retq = jobs.queue().push_back_and_start_delay_for(
+            std::chrono::milliseconds(300),
+            small::EnumPriorities::kNormal, JobsType::kJobsSettings, {JobsType::kJobsSettings, 101, "settings101"}, &jobs_id);
+        ASSERT_EQ(retq, 1);
 
-    //     // check size
-    //     ASSERT_EQ(workers.size(), 0);
-    //     ASSERT_EQ(processing_count, 2);
+        // push back but dont start
+        retq = jobs.queue().push_back(JobsType::kJobsSettings, {JobsType::kJobsSettings, 101, "settings101"}, &jobs_id);
+        ASSERT_EQ(retq, 1);
+        retq = jobs.queue().jobs_start_delay_for(std::chrono::milliseconds(300), small::EnumPriorities::kNormal, jobs_id);
+        ASSERT_EQ(retq, 1);
 
-    //     auto elapsed = small::timeDiffMs(timeStart);
-    //     ASSERT_GE(elapsed, 300 - 1); // due conversion
-    // }
+        ASSERT_GE(jobs.size(), 2); // because the thread is not started
+
+        jobs.start_threads(1); // start thread
+
+        // wait to finish
+        auto retw = jobs.wait();
+        ASSERT_EQ(retw, small::EnumLock::kExit);
+
+        // check size
+        ASSERT_EQ(jobs.size(), 0);
+
+        auto elapsed = small::timeDiffMs(timeStart);
+        ASSERT_GE(elapsed, 300 - 1); // due conversion
+        ASSERT_EQ(processing_count, 2);
+    }
+
+    //
+    // operations with default processing function and timeout request
+    //
+    TEST_F(JobsEngineTest, Jobs_Operations_Default_Processing_Timeout_Request)
+    {
+        auto timeStart = small::timeNow();
+
+        JobsEng::JobsConfig config = m_default_config;
+        // set timeout to 300ms
+        config.m_types[JobsType::kJobsSettings].m_timeout = std::chrono::milliseconds(300);
+
+        JobsEng jobs(config);
+
+        int  processing_count = 0;
+        int  finished_count   = 0;
+        bool state_is_timeout = false;
+
+        // setup
+        jobs.config_default_function_processing([&processing_count](auto& j /*this jobs engine*/, const auto& jobs_items, auto& jobs_config) {
+            for (auto& item : jobs_items) {
+                std::ignore = item;
+                ++processing_count;
+            }
+        });
+
+        jobs.config_default_function_finished(
+            [&finished_count, &state_is_timeout](auto& j /*this jobs engine*/, const auto& jobs_items) {
+                for (auto& item : jobs_items) {
+                    state_is_timeout = item->is_state_timeout();
+                    ++finished_count;
+                }
+            });
+
+        // push back but dont start
+        JobsEng::JobsID jobs_id{};
+
+        auto retq = jobs.queue().push_back(JobsType::kJobsSettings, {JobsType::kJobsSettings, 101, "settings101"}, &jobs_id);
+        ASSERT_EQ(retq, 1);
+
+        ASSERT_GE(jobs.size(), 1); // because the thread is not started
+
+        jobs.start_threads(1); // start thread
+
+        // wait to finish
+        auto retw = jobs.wait();
+        ASSERT_EQ(retw, small::EnumLock::kExit);
+
+        // check size
+        ASSERT_EQ(jobs.size(), 0);
+
+        auto elapsed = small::timeDiffMs(timeStart);
+        ASSERT_GE(elapsed, 300 - 1); // due conversion
+        ASSERT_EQ(processing_count, 0);
+        ASSERT_EQ(state_is_timeout, true);
+    }
+
+    //
+    // operations with jobs specific functions
+    //
+    TEST_F(JobsEngineTest, Jobs_Operations_Jobs_Functions)
+    {
+        JobsEng::JobsConfig config = m_default_config;
+        JobsEng             jobs(config);
+
+        int processing_count = 0;
+        int finished_count   = 0;
+
+        // setup
+        jobs.config_jobs_function_processing(
+            JobsType::kJobsSettings,
+            [&processing_count](auto& j /*this jobs engine*/, const auto& jobs_items, auto& /* jobs_config */) {
+                for (auto& item : jobs_items) {
+                    std::ignore = item;
+                    ++processing_count;
+                }
+            });
+
+        jobs.config_jobs_function_finished(
+            JobsType::kJobsSettings,
+            [&finished_count](auto& j /*this jobs engine*/, const auto& jobs_items) {
+                for (auto& item : jobs_items) {
+                    std::ignore = item;
+                    ++finished_count;
+                }
+            });
+
+        // push
+        JobsEng::JobsID jobs_id{};
+
+        auto retq = jobs.queue().push_back_and_start(
+            small::EnumPriorities::kNormal, JobsType::kJobsSettings, {JobsType::kJobsSettings, 101, "settings101"}, &jobs_id);
+        ASSERT_EQ(retq, 1);
+        ASSERT_GE(jobs.size(), 1); // because the thread is not started
+
+        jobs.start_threads(1); // start thread
+
+        // wait to finish
+        auto retw = jobs.wait();
+        ASSERT_EQ(retw, small::EnumLock::kExit);
+
+        // check size
+        ASSERT_EQ(jobs.size(), 0);
+
+        ASSERT_EQ(processing_count, 1);
+        ASSERT_EQ(finished_count, 1);
+    }
 
     // TEST_F(JobsEngineTest, Jobs_Operations_Force_Exit)
     // {
