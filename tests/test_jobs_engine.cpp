@@ -725,4 +725,104 @@ namespace {
         ASSERT_LE(elapsed, 100);
     }
 
+    //
+    // set progress recursive
+    //
+    TEST_F(JobsEngineTest, Jobs_Set_Progress_Recursive)
+    {
+        JobsEng::JobsConfig config = m_default_config;
+        JobsEng             jobs(config);
+
+        int processing_count = 0;
+        int finished_count   = 0;
+
+        // setup
+        jobs.config_jobs_function_processing(
+            JobsType::kJobsSettings,
+            [&processing_count](auto& j /*this jobs engine*/, const auto& jobs_items, auto& /* jobs_config */) {
+                for (auto& item : jobs_items) {
+                    std::ignore = item;
+                    ++processing_count;
+                }
+            });
+
+        jobs.config_jobs_function_finished(
+            JobsType::kJobsSettings,
+            [&finished_count](auto& j /*this jobs engine*/, const auto& jobs_items) {
+                for (auto& item : jobs_items) {
+                    std::ignore = item;
+                    ++finished_count;
+                }
+            });
+
+        // push
+        JobsEng::JobsID grandparent_jobs_id{};
+        JobsEng::JobsID parent_jobs_id{};
+        JobsEng::JobsID child1_jobs_id{};
+        JobsEng::JobsID child2_jobs_id{};
+
+        // grand parent
+        auto retq = jobs.queue().push_back(JobsType::kJobsSettings, {JobsType::kJobsSettings, 101, "settings101"}, &grandparent_jobs_id);
+        ASSERT_EQ(retq, 1);
+
+        // parent
+        retq = jobs.queue().push_back_child(grandparent_jobs_id, JobsType::kJobsSettings, {JobsType::kJobsSettings, 102, "settings102"}, &parent_jobs_id);
+        ASSERT_EQ(retq, 1);
+
+        // children
+        retq = jobs.queue().push_back_and_start_child(
+            parent_jobs_id, small::EnumPriorities::kNormal, JobsType::kJobsSettings, {JobsType::kJobsSettings, 103, "settings103"}, &child1_jobs_id);
+        ASSERT_EQ(retq, 1);
+
+        retq = jobs.queue().push_back_child(parent_jobs_id, JobsType::kJobsSettings, {JobsType::kJobsSettings, 104, "settings104"}, &child2_jobs_id);
+        ASSERT_EQ(retq, 1);
+
+        ASSERT_GE(jobs.size(), 4); // because the thread is not started
+
+        jobs.start_threads(1); // start thread
+
+        // wait a bit for the first child to finish execution
+        small::sleep(300);
+
+        ASSERT_EQ(processing_count, 1);
+        ASSERT_EQ(finished_count, 1);
+        ASSERT_EQ(jobs.size(), 4); // still all remaining because children are deleted when root parent is deleted
+
+        ASSERT_EQ(jobs.jobs_get(child1_jobs_id)->get_progress(), 100);
+        ASSERT_EQ(jobs.jobs_get(child2_jobs_id)->get_progress(), 0);
+        ASSERT_EQ(jobs.jobs_get(parent_jobs_id)->get_progress(), 50);
+        ASSERT_EQ(jobs.jobs_get(grandparent_jobs_id)->get_progress(), 50);
+
+        // manual advance progress
+        auto retp = jobs.state().jobs_progress(child2_jobs_id, 60);
+        ASSERT_EQ(retp, true);
+        ASSERT_EQ(jobs.jobs_get(child2_jobs_id)->get_progress(), 60);
+
+        retp = jobs.state().jobs_progress(child2_jobs_id, 50); // lower is not possible anymore
+        ASSERT_EQ(retp, false);
+        ASSERT_EQ(jobs.jobs_get(child2_jobs_id)->get_progress(), 60);
+
+        ASSERT_EQ(jobs.jobs_get(parent_jobs_id)->get_progress(), 80);
+        ASSERT_EQ(jobs.jobs_get(grandparent_jobs_id)->get_progress(), 80);
+
+        // advance to 100 will finish the parent and grandparent
+        retp = jobs.state().jobs_progress(child2_jobs_id, 100);
+        ASSERT_EQ(retp, true);
+
+        ASSERT_EQ(jobs.jobs_get(child1_jobs_id), nullptr);
+        ASSERT_EQ(jobs.jobs_get(child2_jobs_id), nullptr);
+        ASSERT_EQ(jobs.jobs_get(parent_jobs_id), nullptr);
+        ASSERT_EQ(jobs.jobs_get(grandparent_jobs_id), nullptr);
+
+        // wait to finish
+        auto retw = jobs.wait();
+        ASSERT_EQ(retw, small::EnumLock::kExit);
+
+        // check size
+        ASSERT_EQ(jobs.size(), 0);
+
+        ASSERT_EQ(processing_count, 3); // child2 was not processed, it was advanced manually
+        ASSERT_EQ(finished_count, 4);
+    }
+
 } // namespace
