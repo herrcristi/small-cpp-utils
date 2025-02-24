@@ -14,6 +14,7 @@
 #include "examples/examples_spinlock.h"
 #include "examples/examples_time_queue.h"
 #include "examples/examples_util.h"
+#include "examples/examples_util_timeout.h"
 #include "examples/examples_worker_threads.h"
 
 int main()
@@ -24,6 +25,7 @@ int main()
     examples::hash::Example1();
     examples::base64::Example1();
     examples::util::Example1();
+    examples::utiltimeout::Example1();
     examples::buffer::Example1();
     examples::event::Example1();
     examples::lock_queue::Example1();
