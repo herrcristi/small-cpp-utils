@@ -26,6 +26,7 @@ int main()
     examples::base64::Example1();
     examples::util::Example1();
     examples::utiltimeout::Example1();
+    examples::utiltimeout::Example2();
     examples::buffer::Example1();
     examples::event::Example1();
     examples::lock_queue::Example1();
