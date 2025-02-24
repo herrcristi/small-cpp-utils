@@ -64,6 +64,7 @@ namespace {
         }
         void TearDown() override
         {
+            // cleanup after test
         }
     };
 
@@ -79,7 +80,7 @@ namespace {
         std::latch sync_main{1};
 
         // create thread
-        auto thread = std::jthread([](JobsEng& _j, std::latch& _sync_thread, std::latch& _sync_main) {
+        auto thread = std::jthread([](JobsEng& _j, std::latch& _sync_thread, const std::latch& _sync_main) {
             std::unique_lock lock(_j);
             _sync_thread.count_down(); // signal that thread is started (and also locked is acquired)
             _sync_main.wait();         // wait that the main finished executing test to proceed further
@@ -127,7 +128,7 @@ namespace {
         int processing_count = 0;
 
         // setup
-        jobs.config_default_function_processing([&processing_count](auto& j /*this jobs engine*/, const auto& jobs_items, auto& /* jobs_config */) {
+        jobs.config_default_function_processing([&processing_count](auto& /*this jobs engine*/, const auto& jobs_items, auto& /* jobs_config */) {
             for (auto& item : jobs_items) {
                 std::ignore = item;
                 ++processing_count;
@@ -186,7 +187,7 @@ namespace {
         int processing_count = 0;
 
         // setup
-        jobs.config_default_function_processing([&processing_count](auto& j /*this jobs engine*/, const auto& jobs_items, auto& jobs_config) {
+        jobs.config_default_function_processing([&processing_count](auto& /*this jobs engine*/, const auto& jobs_items, auto& jobs_config) {
             for (auto& item : jobs_items) {
                 std::ignore = item;
                 ++processing_count;
@@ -229,7 +230,7 @@ namespace {
         int processing_count = 0;
 
         // setup
-        jobs.config_default_function_processing([&processing_count](auto& j /*this jobs engine*/, const auto& jobs_items, auto& jobs_config) {
+        jobs.config_default_function_processing([&processing_count](auto& /*this jobs engine*/, const auto& jobs_items, auto& /* jobs_config */) {
             for (auto& item : jobs_items) {
                 std::ignore = item;
                 ++processing_count;
@@ -284,7 +285,7 @@ namespace {
         bool state_is_timeout = false;
 
         // setup
-        jobs.config_default_function_processing([&processing_count](auto& j /*this jobs engine*/, const auto& jobs_items, auto& jobs_config) {
+        jobs.config_default_function_processing([&processing_count](auto& /*this jobs engine*/, const auto& jobs_items, auto& /* jobs_config */) {
             for (auto& item : jobs_items) {
                 std::ignore = item;
                 ++processing_count;
@@ -292,7 +293,7 @@ namespace {
         });
 
         jobs.config_default_function_finished(
-            [&finished_count, &state_is_timeout](auto& j /*this jobs engine*/, const auto& jobs_items) {
+            [&finished_count, &state_is_timeout](auto& /*this jobs engine*/, const auto& jobs_items) {
                 for (auto& item : jobs_items) {
                     state_is_timeout = item->is_state_timeout();
                     ++finished_count;
@@ -336,7 +337,7 @@ namespace {
         // setup
         jobs.config_jobs_function_processing(
             JobsType::kJobsSettings,
-            [&processing_count](auto& j /*this jobs engine*/, const auto& jobs_items, auto& /* jobs_config */) {
+            [&processing_count](auto& /*this jobs engine*/, const auto& jobs_items, auto& /* jobs_config */) {
                 for (auto& item : jobs_items) {
                     std::ignore = item;
                     ++processing_count;
@@ -345,7 +346,7 @@ namespace {
 
         jobs.config_jobs_function_finished(
             JobsType::kJobsSettings,
-            [&finished_count](auto& j /*this jobs engine*/, const auto& jobs_items) {
+            [&finished_count](auto& /*this jobs engine*/, const auto& jobs_items) {
                 for (auto& item : jobs_items) {
                     std::ignore = item;
                     ++finished_count;
@@ -387,7 +388,7 @@ namespace {
         // setup
         jobs.config_jobs_function_processing(
             JobsType::kJobsSettings,
-            [&processing_count, &processed_web_ids](auto& j /*this jobs engine*/, const auto& jobs_items, auto& /* jobs_config */) {
+            [&processing_count, &processed_web_ids](auto& /*this jobs engine*/, const auto& jobs_items, auto& /* jobs_config */) {
                 for (auto& item : jobs_items) {
                     auto& [jobs_type, web_id, web_data] = item->m_request;
                     processed_web_ids.push_back(web_id);
@@ -438,7 +439,7 @@ namespace {
         // setup
         jobs.config_jobs_function_processing(
             JobsType::kJobsSettings,
-            [&processing_count, &processed_web_ids](auto& j /*this jobs engine*/, const auto& jobs_items, auto& /* jobs_config */) {
+            [&processing_count, &processed_web_ids](auto& /*this jobs engine*/, const auto& jobs_items, auto& /* jobs_config */) {
                 for (auto& item : jobs_items) {
                     auto& [jobs_type, web_id, web_data] = item->m_request;
                     processed_web_ids.push_back(web_id);
@@ -448,7 +449,7 @@ namespace {
 
         jobs.config_jobs_function_finished(
             JobsType::kJobsSettings,
-            [&finished_count](auto& j /*this jobs engine*/, const auto& jobs_items) {
+            [&finished_count](auto& /*this jobs engine*/, const auto& jobs_items) {
                 for (auto& item : jobs_items) {
                     std::ignore = item;
                     ++finished_count;
@@ -498,7 +499,7 @@ namespace {
         // setup
         jobs.config_jobs_function_processing(
             JobsType::kJobsSettings,
-            [&processing_count, &processed_web_ids](auto& j /*this jobs engine*/, const auto& jobs_items, auto& /* jobs_config */) {
+            [&processing_count, &processed_web_ids](auto& /*this jobs engine*/, const auto& jobs_items, auto& /* jobs_config */) {
                 for (auto& item : jobs_items) {
                     auto& [jobs_type, web_id, web_data] = item->m_request;
                     processed_web_ids.push_back(web_id);
@@ -508,7 +509,7 @@ namespace {
 
         jobs.config_jobs_function_finished(
             JobsType::kJobsSettings,
-            [&finished_count](auto& j /*this jobs engine*/, const auto& jobs_items) {
+            [&finished_count](auto& /*this jobs engine*/, const auto& jobs_items) {
                 for (auto& item : jobs_items) {
                     std::ignore = item;
                     ++finished_count;
@@ -561,7 +562,7 @@ namespace {
         // setup
         jobs.config_jobs_function_processing(
             JobsType::kJobsSettings,
-            [&processing_count, &processed_web_ids](auto& j /*this jobs engine*/, const auto& jobs_items, auto& /* jobs_config */) {
+            [&processing_count, &processed_web_ids](auto& /*this jobs engine*/, const auto& jobs_items, auto& /* jobs_config */) {
                 for (auto& item : jobs_items) {
                     auto& [jobs_type, web_id, web_data] = item->m_request;
                     processed_web_ids.push_back(web_id);
@@ -571,7 +572,7 @@ namespace {
 
         jobs.config_jobs_function_finished(
             JobsType::kJobsSettings,
-            [&finished_count](auto& j /*this jobs engine*/, const auto& jobs_items) {
+            [&finished_count](auto& /*this jobs engine*/, const auto& jobs_items) {
                 for (auto& item : jobs_items) {
                     std::ignore = item;
                     ++finished_count;
@@ -622,7 +623,7 @@ namespace {
 
         // setup
         jobs.config_default_function_processing(
-            [&processing_count](auto& j /*this jobs engine*/, const auto& jobs_items, auto& /* jobs_config */) {
+            [&processing_count](auto& /*this jobs engine*/, const auto& jobs_items, auto& /* jobs_config */) {
                 for (auto& item : jobs_items) {
                     std::ignore = item;
                     ++processing_count;
@@ -643,7 +644,7 @@ namespace {
             });
 
         jobs.config_default_function_finished(
-            [&finished_count](auto& j /*this jobs engine*/, const auto& jobs_items) {
+            [&finished_count](auto& /*this jobs engine*/, const auto& jobs_items) {
                 for (auto& item : jobs_items) {
                     std::ignore = item;
                     ++finished_count;
@@ -686,7 +687,7 @@ namespace {
         int processing_count = 0;
 
         // setup
-        jobs.config_default_function_processing([&processing_count](auto& j /*this jobs engine*/, const auto& jobs_items, auto& jobs_config) {
+        jobs.config_default_function_processing([&processing_count](auto& /*this jobs engine*/, const auto& jobs_items, auto& /* jobs_config */) {
             for (auto& item : jobs_items) {
                 std::ignore = item;
                 ++processing_count;
@@ -739,7 +740,7 @@ namespace {
         // setup
         jobs.config_jobs_function_processing(
             JobsType::kJobsSettings,
-            [&processing_count](auto& j /*this jobs engine*/, const auto& jobs_items, auto& /* jobs_config */) {
+            [&processing_count](auto& /*this jobs engine*/, const auto& jobs_items, auto& /* jobs_config */) {
                 for (auto& item : jobs_items) {
                     std::ignore = item;
                     ++processing_count;
@@ -748,7 +749,7 @@ namespace {
 
         jobs.config_jobs_function_finished(
             JobsType::kJobsSettings,
-            [&finished_count](auto& j /*this jobs engine*/, const auto& jobs_items) {
+            [&finished_count](auto& /*this jobs engine*/, const auto& jobs_items) {
                 for (auto& item : jobs_items) {
                     std::ignore = item;
                     ++finished_count;

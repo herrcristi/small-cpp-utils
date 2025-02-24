@@ -17,6 +17,7 @@ namespace {
         }
         void TearDown() override
         {
+            // cleanup after test
         }
     };
 
@@ -31,13 +32,13 @@ namespace {
         std::latch sync_main{1};
 
         // create thread
-        auto thread = std::jthread([](small::event& e, std::latch& sync_thread, std::latch& sync_main) {
-            std::unique_lock lock(e);
-            sync_thread.count_down(); // signal that thread is started (and also locked is acquired)
-            sync_main.wait();         // wait that the main finished executing test to proceed further
-            e.lock();                 // locked again on same thread
-            small::sleep(300);        // sleep inside lock
-            e.unlock();
+        auto thread = std::jthread([](small::event& _e, std::latch& _sync_thread, const std::latch& _sync_main) {
+            std::unique_lock lock(_e);
+            _sync_thread.count_down(); // signal that thread is started (and also locked is acquired)
+            _sync_main.wait();         // wait that the main finished executing test to proceed further
+            _e.lock();                 // locked again on same thread
+            small::sleep(300);         // sleep inside lock
+            _e.unlock();
         },
                                    std::ref(event), std::ref(sync_thread), std::ref(sync_main));
 

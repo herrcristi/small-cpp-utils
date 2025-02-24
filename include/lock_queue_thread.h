@@ -55,7 +55,7 @@ namespace small {
         inline EnumLock wait()
         {
             m_lock_queue.signal_exit_when_done();
-            for (auto& th : m_threads_futures) {
+            for (const auto& th : m_threads_futures) {
                 th.wait();
             }
             return small::EnumLock::kExit;

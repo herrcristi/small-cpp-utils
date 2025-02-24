@@ -346,7 +346,7 @@ namespace small::jobsimpl {
         //
         // apply current state
         //
-        inline bool jobs_apply_state(std::shared_ptr<JobsItem> jobs_item, const small::jobsimpl::EnumJobsState& jobs_state, small::jobsimpl::EnumJobsState* jobs_set_state)
+        inline bool jobs_apply_state(std::shared_ptr<JobsItem> jobs_item, const small::jobsimpl::EnumJobsState& jobs_state, small::jobsimpl::EnumJobsState* jobs_set_state) const
         {
             *jobs_set_state = jobs_state;
 

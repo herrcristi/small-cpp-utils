@@ -17,6 +17,7 @@ namespace {
         }
         void TearDown() override
         {
+            // cleanup after test
         }
     };
 
@@ -31,7 +32,7 @@ namespace {
         std::latch sync_main{1};
 
         // create thread
-        auto thread = std::jthread([](small::worker_thread<int>& _w, std::latch& _sync_thread, std::latch& _sync_main) {
+        auto thread = std::jthread([](small::worker_thread<int>& _w, std::latch& _sync_thread, const std::latch& _sync_main) {
             std::unique_lock lock(_w);
             _sync_thread.count_down(); // signal that thread is started (and also locked is acquired)
             _sync_main.wait();         // wait that the main finished executing test to proceed further
@@ -74,7 +75,7 @@ namespace {
         auto timeStart = small::timeNow();
 
         // create workers
-        small::worker_thread<int> workers({.threads_count = 0 /*no threads*/, .bulk_count = 2}, [](auto& w /*this*/, const auto& items, auto b /*extra param b*/) {
+        small::worker_thread<int> workers({.threads_count = 0 /*no threads*/, .bulk_count = 2}, [](auto& /*this*/, const auto& /* items */, auto /*extra param b*/) {
             small::sleep(300);
             // process item using the workers lock (not recommended)
         },
@@ -112,7 +113,7 @@ namespace {
         int processing_count = 0;
 
         // create workers
-        small::worker_thread<int> workers({.threads_count = 0 /*no threads*/, .bulk_count = 2}, [&processing_count](auto& w /*this*/, const auto& items) {
+        small::worker_thread<int> workers({.threads_count = 0 /*no threads*/, .bulk_count = 2}, [&processing_count](auto& /*this*/, const auto& /* items */) {
             processing_count++;
         });
 
