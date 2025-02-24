@@ -27,6 +27,7 @@ This can be used in following ways:
 -   base64 (quick functions for base64 encode & decode)
 -   qhash (a quick hash function for buffers and null termination strings)
 -   util functions (like small::icasecmp for use with map/set, sleep, timeNow, timeDiff, toISOString, rand, uuid, ...)
+-   util functions set_timeout and set_interval to execute custom functions after a timeout interval
 
 #
 
@@ -676,5 +677,14 @@ auto u1 = small::uuid({.add_hyphen = true, .add_braces = true});
 ...
 // "78F202F1BF7A12D46498C9F0E78DD8A3"
 auto uc = small::uuidc(); // return a uuid with capital letters
+...
+```
+
+`set_timeout, clear_timeout, set_interval, clear_interval`
+
+Use it like this
+
+```
+...TODO
 ...
 ```
