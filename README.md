@@ -680,7 +680,9 @@ auto uc = small::uuidc(); // return a uuid with capital letters
 ...
 ```
 
-### `set_timeout, clear_timeout, set_interval, clear_interval`
+### timeout/interval utils
+
+`set_timeout, clear_timeout, set_interval, clear_interval`
 
 Use it like this
 
