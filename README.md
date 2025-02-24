@@ -6,28 +6,28 @@ Contains useful every day features and also a great material for didactic purpos
 
 This can be used in following ways:
 
--   event (it combines mutex and condition variable to create an event which is either automatic or manual)
+-   <b>event</b> (it combines mutex and condition variable to create an event which is either automatic or manual)
 
--   lock_queue (thread safe queue with waiting mechanism to be used in concurrent environment)
--   time_queue (thread safe queue for delay requests)
--   prio_queue (thread safe queue for requests with priority like high, normal, low, etc)
+-   <b>lock_queue</b> (thread safe queue with waiting mechanism to be used in concurrent environment)
+-   <b>time_queue</b> (thread safe queue for delay requests)
+-   <b>prio_queue</b> (thread safe queue for requests with priority like high, normal, low, etc)
 
--   worker_thread (creates workers on separate threads that do task when requested, based on lock_queue and time_queue)
+-   <b>worker_thread</b> (creates workers on separate threads that do task when requested, based on lock_queue and time_queue)
 
--   jobs_engine (uses a thread pool based on worker_thread to process different jobs with config execution pattern)
+-   <b>jobs_engine</b> (uses a thread pool based on worker_thread to process different jobs with config execution pattern)
 
--   spinlock (or critical_section to do quick locks)
-
-#
-
--   buffer (a class for manipulating buffers)
+-   <b>spinlock</b> (or critical_section to do quick locks)
 
 #
 
--   base64 (quick functions for base64 encode & decode)
--   qhash (a quick hash function for buffers and null termination strings)
--   util functions (like small::icasecmp for use with map/set, sleep, timeNow, timeDiff, toISOString, rand, uuid, ...)
--   util functions set_timeout and set_interval to execute custom functions after a timeout interval
+-   <b>buffer</b> (a class for manipulating buffers)
+
+#
+
+-   <b>base64</b> (quick functions for base64 encode & decode)
+-   <b>qhash</b> (a quick hash function for buffers and null termination strings)
+-   <b>util</b> functions (like <b>icasecmp</b> for use with map/set, <b>sleep</b>, <b>timeNow</b>, <b>timeDiff</b>, <b>toISOString</b>, <b>rand</b>, <b>uuid</b>, ...)
+-   <b>set_timeout</b> and <b>set_interval</b> util functions to execute custom functions after a timeout interval
 
 #
 
@@ -680,7 +680,7 @@ auto uc = small::uuidc(); // return a uuid with capital letters
 ...
 ```
 
-`set_timeout, clear_timeout, set_interval, clear_interval`
+### `set_timeout, clear_timeout, set_interval, clear_interval`
 
 Use it like this
 
