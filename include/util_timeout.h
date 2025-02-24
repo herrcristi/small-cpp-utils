@@ -6,9 +6,16 @@
 
 #include "jobs_engine.h"
 
-// set_timeout - helping function to execute a function after a specified timeout interval
 //
+// set_timeout / set_timeout - helping function to execute a function after a specified timeout interval
 //
+// auto timeoutID = small::set_timeout(std::chrono::milliseconds(1000), [&]() {
+//     // ....
+// });
+// ...
+// /*auto ret =*/ small::clear_timeout(timeoutID);
+//
+
 namespace small {
     namespace timeoutimpl {
         enum class JobsType
