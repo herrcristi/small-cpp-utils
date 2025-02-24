@@ -31,11 +31,19 @@ namespace small {
         {
             constexpr int threads_count = 4; // just like in node.js
 
+            // this functions is defined without the engine params (it is here just for the example)
+            static auto jobs_function_processing = [](const std::vector<std::shared_ptr<JobsEng::JobsItem>>& items, JobsEng::JobsConfig::ConfigProcessing& /* config */) {
+                for (auto& item : items) {
+                    item->m_request();
+                    item->m_response = true;
+                }
+            };
+
             static JobsEng::JobsConfig config{
                 .m_engine = {.m_threads_count = threads_count,
                              .m_config_prio   = {.priorities = {{small::EnumPriorities::kNormal, 1}}}}, // overall config with default priorities
 
-                // .m_default_function_processing = jobs_function_processing, // default processing function, better use jobs.config_default_function_processing to set it
+                .m_default_function_processing = jobs_function_processing,
 
                 // config by jobs group
                 .m_groups = {
