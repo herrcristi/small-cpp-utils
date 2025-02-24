@@ -685,6 +685,10 @@ auto uc = small::uuidc(); // return a uuid with capital letters
 Use it like this
 
 ```
-...TODO
+auto timeoutID = small::set_timeout(std::chrono::milliseconds(1000), [&]() {
+    // ....
+});
+...
+/*auto ret */= small::clear_timeout(timeoutID);
 ...
 ```

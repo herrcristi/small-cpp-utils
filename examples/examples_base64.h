@@ -10,7 +10,7 @@ namespace examples::base64 {
     //
     // example 1
     //
-    int Example1()
+    inline int Example1()
     {
         std::cout << "Base64\n";
 

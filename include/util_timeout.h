@@ -59,6 +59,7 @@ namespace small {
             return jobs_timeout;
         }
     } // namespace timeoutimpl
+
     //
     // set_timeout - helping function to execute a function after a specified timeout interval
     // returns the timeoutID with which the timeout can be cancelled if not executed

@@ -11,7 +11,7 @@ namespace examples::util {
     //
     //  example 1
     //
-    int Example1()
+    inline int Example1()
     {
         std::cout << "Utils\n";
 

@@ -10,7 +10,7 @@ namespace examples::buffer {
     //
     //  example 1
     //
-    int Example1()
+    inline int Example1()
     {
         std::cout << "Buffer\n";
 

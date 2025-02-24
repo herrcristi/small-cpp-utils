@@ -12,7 +12,7 @@ namespace examples::worker_thread {
     //
     //  example 1
     //
-    int Example1()
+    inline int Example1()
     {
         std::cout << "Worker Thread example 1\n";
 
@@ -52,7 +52,7 @@ namespace examples::worker_thread {
     //
     //  example 2
     //
-    int Example2()
+    inline int Example2()
     {
         std::cout << "Worker Thread example 2\n";
 
@@ -95,7 +95,7 @@ namespace examples::worker_thread {
     //
     //  perf example 3
     //
-    int Example3_Perf()
+    inline int Example3_Perf()
     {
         std::cout << "Worker Thread example 3\n";
 
