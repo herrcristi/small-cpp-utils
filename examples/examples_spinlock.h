@@ -10,12 +10,12 @@ namespace examples::spinlock {
     //
     // example 1
     //
-    int Example1()
+    inline int Example1()
     {
         std::cout << "Spin lock\n";
 
         // thread function
-        auto fn_t = [](auto i, small::spinlock &lock) {
+        auto fn_t = [](auto i, small::spinlock& lock) {
             for (int t = 0; t < 5; ++t) {
                 {
                     std::unique_lock<small::spinlock> mlock(lock);
@@ -34,7 +34,7 @@ namespace examples::spinlock {
         }
 
         // wait
-        for (auto &t : threads) {
+        for (auto& t : threads) {
             if (t.joinable()) {
                 t.join();
             }

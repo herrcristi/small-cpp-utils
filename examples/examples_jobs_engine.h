@@ -295,7 +295,7 @@ namespace examples::jobs_engine {
     //
     //  example 1
     //
-    int Example1()
+    inline int Example1()
     {
         std::cout << "Jobs Engine example 1\n";
 

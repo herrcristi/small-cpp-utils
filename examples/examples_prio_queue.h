@@ -9,14 +9,14 @@ namespace examples::prio_queue {
     //
     //  example 1
     //
-    int Example1()
+    inline int Example1()
     {
         std::cout << "PrioQueue\n";
 
         using qc = std::pair<int, std::string>;
         small::prio_queue<qc> q;
 
-        std::jthread t([](small::prio_queue<qc> &_q) {
+        std::jthread t([](small::prio_queue<qc>& _q) {
             std::this_thread::sleep_for(std::chrono::milliseconds(300));
             std::cout << "push {1, \"A\"}" << std::endl;
             for (int i = 0; i < 5; ++i) {
