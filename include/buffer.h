@@ -233,7 +233,11 @@ namespace small {
 
             // (re)allocate
             if (reallocate) {
-                m_chunk_buffer_data       = (m_chunk_buffer_alloc_size == 0) ? (char*)malloc(new_alloc_size) : (char*)realloc(m_chunk_buffer_data, new_alloc_size);
+                m_chunk_buffer_data = (m_chunk_buffer_alloc_size == 0) ? (char*)calloc(1, new_alloc_size) : (char*)realloc(m_chunk_buffer_data, new_alloc_size);
+                // fill with zeros
+                if ((m_chunk_buffer_alloc_size != 0) && (new_alloc_size > m_chunk_buffer_length)) {
+                    memset(m_chunk_buffer_data + m_chunk_buffer_length, 0, new_alloc_size - m_chunk_buffer_length);
+                }
                 m_chunk_buffer_alloc_size = new_alloc_size;
             }
 
