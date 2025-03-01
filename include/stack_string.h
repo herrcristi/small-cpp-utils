@@ -117,7 +117,6 @@ namespace small {
 
         // clang-format off
         // assign
-        inline void         assign          (const stack_string& s)                             { if (this != &s) { set(0/*startfrom*/, s); } }
         inline void         assign          (const char c)                                      { set(0/*startfrom*/, c); }
         inline void         assign          (const char* s, const size_t& s_length)             { set(0/*startfrom*/, s, s_length); }
         inline void         assign          (const std::string_view s)                          { set(0/*startfrom*/, s); }
@@ -130,7 +129,6 @@ namespace small {
 
         // clang-format off
         // append
-        inline void         append          (const stack_string& s)                             { if (this != &s) { set(size()/*startfrom*/, s); } }
         inline void         append          (const char c)                                      { set(size()/*startfrom*/, c); }
         inline void         append          (const char* s, size_t s_length)                    { set(size()/*startfrom*/, s, s_length); }
         inline void         append          (const std::string_view s)                          { set(size()/*startfrom*/, s); }
@@ -143,7 +141,6 @@ namespace small {
 
         // clang-format off
         // insert
-        inline void         insert          (std::size_t from, const stack_string& s)           { if (this != &s) { insert_impl(from, s.data, s.size()); } }
         inline void         insert          (std::size_t from, const char c)                    { insert_impl(from, &c, 1); }
         inline void         insert          (std::size_t from, const char* s, size_t s_length)  { insert_impl(from, s, s_length); }
         inline void         insert          (std::size_t from, const std::string_view s)        { insert_impl(from, s.data(), s.size()); }
@@ -156,7 +153,6 @@ namespace small {
 
         // clang-format off
         // overwrite
-        inline void         overwrite       (std::size_t from, const stack_string& s)           { if (this != &s) { set(from, s); } }
         inline void         overwrite       (std::size_t from, const char c)                    { set(from, c); }
         inline void         overwrite       (std::size_t from, const char* s, size_t s_length)  { set(from, s, s_length); }
         inline void         overwrite       (std::size_t from, const std::string_view s)        { set(from, s); }
@@ -169,7 +165,6 @@ namespace small {
 
         // clang-format off
         // set
-        inline void         set             (std::size_t from, const stack_string& s)           { if (this != &s) { set_impl(from, s.data(), s.size()); } }
         inline void         set             (std::size_t from, const char c)                    { set_impl(from, &c, 1); }
         inline void         set             (std::size_t from, const char* s, size_t s_length)  { set_impl(from, s, s_length); }
         inline void         set             (std::size_t from, const std::string_view s)        { set_impl(from, s.data(), s.size()); }
@@ -230,12 +225,12 @@ namespace small {
         {
             if (this != &o) {
                 m_stack_string_size = o.m_stack_string_size;
-                m_stack_string      = std::copy(o.m_stack_string);
+                m_stack_string      = o.m_stack_string;
                 if (o.m_std_string) {
                     if (!m_std_string) {
                         m_std_string = std::make_unique<std::string>();
                     }
-                    m_std_string = *o.m_std_string.get();
+                    *m_std_string = *o.m_std_string.get();
                 } else {
                     m_std_string.reset();
                 }
@@ -247,7 +242,7 @@ namespace small {
         {
             if (this != &o) {
                 m_stack_string_size = o.m_stack_string_size;
-                m_stack_string      = std::copy(o.m_stack_string);
+                m_stack_string      = o.m_stack_string;
                 m_std_string        = std::move(o.m_std_string);
                 o.init();
             }
@@ -267,7 +262,6 @@ namespace small {
 
         // clang-format off
         // +=
-        inline stack_string& operator+=     (const stack_string& s) noexcept                    { append(s); return *this; }
         inline stack_string& operator+=     (const char c) noexcept                             { append(c); return *this; }
         inline stack_string& operator+=     (const std::string_view s) noexcept                 { append(s); return *this; }
         inline stack_string& operator+=     (const std::vector<char>& v) noexcept               { append(v); return *this; }
@@ -516,7 +510,6 @@ namespace small {
 
         // clang-format off
         // +        
-        friend inline stack_string operator+(const stack_string& s, const stack_string& s2)     { stack_string sr = s; sr.append(s2); return sr; }
         friend inline stack_string operator+(const stack_string& s, const char c)               { stack_string sr = s; sr.append(c); return sr; }
         friend inline stack_string operator+(const stack_string& s, const std::string_view v)   { stack_string sr = s; sr.append(v); return sr; }
         friend inline stack_string operator+(const stack_string& s, const std::vector<char>& v) { stack_string sr = s; sr.append(v); return sr; }        
@@ -524,7 +517,6 @@ namespace small {
         friend inline stack_string operator+(const stack_string& s, const std::wstring_view w)  { stack_string sr = s; sr.append(w); return sr; }
         
         friend inline stack_string operator+(const char c, const stack_string& s2)              { stack_string sr(c); sr.append(s2); return sr; }
-        friend inline stack_string operator+(const std::string_view s, const stack_string& s2)  { stack_string sr(s); sr.append(s2); return sr; }
         friend inline stack_string operator+(const std::vector<char>& v, const stack_string& s2){ stack_string sr(v); sr.append(s2); return sr; }
         friend inline stack_string operator+(const wchar_t c, const stack_string& s2)           { stack_string sr(c); sr.append(s2); return sr; }
         friend inline stack_string operator+(const std::wstring_view s, const stack_string& s2) { stack_string sr(s); sr.append(s2); return sr; }
@@ -532,71 +524,59 @@ namespace small {
 
         // clang-format off
         // ==
-        friend inline bool         operator==(const stack_string& s, const stack_string& s2)    { return s.is_equal(s2.data(), s2.size()); }
         friend inline bool         operator==(const stack_string& s, const char c)              { return s.is_equal( &c, sizeof(c)); }
         friend inline bool         operator==(const stack_string& s, const std::string_view v)  { return s.is_equal(v.data(), v.size()); }
         friend inline bool         operator==(const stack_string& s, const std::vector<char>& v){ return s.is_equal(v.data(), v.size()); }
          
         friend inline bool         operator==(const char c, const stack_string& s2)             { return s2.is_equal(&c, sizeof(c)); }
-        friend inline bool         operator==(const std::string_view s, const stack_string& s2) { return s2.is_equal(s.data(), s.size()); }
         friend inline bool         operator==(const std::vector<char>& v, const stack_string& s2){return s2.is_equal(v.data(), v.size()); }
         
         // !=
-        friend inline bool         operator!=(const stack_string& s, const stack_string& s2)    { return !s.is_equal(s2.data(), s2.size()); }
         friend inline bool         operator!=(const stack_string& s, const char c)              { return !s.is_equal(&c, sizeof(c)); }
         friend inline bool         operator!=(const stack_string& s, const std::string_view v)  { return !s.is_equal(v.data(), v.size()); }
         friend inline bool         operator!=(const stack_string& s, const std::vector<char>& v){ return !s.is_equal(v.data(), v.size()); }
 
         friend inline bool         operator!=(const char c, const stack_string& s2)             { return !s2.is_equal(&c, sizeof(c)); }
-        friend inline bool         operator!=(const std::string_view s, const stack_string& s2) { return !s2.is_equal(s.data(), s.size()); }
         friend inline bool         operator!=(const std::vector<char>& v, const stack_string& s2){return !s2.is_equal(v.data(), v.size()); }
         // clang-format on
 
         // clang-format off
         // < 
-        friend inline bool         operator< (const stack_string& s, const stack_string& s2)    { return s.compare(s2.data(), s2.size()) < 0; }
         friend inline bool         operator< (const stack_string& s, const char c)              { return s.compare(&c, sizeof(c)) < 0; }
         friend inline bool         operator< (const stack_string& s, const std::string_view v)  { return s.compare(v.data(), v.size()) < 0; }
         friend inline bool         operator< (const stack_string& s, const std::vector<char>& v){ return s.compare(v.data(), v.size()) < 0; }
 
         friend inline bool         operator< (const char c, const stack_string& s2)             { return s2.compare(&c, sizeof(c)) >= 0; }
-        friend inline bool         operator< (const std::string_view s, const stack_string& s2) { return s2.compare(s.data(), s.size()) >= 0; }
         friend inline bool         operator< (const std::vector<char>& v, const stack_string& s2){return s2.compare(v.data(), v.size()) >= 0; }
         // clang-format on
 
         // clang-format off
         // <= 
-        friend inline bool         operator<=(const stack_string& s, const stack_string& s2)    { return s.compare(s2.data(), s2.size()) <= 0; }
         friend inline bool         operator<=(const stack_string& s, const char c)              { return s.compare(&c, sizeof(c)) <= 0; }
         friend inline bool         operator<=(const stack_string& s, const std::string_view v)  { return s.compare(v.data(), v.size()) <= 0; }
         friend inline bool         operator<=(const stack_string& s, const std::vector<char>& v){ return s.compare(v.data(), v.size()) <= 0; }
 
         friend inline bool         operator<=(const char c, const stack_string& s2)             { return s2.compare(&c, sizeof(c)) > 0; }
-        friend inline bool         operator<=(const std::string_view s, const stack_string& s2) { return s2.compare(s.data(), s.size()) > 0; }
         friend inline bool         operator<=(const std::vector<char>& v, const stack_string& s2){return s2.compare(v.data(), v.size()) > 0; }
         // clang-format on
 
         // clang-format off
         // >        
-        friend inline bool         operator> (const stack_string& s, const stack_string& s2)    { return s.compare(s2.data(), s2.size()) > 0; }
         friend inline bool         operator> (const stack_string& s, const char c)              { return s.compare(&c, sizeof(c)) > 0; }
         friend inline bool         operator> (const stack_string& s, const std::string_view v)  { return s.compare(v.data(), v.size()) > 0; }
         friend inline bool         operator> (const stack_string& s, const std::vector<char>& v){ return s.compare(v.data(), v.size()) > 0; }
 
         friend inline bool         operator> (const char c, const stack_string& s2)             { return s2.compare(&c, sizeof(c)) <= 0; }
-        friend inline bool         operator> (const std::string_view s, const stack_string& s2) { return s2.compare(s.data(), s.size()) <= 0; }
         friend inline bool         operator> (const std::vector<char>& v, const stack_string& s2){return s2.compare(v.data(), v.size()) <= 0; }
         // clang-format on
 
         // clang-format off
         // >= 
-        friend inline bool         operator>=(const stack_string& s, const stack_string& s2)    { return s.compare(s2.data(), s2.size()) >= 0; }
         friend inline bool         operator>=(const stack_string& s, const char c)              { return s.compare(&c, sizeof(c)) >= 0; }
         friend inline bool         operator>=(const stack_string& s, const std::string_view v)  { return s.compare(v.data(), v.size()) >= 0; }
         friend inline bool         operator>=(const stack_string& s, const std::vector<char>& v){ return s.compare(v.data(), v.size()) >= 0; }
                                                                             
         friend inline bool         operator>=(const char c, const stack_string& s2)             { return s2.compare(&c, sizeof(c)) < 0; }        
-        friend inline bool         operator>=(const std::string_view s, const stack_string& s2) { return s2.compare(s.data(), s.size()) < 0; }
         friend inline bool         operator>=(const std::vector<char>& v, const stack_string& s2){return s2.compare(v.data(), v.size()) < 0; }
         // clang-format on
 

@@ -7,6 +7,8 @@
 #include "../include/stack_string.h"
 
 namespace examples::stack_string {
+    using namespace std::literals;
+
     //
     //  example 1
     //

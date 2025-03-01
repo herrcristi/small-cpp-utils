@@ -284,15 +284,12 @@ namespace small {
 
         // clang-format off
         // +
-        friend inline buffer operator+  (const buffer& b, const base_buffer& b2)    { buffer br = b; br.append(b2); return br; }
-        friend inline buffer operator+  (const base_buffer& b2, const buffer& b)    { buffer br = b; br.append(b2); return br; }
         friend inline buffer operator+  (const buffer& b, const char c)             { buffer br = b; br.append(c);  return br; }
         friend inline buffer operator+  (const buffer& b, const std::string_view s) { buffer br = b; br.append(s);  return br; }
         friend inline buffer operator+  (const buffer& b, const std::vector<char>& v){buffer br = b; br.append(v);  return br; }
 
         // +
         friend inline buffer operator+  (const char c, const buffer& b)             { buffer br({.chunk_size = b.get_chunk_size()}); br.append(c); br += b; return br; }
-        friend inline buffer operator+  (const std::string_view s, const buffer& b) { buffer br({.chunk_size = b.get_chunk_size()}); br.append(s); br += b; return br; }
         friend inline buffer operator+  (const std::vector<char>& v, const buffer& b){buffer br({.chunk_size = b.get_chunk_size()}); br.append(v); br += b; return br; }
         // clang-format on
 
