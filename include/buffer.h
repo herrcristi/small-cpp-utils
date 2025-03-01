@@ -78,7 +78,7 @@ namespace small {
         // from char*
         buffer(const char c) noexcept                           : buffer() { base_buffer::operator=(c); }
         buffer(const char* s, std::size_t s_length) noexcept    : buffer() { set(0 /*from*/, s, s_length); }
-        buffer(const std::string s) noexcept                    : buffer() { base_buffer::operator=(s); }
+        buffer(const std::string& s) noexcept                   : buffer() { base_buffer::operator=(s); }
         buffer(const std::string_view s) noexcept               : buffer() { base_buffer::operator=(s); }
         buffer(const std::vector<char>& v) noexcept             : buffer() { base_buffer::operator=(v); }
 

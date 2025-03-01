@@ -47,8 +47,12 @@ namespace examples::stack_string {
 
         s.clear();
 
-        small::stack_string<4> s1 = "this is a long string to show switch to std::string";
+        small::stack_string<4> s1 = std::string_view{"this is a long string to show switch to std::string"};
         std::cout << "long string = " << s1 << "\n";
+
+        small::stack_string<4> s2  = std::string_view{"s2"};
+        s2                        += "make it allocate the std::string";
+        std::cout << "long string = " << s2 << "\n";
 
         std::cout << "Stack String finished\n\n";
 
