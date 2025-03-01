@@ -9,6 +9,8 @@
 #include <string_view>
 #include <vector>
 
+#include "util_str.h"
+
 //
 // small::stack_string<256/*on stack*/> s;
 // ...
@@ -282,12 +284,12 @@ namespace small {
         inline char&        at              (std::size_t index)                                 { return data()[index]; }
         inline char         at              (std::size_t index) const                           { return data()[index]; }
 
-         // front / back
-         inline char&        front          ()                                                  { return size() > 0 ? data()[0] : m_stack_string[0]; }
-         inline char         front          () const                                            { return size() > 0 ? data()[0] : '\0'; }
- 
-         inline char&        back           ()                                                  { return size() > 0 ? data()[size() - 1] : m_stack_string[0]; }
-         inline char         back           () const                                            { return size() > 0 ? data()[size() - 1] : '\0'; }
+        // front / back
+        inline char&        front           ()                                                  { return size() > 0 ? data()[0] : m_stack_string[0]; }
+        inline char         front           () const                                            { return size() > 0 ? data()[0] : '\0'; }
+
+        inline char&        back            ()                                                  { return size() > 0 ? data()[size() - 1] : m_stack_string[0]; }
+        inline char         back            () const                                            { return size() > 0 ? data()[size() - 1] : '\0'; }
 
         // clang-format on
 
@@ -399,66 +401,26 @@ namespace small {
         inline void set_impl(const size_t& start_from, const char* b, const size_t& b_length)
         {
             resize(start_from + b_length);
-            memcpy(data() + start_from, b, b_length);
+            memcpy(data() + start_from /*dest*/, b /*src*/, b_length /*length*/);
         }
 
         // set impl
-        inline void set_impl(const size_t& start_from, const wchar_t* wstr, const size_t& wstr_length)
+        inline void set_impl(const size_t& start_from, const wchar_t* wstr, const size_t& /* wstr_length */)
         {
-            std::setlocale(LC_ALL, "en_US.utf8");
-            std::mbstate_t state = std::mbstate_t();
-
-            // determine size
-
-#ifdef _WIN32
-            size_t new_length = 0;
-            int    ret        = wcsrtombs_s(&new_length, nullptr, 0, &wstr, 0, &state);
-            if (ret != 0 || new_length == 0)
+            std::size_t new_length = small::impl::to_utf8_needed_length(wstr);
+            if (new_length == static_cast<std::size_t>(-1)) {
+                resize(start_from);
                 return;
-            --new_length; // because it adds the null terminator in length
-            resize(start_from + new_length);
-
-            size_t converted = 0;
-            ret              = wcsrtombs_s(&converted, data() + start_from, new_length + 1, &wstr, new_length, &state);
-#else
-            size_t new_length = std::wcsrtombs(nullptr, &wstr, 0, &state);
-            if (new_length == static_cast<std::size_t>(-1))
-                return;
+            }
 
             resize(start_from + new_length);
-            /*size_t converted =*/std::wcsrtombs(data() + start_from, &wstr, new_length, &state);
-#endif
+            small::impl::to_utf8(wstr, data() + start_from, new_length);
         }
 
         // get the wstring
-        std::wstring get_stringw_impl() const
+        inline std::wstring get_stringw_impl() const
         {
-            std::setlocale(LC_ALL, "en_US.utf8");
-            std::mbstate_t state = std::mbstate_t();
-
-            // determine size
-            std::wstring wstr;
-            const char*  mbstr = data();
-
-#ifdef _WIN32
-            size_t new_length = 0;
-            int    ret        = mbsrtowcs_s(&new_length, nullptr, 0, &mbstr, 0, &state);
-            if (ret != 0 || new_length == 0)
-                return wstr;
-            --new_length; // because it adds the null terminator in length
-
-            wstr.resize(new_length);
-            size_t converted = 0;
-            ret              = mbsrtowcs_s(&converted, wstr.data(), new_length + 1, &mbstr, new_length, &state);
-#else
-            size_t new_length = std::mbsrtowcs(nullptr, &mbstr, 0, &state);
-            if (new_length == static_cast<std::size_t>(-1))
-                return wstr;
-
-            wstr.resize(new_length);
-            std::mbsrtowcs(wstr.data(), &mbstr, wstr.size(), &state);
-#endif
-            return wstr;
+            return small::to_utf16(data());
         }
 
         // insert impl
@@ -472,9 +434,9 @@ namespace small {
             } else {
                 resize(insert_from <= initial_length ? initial_length + b_length : insert_from + b_length);
                 if (insert_from <= initial_length) {
-                    memmove(m_stack_string.data() + insert_from + b_length,
-                            m_stack_string.data() + insert_from,
-                            initial_length - insert_from);
+                    memmove(m_stack_string.data() + insert_from + b_length /*dest*/,
+                            m_stack_string.data() + insert_from /*src*/,
+                            initial_length - insert_from /*length*/);
                 } else {
                     memset(m_stack_string.data() + initial_length, '\0', (insert_from - initial_length));
                 }
@@ -491,7 +453,7 @@ namespace small {
                 if (start_from < size()) {
                     if (start_from + length < size()) {
                         size_t move_length = size() - (start_from + length);
-                        memmove(m_stack_string + start_from, m_stack_string + start_from + length, move_length);
+                        memmove(m_stack_string + start_from /*dest*/, m_stack_string + start_from + length /*src*/, move_length /*length*/);
                         resize(size() - length);
                     } else {
                         resize(start_from);

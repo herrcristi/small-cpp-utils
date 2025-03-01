@@ -69,6 +69,7 @@ namespace examples::stack_string {
         small::stack_string<4> s2  = std::string_view{"s2"};
         s2                        += "make it allocate the std::string";
         std::cout << "long string = " << s2 << "\n";
+        std::wcout << "long string utf16 = " << std::wstring_view{s2.c_wstring()} << "\n";
 
         auto s3 = s + s1;
 
