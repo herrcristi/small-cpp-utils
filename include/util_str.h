@@ -203,7 +203,7 @@ namespace small {
 
 #if defined(_WIN32) || defined(_WIN64)
             size_t converted = 0;
-            ret              = mbsrtowcs_s(&converted, wstr, new_length + 1, &mbstr, new_length, &state);
+            /* ret              = */ mbsrtowcs_s(&converted, wstr, new_length + 1, &mbstr, new_length, &state);
 #else
             /*size_t converted =*/std::mbsrtowcs(wstr, &mbstr, new_length, &state);
 #endif
@@ -217,7 +217,7 @@ namespace small {
 
 #if defined(_WIN32) || defined(_WIN64)
             size_t converted = 0;
-            ret              = wcsrtombs_s(&converted, mbstr, new_length + 1, &wstr, new_length, &state);
+            /* ret              = */ wcsrtombs_s(&converted, mbstr, new_length + 1, &wstr, new_length, &state);
 #else
             /*size_t converted =*/std::wcsrtombs(mbstr, &wstr, new_length, &state);
 #endif
