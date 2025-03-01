@@ -27,7 +27,7 @@ This can be used in following ways:
 
 -   <b>base64</b> (quick functions for base64 encode & decode)
 -   <b>qhash</b> (a quick hash function for buffers and null termination strings)
--   <b>util</b> functions (like <b>icasecmp</b> for use with map/set, <b>sleep</b>, <b>time_now</b>, <b>time_diff_ms</b>, <b>to_iso_string()</b>, <b>rand</b>, <b>uuid</b>, ...)
+-   <b>util</b> functions (like <b>icasecmp</b> for use with map/set, <b>sleep</b>, <b>time_now</b>, <b>time_diff_ms</b>, <b>to_iso_string</b>, <b>rand</b>, <b>uuid</b>, ...)
 -   <b>set_timeout</b> and <b>set_interval</b> util functions to execute custom functions after a timeout interval
 
 #
