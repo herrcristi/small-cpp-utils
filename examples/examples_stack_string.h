@@ -42,7 +42,10 @@ namespace examples::stack_string {
         s.insert(2 /*from*/, "a", 1);
         std::cout << "assign insert a = " << s << "\n";
 
-        char* e = s.data(); // "anab"
+        s.insert(10 /*from*/, "c", 1);
+        std::cout << "assign insert c = " << s << "\n";
+
+        const char* e = s.data(); // "anabc"
         std::cout << "data = " << e << "\n";
 
         s.append("hello");
@@ -55,6 +58,8 @@ namespace examples::stack_string {
 
         s.append("world", 5);
         std::cout << "append world = " << s << "\n";
+        s.set(10, "!", 1);
+        std::cout << "append ! = " << s << "\n";
 
         std::cout << "substr = " << s.substr(2, 2) << "\n";
 

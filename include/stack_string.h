@@ -105,7 +105,7 @@ namespace small {
             } else {
                 // fill with zero from current size to new size
                 if (m_stack_string_size < new_size) {
-                    memset(m_stack_string.data() + m_stack_string_size, 0, new_size - m_stack_string_size);
+                    memset(m_stack_string.data() + m_stack_string_size, '\0', new_size - m_stack_string_size);
                 }
                 m_stack_string_size                 = new_size;
                 m_stack_string[m_stack_string_size] = '\0';
@@ -152,7 +152,7 @@ namespace small {
         inline void         insert          (std::size_t from, const std::string_view s)        { insert_impl(from, s.data(), s.size()); }
         inline void         insert          (std::size_t from, const std::vector<char>& v)      { insert_impl(from, v.data(), v.size()); }
         
-        inline void         insert          (std::size_t from, const wchar_t c)                 { insert_impl(from, &c, 1); }
+        inline void         insert          (std::size_t from, const wchar_t c)                 { wchar_t s[2] = {c}; insert_impl(from, s, 1); } // to be null terminated
         inline void         insert          (std::size_t from, const wchar_t* s, size_t s_length){insert_impl(from, s, s_length); }
         inline void         insert          (std::size_t from, const std::wstring_view s)       { insert_impl(from, s.data(), s.size()); }
         // clang-format on
@@ -398,15 +398,22 @@ namespace small {
         }
 
         // set impl
-        inline void set_impl(const size_t& start_from, const char* b, const size_t& b_length)
+        inline void set_impl(size_t start_from, const char* b, const size_t& b_length)
         {
+            std::size_t initial_length = size();
+
+            start_from = std::min(start_from, initial_length); // otherwise zeros are added
             resize(start_from + b_length);
             memcpy(data() + start_from /*dest*/, b /*src*/, b_length /*length*/);
         }
 
         // set impl
-        inline void set_impl(const size_t& start_from, const wchar_t* wstr, const size_t& /* wstr_length */)
+        inline void set_impl(size_t start_from, const wchar_t* wstr, const size_t& /* wstr_length */)
         {
+            std::size_t initial_length = size();
+
+            start_from = std::min(start_from, initial_length); // otherwise zeros are added
+
             std::size_t new_length = small::impl::to_utf8_needed_length(wstr);
             if (new_length == static_cast<std::size_t>(-1)) {
                 resize(start_from);
@@ -424,24 +431,31 @@ namespace small {
         }
 
         // insert impl
-        inline void insert_impl(const size_t& insert_from, const char* b, const size_t& b_length)
+        inline void insert_impl(size_t insert_from, const char* b, const size_t& b_length)
         {
-            size_t initial_length = size();
-            reserve(insert_from <= initial_length ? initial_length + b_length : insert_from + b_length);
+            std::size_t initial_length = size();
+            insert_from                = std::min(insert_from, initial_length); // otherwise zeros are added
+            std::size_t new_length     = initial_length + b_length;
+            reserve(new_length);
 
             if (m_std_string) {
                 m_std_string->insert(insert_from, b, b_length);
             } else {
-                resize(insert_from <= initial_length ? initial_length + b_length : insert_from + b_length);
-                if (insert_from <= initial_length) {
+                resize(new_length);
+                if (insert_from < initial_length) {
                     memmove(m_stack_string.data() + insert_from + b_length /*dest*/,
                             m_stack_string.data() + insert_from /*src*/,
                             initial_length - insert_from /*length*/);
-                } else {
-                    memset(m_stack_string.data() + initial_length, '\0', (insert_from - initial_length));
                 }
-                memcpy(m_stack_string.data() + insert_from, b, b_length);
+                memcpy(m_stack_string.data() + insert_from /*dest*/, b /*src*/, b_length /*length*/);
             }
+        }
+
+        // insert impl
+        inline void insert_impl(const size_t& insert_from, const wchar_t* wstr, const size_t& /* wstr_length */)
+        {
+            std::string str = small::to_utf8(wstr);
+            insert_impl(insert_from, str.data(), str.size());
         }
 
         // erase
