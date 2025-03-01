@@ -21,6 +21,7 @@ This can be used in following ways:
 #
 
 -   <b>buffer</b> (a class for manipulating buffers)
+-   <b>stack_string</b> (a string that first uses the stack to allocate space, it works faster when using multithreading environment and has conversion to/from wstring)
 
 #
 
@@ -558,6 +559,23 @@ std::string s64 = small::tobase64( text );
 b.clear();
 b = small::frombase64<small::buffer>( s64 );
 
+```
+
+#
+
+### stack_string
+
+A string class that uses the stack to allocate the string (it defines an array basically).
+Ofcourse if the string is longer than the stack size a normal std::string is used.
+
+Why? Because in multithreading environment we have a boost in speed by avoiding allocations
+
+The functions from string are also available, and should have the same usage.
+Beware that move semantics must copy the part that is allocated on stack.
+Also there is conversion from string to wstring and viceversa through ut8.
+
+```
+small::stack_string<256/*on stack*/> s;
 ```
 
 #
