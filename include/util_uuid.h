@@ -44,7 +44,7 @@ namespace small {
 
     inline std::string uuid_to_uppercase(std::string& u)
     {
-        return small::toUpperCase(u);
+        return small::to_upper_case(u);
     }
 
     struct config_uuid
@@ -59,7 +59,7 @@ namespace small {
         // generate 2 random uint64 numbers
         auto [r1, r2] = uuidp();
 
-        auto u = small::toHexF(r1) + small::toHexF(r2);
+        auto u = small::to_hex_fill(r1) + small::to_hex_fill(r2);
 
         if (config.add_hyphen) {
             uuid_add_hyphen(u);

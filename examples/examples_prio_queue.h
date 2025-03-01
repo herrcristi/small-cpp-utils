@@ -50,7 +50,7 @@ namespace examples::prio_queue {
                 std::cout << "ret=" << static_cast<int>(ret)
                           << ", pop " << e.first << "," << e.second
                           << ", qsize " << q.size()
-                          << " time " << small::toISOString(small::timeNow())
+                          << " time " << small::to_iso_string()(small::time_now())
                           << "\n";
             }
         }

@@ -13,7 +13,7 @@ namespace small {
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(time_in_ms));
     }
-    inline void sleepMicro(int time_in_microseconds)
+    inline void sleep_micro(int time_in_microseconds)
     {
         std::this_thread::sleep_for(std::chrono::microseconds(time_in_microseconds));
     }
@@ -21,20 +21,20 @@ namespace small {
     //
     // time utils
     //
-    inline std::chrono::system_clock::time_point timeNow()
+    inline std::chrono::system_clock::time_point time_now()
     {
         return std::chrono::system_clock::now();
     }
 
-    inline long long timeDiffMs(std::chrono::system_clock::time_point start, std::chrono::system_clock::time_point end = std::chrono::system_clock::now())
+    inline long long time_diff_ms(std::chrono::system_clock::time_point start, std::chrono::system_clock::time_point end = std::chrono::system_clock::now())
     {
         return std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
     }
-    inline long long timeDiffMicro(std::chrono::system_clock::time_point start, std::chrono::system_clock::time_point end = std::chrono::system_clock::now())
+    inline long long time_diff_micro(std::chrono::system_clock::time_point start, std::chrono::system_clock::time_point end = std::chrono::system_clock::now())
     {
         return std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
     }
-    inline long long timeDiffNano(std::chrono::system_clock::time_point start, std::chrono::system_clock::time_point end = std::chrono::system_clock::now())
+    inline long long time_diff_nano(std::chrono::system_clock::time_point start, std::chrono::system_clock::time_point end = std::chrono::system_clock::now())
     {
         return std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
     }
@@ -42,7 +42,7 @@ namespace small {
     //
     // to Unix timestamp in milliseconds since 1970
     //
-    inline unsigned long long toUnixTimestamp(std::chrono::system_clock::time_point time = std::chrono::system_clock::now())
+    inline unsigned long long to_unix_timestamp(std::chrono::system_clock::time_point time = std::chrono::system_clock::now())
     {
         return std::chrono::duration_cast<std::chrono::milliseconds>(time.time_since_epoch()).count();
     }
@@ -50,7 +50,7 @@ namespace small {
     //
     // to iso string format '2024-12-02T18:45:43.950Z'
     //
-    inline std::string toISOString(std::chrono::system_clock::time_point time = std::chrono::system_clock::now())
+    inline std::string to_iso_string()(std::chrono::system_clock::time_point time = std::chrono::system_clock::now())
     {
         auto    tt = std::chrono::system_clock::to_time_t(time);
         std::tm tt_tm; // = *std::gmtime(&tt) is not thread safe
@@ -60,7 +60,7 @@ namespace small {
         gmtime_r(&tt, &tt_tm);
 #endif
 
-        auto timestamp = small::toUnixTimestamp(time);
+        auto timestamp = small::to_unix_timestamp(time);
 
         std::stringstream ss;
         ss
@@ -75,20 +75,20 @@ namespace small {
     //
     // time functions for  high_resolution_clock
     //
-    inline std::chrono::high_resolution_clock::time_point htimeNow()
+    inline std::chrono::high_resolution_clock::time_point high_time_now()
     {
         return std::chrono::high_resolution_clock::now();
     }
 
-    inline long long htimeDiffMs(std::chrono::high_resolution_clock::time_point start, std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now())
+    inline long long high_time_diff_ms(std::chrono::high_resolution_clock::time_point start, std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now())
     {
         return std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
     }
-    inline long long htimeDiffMicro(std::chrono::high_resolution_clock::time_point start, std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now())
+    inline long long high_time_diff_micro(std::chrono::high_resolution_clock::time_point start, std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now())
     {
         return std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
     }
-    inline long long htimeDiffNano(std::chrono::high_resolution_clock::time_point start, std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now())
+    inline long long high_time_diff_nano(std::chrono::high_resolution_clock::time_point start, std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now())
     {
         return std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
     }

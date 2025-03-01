@@ -109,46 +109,46 @@ namespace {
     }
 
     //
-    // conversion toLowerCase, toUpperCase
+    // conversion to_lower_case, to_upper_case
     //
     TEST_F(UtilTest, conversion_strings)
     {
         std::string s = "Some Text";
-        small::toLowerCase(s);
+        small::to_lower_case(s);
         ASSERT_EQ(s, "some text");
 
-        small::toUpperCase(s);
+        small::to_upper_case(s);
         ASSERT_EQ(s, "SOME TEXT");
 
-        small::toCapitalizeCase(s);
+        small::to_capitalize_case(s);
         ASSERT_EQ(s, "Some text");
 
-        ASSERT_EQ(small::toHex(false), "0");
-        ASSERT_EQ(small::toHex(true), "1");
+        ASSERT_EQ(small::to_hex(false), "0");
+        ASSERT_EQ(small::to_hex(true), "1");
 
-        ASSERT_EQ(small::toHex(-1), "ffffffff");
-        ASSERT_EQ(small::toHex(5), "5");
-        ASSERT_EQ(small::toHex(15), "f");
-        ASSERT_EQ(small::toHex(25), "19");
-        ASSERT_EQ(small::toHex(45), "2d");
+        ASSERT_EQ(small::to_hex(-1), "ffffffff");
+        ASSERT_EQ(small::to_hex(5), "5");
+        ASSERT_EQ(small::to_hex(15), "f");
+        ASSERT_EQ(small::to_hex(25), "19");
+        ASSERT_EQ(small::to_hex(45), "2d");
 
-        ASSERT_EQ(small::toHex(-1LL), "ffffffffffffffff");
-        ASSERT_EQ(small::toHex(45LL), "2d");
-        ASSERT_EQ(small::toHex(45ULL), "2d");
+        ASSERT_EQ(small::to_hex(-1LL), "ffffffffffffffff");
+        ASSERT_EQ(small::to_hex(45LL), "2d");
+        ASSERT_EQ(small::to_hex(45ULL), "2d");
 
         // with fill
-        ASSERT_EQ(small::toHex(false, {.fill = true}), "00");
-        ASSERT_EQ(small::toHex(true, {.fill = true}), "01");
-        ASSERT_EQ(small::toHex(-1, {.fill = true}), "ffffffff");
-        ASSERT_EQ(small::toHex(5, {.fill = true}), "00000005");
-        ASSERT_EQ(small::toHex(45, {.fill = true}), "0000002d");
-        ASSERT_EQ(small::toHex(5LL, {.fill = true}), "0000000000000005");
-        ASSERT_EQ(small::toHex(-1LL, {.fill = true}), "ffffffffffffffff");
-        ASSERT_EQ(small::toHex(45ULL, {.fill = true}), "000000000000002d");
+        ASSERT_EQ(small::to_hex(false, {.fill = true}), "00");
+        ASSERT_EQ(small::to_hex(true, {.fill = true}), "01");
+        ASSERT_EQ(small::to_hex(-1, {.fill = true}), "ffffffff");
+        ASSERT_EQ(small::to_hex(5, {.fill = true}), "00000005");
+        ASSERT_EQ(small::to_hex(45, {.fill = true}), "0000002d");
+        ASSERT_EQ(small::to_hex(5LL, {.fill = true}), "0000000000000005");
+        ASSERT_EQ(small::to_hex(-1LL, {.fill = true}), "ffffffffffffffff");
+        ASSERT_EQ(small::to_hex(45ULL, {.fill = true}), "000000000000002d");
 
         // fill short version
-        ASSERT_EQ(small::toHexF(5), "00000005");
-        ASSERT_EQ(small::toHexF(45ULL), "000000000000002d");
+        ASSERT_EQ(small::to_hex_fill(5), "00000005");
+        ASSERT_EQ(small::to_hex_fill(45ULL), "000000000000002d");
     }
 
     //
@@ -156,13 +156,13 @@ namespace {
     //
     TEST_F(UtilTest, time)
     {
-        auto timeStart = small::timeNow();
+        auto timeStart = small::time_now();
 
         small::sleep(100 /*ms*/);
 
-        auto timeElapsedMs    = small::timeDiffMs(timeStart);
-        auto timeElapsedMicro = small::timeDiffMicro(timeStart);
-        auto timeElapsedNano  = small::timeDiffNano(timeStart);
+        auto timeElapsedMs    = small::time_diff_ms(timeStart);
+        auto timeElapsedMicro = small::time_diff_micro(timeStart);
+        auto timeElapsedNano  = small::time_diff_nano(timeStart);
 
         ASSERT_GE(timeElapsedMs, 100 - 1);             // due conversion
         ASSERT_GE(timeElapsedMicro, (100 - 1) * 1000); // due conversion
@@ -171,41 +171,41 @@ namespace {
 
     TEST_F(UtilTest, time_micro)
     {
-        auto timeStart = small::timeNow();
+        auto timeStart = small::time_now();
 
-        small::sleepMicro(100 /*ms*/ * 1000);
+        small::sleep_micro(100 /*ms*/ * 1000);
 
-        auto timeElapsedMs    = small::timeDiffMs(timeStart);
-        auto timeElapsedMicro = small::timeDiffMicro(timeStart);
-        auto timeElapsedNano  = small::timeDiffNano(timeStart);
+        auto timeElapsedMs    = small::time_diff_ms(timeStart);
+        auto timeElapsedMicro = small::time_diff_micro(timeStart);
+        auto timeElapsedNano  = small::time_diff_nano(timeStart);
 
         ASSERT_GE(timeElapsedMs, 100 - 1);             // due conversion
         ASSERT_GE(timeElapsedMicro, (100 - 1) * 1000); // due conversion
         ASSERT_GE(timeElapsedNano, (100 - 1) * 1000 * 1000);
     }
 
-    TEST_F(UtilTest, time_toISOString_and_UnixTimestamp)
+    TEST_F(UtilTest, time_to_iso_string() _and_UnixTimestamp)
     {
         std::time_t t    = 0;
         auto        from = std::chrono::system_clock::from_time_t(t);
-        ASSERT_EQ(small::toISOString(from), "1970-01-01T00:00:00.000Z");
-        ASSERT_EQ(small::toUnixTimestamp(from), 0);
+        ASSERT_EQ(small::to_iso_string()(from), "1970-01-01T00:00:00.000Z");
+        ASSERT_EQ(small::to_unix_timestamp(from), 0);
 
         t    = 1733172168; // time_t is in seconds
         from = std::chrono::system_clock::from_time_t(t);
-        ASSERT_EQ(small::toISOString(from), "2024-12-02T20:42:48.000Z");
-        ASSERT_EQ(small::toUnixTimestamp(from), 1733172168000ULL);
+        ASSERT_EQ(small::to_iso_string()(from), "2024-12-02T20:42:48.000Z");
+        ASSERT_EQ(small::to_unix_timestamp(from), 1733172168000ULL);
     }
 
     TEST_F(UtilTest, high_time)
     {
-        auto timeStart = small::htimeNow();
+        auto timeStart = small::high_time_now();
 
         small::sleep(100 /*ms*/);
 
-        auto timeElapsedMs    = small::htimeDiffMs(timeStart);
-        auto timeElapsedMicro = small::htimeDiffMicro(timeStart);
-        auto timeElapsedNano  = small::htimeDiffNano(timeStart);
+        auto timeElapsedMs    = small::high_time_diff_ms(timeStart);
+        auto timeElapsedMicro = small::high_time_diff_micro(timeStart);
+        auto timeElapsedNano  = small::high_time_diff_nano(timeStart);
 
         ASSERT_GE(timeElapsedMs, 100 - 1);             // due conversion
         ASSERT_GE(timeElapsedMicro, (100 - 1) * 1000); // due conversion
@@ -214,13 +214,13 @@ namespace {
 
     TEST_F(UtilTest, high_time_micro)
     {
-        auto timeStart = small::htimeNow();
+        auto timeStart = small::high_time_now();
 
-        small::sleepMicro(100 /*ms*/ * 1000);
+        small::sleep_micro(100 /*ms*/ * 1000);
 
-        auto timeElapsedMs    = small::htimeDiffMs(timeStart);
-        auto timeElapsedMicro = small::htimeDiffMicro(timeStart);
-        auto timeElapsedNano  = small::htimeDiffNano(timeStart);
+        auto timeElapsedMs    = small::high_time_diff_ms(timeStart);
+        auto timeElapsedMicro = small::high_time_diff_micro(timeStart);
+        auto timeElapsedNano  = small::high_time_diff_nano(timeStart);
 
         ASSERT_GE(timeElapsedMs, 100 - 1);             // due conversion
         ASSERT_GE(timeElapsedMicro, (100 - 1) * 1000); // due conversion
@@ -265,9 +265,9 @@ namespace {
     //
     TEST_F(UtilTest, uuid_help_string_function)
     {
-        std::string u = small::toHexF(0ULL);
+        std::string u = small::to_hex_fill(0ULL);
         ASSERT_EQ(u, "0000000000000000");
-        u += small::toHexF((unsigned long long)UINT32_MAX);
+        u += small::to_hex_fill((unsigned long long)UINT32_MAX);
         ASSERT_EQ(u, "000000000000000000000000ffffffff");
 
         small::uuid_add_hyphen(u);

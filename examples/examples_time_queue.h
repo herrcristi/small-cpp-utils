@@ -16,7 +16,7 @@ namespace examples::time_queue {
         using qc = std::pair<int, std::string>;
         small::time_queue<qc> q;
 
-        auto timeStart = small::timeNow();
+        auto timeStart = small::time_now();
 
         std::thread t([](small::time_queue<qc>& _q) {
             std::cout << "push {1, \"A\"}" << std::endl;
@@ -47,7 +47,7 @@ namespace examples::time_queue {
 
         for (; ret != small::EnumLock::kExit;) {
             ret          = q.wait_pop(&e);
-            auto elapsed = small::timeDiffMs(timeStart);
+            auto elapsed = small::time_diff_ms(timeStart);
             switch (ret) {
             case small::EnumLock::kElement:
                 std::cout << "ret=" << static_cast<int>(ret) << ", pop " << e.first << "," << e.second << ", elapsed " << elapsed << " ms\n";

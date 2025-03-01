@@ -51,7 +51,7 @@ namespace {
         ASSERT_FALSE(locked);
 
         // signal thread to proceed further
-        auto timeStart = small::timeNow();
+        auto timeStart = small::time_now();
         sync_main.count_down();
 
         // wait for the thread to stop
@@ -64,7 +64,7 @@ namespace {
         // unlock
         q.unlock();
 
-        auto elapsed = small::timeDiffMs(timeStart);
+        auto elapsed = small::time_diff_ms(timeStart);
         ASSERT_GE(elapsed, 300 - 1);
     }
 
@@ -233,12 +233,12 @@ namespace {
         ASSERT_EQ(q.size(), 0);
 
         // wait with timeout (since no elements)
-        auto timeStart = small::timeNow();
+        auto timeStart = small::time_now();
         int  value{};
         auto ret = q.wait_pop_front_for(std::chrono::milliseconds(300), &value);
         ASSERT_EQ(ret, small::EnumLock::kTimeout);
 
-        auto elapsed = small::timeDiffMs(timeStart);
+        auto elapsed = small::time_diff_ms(timeStart);
         ASSERT_GE(elapsed, 300 - 1); // due conversion
 
         // push
@@ -255,9 +255,9 @@ namespace {
 
         // pop again
         value     = {};
-        timeStart = small::timeNow();
+        timeStart = small::time_now();
         ret       = q.wait_pop_front_until(timeStart + std::chrono::milliseconds(300), &value);
-        elapsed   = small::timeDiffMs(timeStart);
+        elapsed   = small::time_diff_ms(timeStart);
 
         ASSERT_GE(elapsed, 300 - 1); // due conversion
         ASSERT_EQ(ret, small::EnumLock::kTimeout);
@@ -269,12 +269,12 @@ namespace {
         ASSERT_EQ(q.size(), 0);
 
         // wait with timeout (since no elements)
-        auto             timeStart = small::timeNow();
+        auto             timeStart = small::time_now();
         std::vector<int> values;
         auto             ret = q.wait_pop_front_for(std::chrono::milliseconds(300), values, 10);
         ASSERT_EQ(ret, small::EnumLock::kTimeout);
 
-        auto elapsed = small::timeDiffMs(timeStart);
+        auto elapsed = small::time_diff_ms(timeStart);
         ASSERT_GE(elapsed, 300 - 1); // due conversion
 
         // push
@@ -292,9 +292,9 @@ namespace {
         ASSERT_EQ(q.size(), 0);
 
         // pop again
-        timeStart = small::timeNow();
+        timeStart = small::time_now();
         ret       = q.wait_pop_front_until(timeStart + std::chrono::milliseconds(300), values, 10);
-        elapsed   = small::timeDiffMs(timeStart);
+        elapsed   = small::time_diff_ms(timeStart);
 
         ASSERT_GE(elapsed, 300 - 1); // due conversion
         ASSERT_EQ(ret, small::EnumLock::kTimeout);
@@ -306,7 +306,7 @@ namespace {
         ASSERT_EQ(q.size(), 0);
 
         // push inside thread
-        auto timeStart = small::timeNow();
+        auto timeStart = small::time_now();
         auto thread    = std::jthread([](small::prio_queue<int>& _q) {
             small::sleep(300);
 
@@ -318,7 +318,7 @@ namespace {
         // wait and pop
         int  value   = {};
         auto ret     = q.wait_pop_front(&value);
-        auto elapsed = small::timeDiffMs(timeStart);
+        auto elapsed = small::time_diff_ms(timeStart);
 
         ASSERT_EQ(ret, small::EnumLock::kElement);
         ASSERT_EQ(value, 5);
@@ -344,7 +344,7 @@ namespace {
         ASSERT_EQ(q.size(), 0);
 
         // create thread
-        auto timeStart = small::timeNow();
+        auto timeStart = small::time_now();
         auto thread    = std::jthread([](small::prio_queue<int>& _q) {
             // signal after some time
             small::sleep(300);
@@ -355,7 +355,7 @@ namespace {
         // check
         value        = {};
         ret          = q.wait_pop_front(&value);
-        auto elapsed = small::timeDiffMs(timeStart);
+        auto elapsed = small::time_diff_ms(timeStart);
 
         ASSERT_EQ(ret, small::EnumLock::kExit);
         ASSERT_GE(elapsed, 300 - 1); // due conversion
@@ -383,7 +383,7 @@ namespace {
         ASSERT_EQ(q.size(), 0);
 
         // create thread
-        auto timeStart = small::timeNow();
+        auto timeStart = small::time_now();
         auto thread    = std::jthread([](small::prio_queue<int>& _q) {
             // signal after some time
             small::sleep(300);
@@ -394,7 +394,7 @@ namespace {
         // check that exit happened because there is nothing in queue
         value        = {};
         ret          = q.wait_pop_front(&value);
-        auto elapsed = small::timeDiffMs(timeStart);
+        auto elapsed = small::time_diff_ms(timeStart);
 
         ASSERT_EQ(ret, small::EnumLock::kExit);
         ASSERT_GE(elapsed, 300 - 1); // due conversion

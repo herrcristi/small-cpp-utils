@@ -95,21 +95,21 @@ namespace small {
     };
 
     //
-    // conversion toLowerCase, toUpperCase
+    // conversion to_lower_case, to_upper_case
     //
-    inline std::string toLowerCase(std::string& u)
+    inline std::string to_lower_case(std::string& u)
     {
         std::transform(u.begin(), u.end(), u.begin(), ::tolower);
         return u;
     }
 
-    inline std::string toUpperCase(std::string& u)
+    inline std::string to_upper_case(std::string& u)
     {
         std::transform(u.begin(), u.end(), u.begin(), ::toupper);
         return u;
     }
 
-    inline std::string toCapitalizeCase(std::string& u)
+    inline std::string to_capitalize_case(std::string& u)
     {
         std::transform(u.begin(), u.end(), u.begin(), ::tolower);
         if (u.begin() != u.end()) {
@@ -121,13 +121,13 @@ namespace small {
     //
     // convert to hex representation
     //
-    struct toHex_config
+    struct to_hex_config
     {
         bool fill{}; // fill with zeroes up to the size
     };
 
     template <typename T>
-    inline std::string toHex(const T number, const toHex_config config = {})
+    inline std::string to_hex(const T number, const to_hex_config config = {})
     {
         std::stringstream ss;
         ss << std::hex;
@@ -141,8 +141,10 @@ namespace small {
     }
 
     template <typename T>
-    inline std::string toHexF(const T number)
+    inline std::string to_hex_fill(const T number)
     {
-        return toHex(number, {.fill = true});
+        return to_hex(number, {.fill = true});
     }
+
+    // TODO add conversion from string to wstring and reverse
 } // namespace small

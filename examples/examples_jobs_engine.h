@@ -161,7 +161,7 @@ namespace examples::jobs_engine {
                 std::cout << color::lightblue << std::setw(15) << "..."
                           << "ADD TO " << data_type
                           << " {" << webID << ", " << webData << "} jobid=" << jobs_item->m_id
-                          << " time " << small::toISOString(small::timeNow())
+                          << " time " << small::to_iso_string()(small::time_now())
                           << " thread " << std::this_thread::get_id()
                           << "\n"
                           << color::reset;
@@ -178,7 +178,7 @@ namespace examples::jobs_engine {
                     std::cout << color::lightblue << std::setw(15) << "..."
                               << "DELETE FROM " << data_type
                               << " {" << webID << ", " << it_data->second << "} jobid=" << jobs_item->m_id
-                              << " time " << small::toISOString(small::timeNow())
+                              << " time " << small::to_iso_string()(small::time_now())
                               << " thread " << std::this_thread::get_id()
                               << "\n"
                               << color::reset;
@@ -186,7 +186,7 @@ namespace examples::jobs_engine {
                     std::cout << color::yellow << std::setw(15) << "..."
                               << "DELETE NOT FOUND IN " << data_type
                               << " {" << webID << "} jobid=" << jobs_item->m_id
-                              << " time " << small::toISOString(small::timeNow())
+                              << " time " << small::to_iso_string()(small::time_now())
                               << " thread " << std::this_thread::get_id()
                               << "\n"
                               << color::reset;
@@ -203,7 +203,7 @@ namespace examples::jobs_engine {
                     std::cout << color::lightblue << std::setw(15) << "..."
                               << "GET FROM " << data_type
                               << " {" << webID << ", " << it_data->second << "} jobid=" << jobs_item->m_id
-                              << " time " << small::toISOString(small::timeNow())
+                              << " time " << small::to_iso_string()(small::time_now())
                               << " thread " << std::this_thread::get_id()
                               << "\n"
                               << color::reset;
@@ -211,7 +211,7 @@ namespace examples::jobs_engine {
                     std::cout << color::yellow << std::setw(15) << "..."
                               << "GET NOT FOUND IN " << data_type
                               << " {" << webID << "} jobid=" << jobs_item->m_id
-                              << " time " << small::toISOString(small::timeNow())
+                              << " time " << small::to_iso_string()(small::time_now())
                               << " thread " << std::this_thread::get_id()
                               << "\n"
                               << color::reset;
@@ -271,7 +271,7 @@ namespace examples::jobs_engine {
             std::cout << color::cyan << std::setw(15) << "..."
                       << "DATABASE processing (coalesced) calls for jobsids [ " << ssr.str() << " ]"
                       << " current jobsids calls [ " << ssj.str() << " ]"
-                      << " time " << small::toISOString(small::timeNow())
+                      << " time " << small::to_iso_string()(small::time_now())
                       << " thread " << std::this_thread::get_id()
                       << "\n"
                       << color::reset;
@@ -282,7 +282,7 @@ namespace examples::jobs_engine {
             std::cout << color::cyan << std::setw(15) << "..."
                       << "DATABASE processed (coalesced) calls for jobsids [ " << ssr.str() << " ]"
                       << " current jobsids calls [ " << ssj.str() << " ]"
-                      << " time " << small::toISOString(small::timeNow())
+                      << " time " << small::to_iso_string()(small::time_now())
                       << " thread " << std::this_thread::get_id()
                       << "\n"
                       << color::reset;
@@ -355,7 +355,7 @@ namespace examples::jobs_engine {
                       << " req=" << impl::to_string(item->m_request)
                       << " res=" << impl::to_string(item->m_response)
                       << "}"
-                      << " time " << small::toISOString(small::timeNow())
+                      << " time " << small::to_iso_string()(small::time_now())
                       << " thread " << std::this_thread::get_id()
                       << "\n"
                       << impl::color::reset;

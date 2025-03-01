@@ -20,10 +20,20 @@ namespace examples::stack_string {
         s.clear();
 
         s = std::string("ancx");
-        // s < std::string("ancx");
-        // s.assign(std::string("ancx"));
-        // s.set(0, std::string("ancx"));
-        // s.overwrite(0, std::string("ancx"));
+        s = "ancx"sv;
+        s = L"ancx"sv;
+        s.assign(std::string("ancx"));
+        s.set(0, std::string("ancx"));
+        s.overwrite(0, std::string("ancx"));
+
+        auto b1 = s < std::string("ancx");
+        auto b2 = s + std::string("ancx");
+        auto b3 = s == std::string("ancx");
+
+        std::cout << "comparison less with itself = " << b1 << "\n";
+        std::cout << "sum b2 = " << b2 << "\n";
+        std::cout << "comparison should be equal = " << b3 << "\n";
+
         std::cout << "assign ancx = " << s << "\n";
 
         s.set(2 /*from*/, "b", 1);
@@ -59,6 +69,8 @@ namespace examples::stack_string {
         small::stack_string<4> s2  = std::string_view{"s2"};
         s2                        += "make it allocate the std::string";
         std::cout << "long string = " << s2 << "\n";
+
+        auto s3 = s + s1;
 
         std::cout << "Stack String finished\n\n";
 

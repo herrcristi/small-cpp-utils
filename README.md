@@ -27,7 +27,7 @@ This can be used in following ways:
 
 -   <b>base64</b> (quick functions for base64 encode & decode)
 -   <b>qhash</b> (a quick hash function for buffers and null termination strings)
--   <b>util</b> functions (like <b>icasecmp</b> for use with map/set, <b>sleep</b>, <b>timeNow</b>, <b>timeDiff</b>, <b>toISOString</b>, <b>rand</b>, <b>uuid</b>, ...)
+-   <b>util</b> functions (like <b>icasecmp</b> for use with map/set, <b>sleep</b>, <b>time_now</b>, <b>time_diff_ms</b>, <b>to_iso_string()</b>, <b>rand</b>, <b>uuid</b>, ...)
 -   <b>set_timeout</b> and <b>set_interval</b> util functions to execute custom functions after a timeout interval
 
 #
@@ -632,7 +632,7 @@ The following functions are available
 
 `stricmp, struct icasecmp`
 
-`toLowerCase`, `toUpperCase`, `toCapitalizeCase`, `toHex`, `toHexF with 0 prefill`
+`to_lower_case`, `to_upper_case`, `to_capitalize_case`, `to_hex`, `to_hex_fill with 0 prefill`
 
 Use it like this
 
@@ -642,7 +642,7 @@ int r = small::stricmp( "a", "C" );
 std::map<std::string, int, small::icasecmp> m;
 ...
 std::string s = "Some text";
-small::toLowerCase(s);
+small::to_lower_case(s);
 
 ```
 
@@ -656,19 +656,19 @@ small::sleep(100/*ms*/);
 ...
 ```
 
-`timeNow, timeDiffMs, timeDiffMicro, timeDiffNano`
+`time_now, time_diff_ms, time_diff_micro, time_diff_nano`
 
-`toUnixTimestamp`, `toISOString`
+`to_unix_timestamp`, `to_iso_string`
 
 Use it like this
 
 ```
-auto timeStart = small::timeNow();
+auto timeStart = small::time_now();
 ...
-auto elapsed = small::timeDiffMs(timeStart);
+auto elapsed = small::time_diff_ms(timeStart);
 ...
-auto timestamp = small::toUnixTimestamp(timeStart);
-auto time_str = small::toISOString(timeStart);
+auto timestamp = small::to_unix_timestamp(timeStart);
+auto time_str = small::to_iso_string()(timeStart);
 ```
 
 `rand8, rand16, rand32, rand64`

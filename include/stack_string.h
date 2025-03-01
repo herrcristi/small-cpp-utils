@@ -87,7 +87,7 @@ namespace small {
         // reserve / resize
         inline void reserve(const size_t new_size)
         {
-            ensure_size(new_size);
+            ensure_allocation(new_size);
             if (m_std_string) {
                 m_std_string->reserve(new_size);
             } else {
@@ -97,10 +97,14 @@ namespace small {
 
         inline void resize(const size_t new_size)
         {
-            ensure_size(new_size);
+            ensure_allocation(new_size);
             if (m_std_string) {
                 m_std_string->resize(new_size);
             } else {
+                // fill with zero from current size to new size
+                if (m_stack_string_size < new_size) {
+                    memset(m_stack_string.data() + m_stack_string_size, 0, new_size - m_stack_string_size);
+                }
                 m_stack_string_size                 = new_size;
                 m_stack_string[m_stack_string_size] = '\0';
             }
@@ -374,12 +378,16 @@ namespace small {
             m_std_string.reset();
         }
 
-        // ensure size
-        inline void ensure_size(size_t new_size)
+        // ensure allocation, stack or new std::string
+        inline void ensure_allocation(size_t new_size)
         {
-            // TODO copy data
-            if (new_size < m_stack_string.max_size()) {
+            // once std::string is allocated use it
+            if (m_std_string) {
+                return;
+            }
 
+            if (new_size < m_stack_string.max_size()) {
+                /*still on stack including null terminator*/
             } else {
                 if (!m_std_string) {
                     m_std_string = std::make_unique<std::string>(m_stack_string.data(), m_stack_string_size);
@@ -391,19 +399,11 @@ namespace small {
         inline void set_impl(const size_t& start_from, const char* b, const size_t& b_length)
         {
             resize(start_from + b_length);
-            // if ( m_std_string )
-            //{
-            //     memcpy( m_std_string.get()->data() + start_from, b, b_length );
-            // }
-            // else
-            //{
-            //     memcpy( m_stack_string.data() + start_from, b, b_length );
-            // }
             memcpy(data() + start_from, b, b_length);
         }
 
         // set impl
-        inline void set_impl(const wchar_t* wstr, const size_t& wstr_length, const size_t& start_from = 0)
+        inline void set_impl(const size_t& start_from, const wchar_t* wstr, const size_t& wstr_length)
         {
             std::setlocale(LC_ALL, "en_US.utf8");
             std::mbstate_t state = std::mbstate_t();

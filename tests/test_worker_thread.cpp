@@ -50,7 +50,7 @@ namespace {
         ASSERT_FALSE(locked);
 
         // signal thread to proceed further
-        auto timeStart = small::timeNow();
+        auto timeStart = small::time_now();
         sync_main.count_down();
 
         // wait for the thread to stop
@@ -63,7 +63,7 @@ namespace {
         // unlock
         w.unlock();
 
-        auto elapsed = small::timeDiffMs(timeStart);
+        auto elapsed = small::time_diff_ms(timeStart);
         ASSERT_GE(elapsed, 300 - 1);
     }
 
@@ -72,7 +72,7 @@ namespace {
     //
     TEST_F(WorkerThreadTest, Worker_Operations)
     {
-        auto timeStart = small::timeNow();
+        auto timeStart = small::time_now();
 
         // create workers
         small::worker_thread<int> workers({.threads_count = 0 /*no threads*/, .bulk_count = 2}, [](auto& /*this*/, const auto& /* items */, auto /*extra param b*/) {
@@ -98,7 +98,7 @@ namespace {
         // check size
         ASSERT_EQ(workers.size(), 0);
 
-        auto elapsed = small::timeDiffMs(timeStart);
+        auto elapsed = small::time_diff_ms(timeStart);
         ASSERT_GE(elapsed, 300 - 1); // due conversion
 
         // push after wait is not allowed
@@ -108,7 +108,7 @@ namespace {
 
     TEST_F(WorkerThreadTest, Worker_Operations_Delayed)
     {
-        auto timeStart = small::timeNow();
+        auto timeStart = small::time_now();
 
         int processing_count = 0;
 
@@ -133,13 +133,13 @@ namespace {
         ASSERT_EQ(workers.size(), 0);
         ASSERT_EQ(processing_count, 2);
 
-        auto elapsed = small::timeDiffMs(timeStart);
+        auto elapsed = small::time_diff_ms(timeStart);
         ASSERT_GE(elapsed, 300 - 1); // due conversion
     }
 
     TEST_F(WorkerThreadTest, Worker_Operations_Force_Exit)
     {
-        auto timeStart = small::timeNow();
+        auto timeStart = small::time_now();
 
         struct WorkerThreadFunction
         {
@@ -178,7 +178,7 @@ namespace {
         ASSERT_EQ(workers.size(), 1);
 
         // elapsed only 300 and not 600
-        auto elapsed = small::timeDiffMs(timeStart);
+        auto elapsed = small::time_diff_ms(timeStart);
         ASSERT_GE(elapsed, 300 - 1); // due conversion
         ASSERT_LT(elapsed, 600 - 1); // due conversion
     }
