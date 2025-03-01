@@ -1,0 +1,57 @@
+
+#include <cstdio>
+#include <iostream>
+#include <map>
+#include <thread>
+
+#include "../include/stack_string.h"
+
+namespace examples::stack_string {
+    //
+    //  example 1
+    //
+    inline int Example1()
+    {
+        std::cout << "Stack String\n";
+
+        small::stack_string s;
+        s.clear();
+
+        s.assign(std::string("ancx"));
+        std::cout << "assign ancx = " << s << "\n";
+
+        s.set(2 /*from*/, "b", 1);
+        std::cout << "assign set b = " << s << "\n";
+
+        s.insert(2 /*from*/, "a", 1);
+        std::cout << "assign insert a = " << s << "\n";
+
+        char* e = b.data(); // "anab"
+        std::cout << "data = " << e << "\n";
+
+        s.append("hello");
+        std::cout << "append = " << s << "\n";
+        s.clear();
+        std::cout << "after clear = " << s << "\n";
+
+        char* e1 = b.data(); // ""
+        std::cout << "data empty = " << e1 << "\n";
+
+        s.append("world", 5);
+        std::cout << "append world = " << s << "\n";
+
+        std::cout << "substr = " << s.substr(2, 2) << "\n";
+
+        auto h = std::hash<std::string_view>{}(s);
+        std::cout << "hash = " << h << "\n";
+
+        s.clear();
+
+        small::stack_string<4> s1 = "this is a long string to show switch to std::string";
+        std::cout << "long string = " << s1 << "\n";
+
+        std::cout << "Stack String finished\n\n";
+
+        return 0;
+    }
+} // namespace examples::stack_string
