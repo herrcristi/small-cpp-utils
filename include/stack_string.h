@@ -176,7 +176,7 @@ namespace small {
         inline void         set             (std::size_t from, const std::string_view s)        { set_impl(from, s.data(), s.size()); }
         inline void         set             (std::size_t from, const std::vector<char>& v)      { set_impl(from, v.data(), v.size()); }
         
-        inline void         set             (std::size_t from, const wchar_t c)                 { set_impl(from, &c, 1); }
+        inline void         set             (std::size_t from, const wchar_t c)                 { wchar_t s[2] = {c}; set_impl(from, s, 1); } // to be null terminated
         inline void         set             (std::size_t from, const wchar_t* s, size_t s_length){set_impl(from, s, s_length); }
         inline void         set             (std::size_t from, const std::wstring_view s)       { set_impl(from, s.data(), s.size()); }
         // clang-format on
