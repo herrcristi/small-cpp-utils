@@ -8,6 +8,11 @@
 #include <string>
 #include <string_view>
 
+//
+// small::stack_string<256/*on stack*/> s;
+// ...
+//
+
 
 namespace small
 {
@@ -21,61 +26,55 @@ namespace small
         // clang-format off
         stack_string                                () { init(); }
 
-        // from stack_string
+        
         stack_string                                ( const stack_string& o ) noexcept : stack_string() { operator=( o ); }
         stack_string                                ( stack_string&&      o ) noexcept : stack_string() { operator=( std::forward<stack_string>( o ) ); }
-        // from char*
+        
+        stack_string                                ( const char c    )                : stack_string() { operator=( c ); }
         stack_string                                ( const char* s )                  : stack_string() { operator=( s ); }
         stack_string                                ( const char* s, const size_t& s_length ) : stack_string() { set( s, s_length ); }
-        // from wchar_t*
+        stack_string                                ( const std::string& s )           : stack_string() { operator=( s ); }
+        stack_string                                ( const std::vector<char>& v )     : stack_string() { operator=( v ); }
+        stack_string                                ( const std::string_view s )       : stack_string() { operator=( s ); }
+        
+        stack_string                                ( const wchar_t c    )             : stack_string() { operator=( c ); }
         stack_string                                ( const wchar_t *s )               : stack_string() {  operator=( s ); }
         stack_string                                ( const wchar_t *s, const size_t& s_length ) : stack_string() { set( s, s_length ); }
-        // from char
-        stack_string                                ( const char c    )                : stack_string() { operator=( c ); }
-        // from wchar_t
-        stack_string                                ( const wchar_t c    )             : stack_string() { operator=( c ); }
-        // from std::string
-        stack_string                                ( const std::string& s )           : stack_string() { operator=( s ); }
-        // from std::wstring
         stack_string                                ( const std::wstring& s )          : stack_string() { operator=( s ); }
-        // from std::vector<char>
-        stack_string                                ( const std::vector<char>& v )     : stack_string() { operator=( v ); }
-        // from std::string_view
-        stack_string                                ( const std::string_view s )       : stack_string() { operator=( s ); }
 
         // destructor
-        ~stack_string                               () { }
+        ~stack_string                               () = default;
         // clang-format on
 
 
 
         // clang-format off
         // size / empty / clear
-        inline size_t   size                        () const { return std_string_ ? std_string_->size() : stack_string_size_;  }
+        inline size_t   size                        () const { return m_std_string ? m_std_string->size() : m_stack_string_size;  }
         inline size_t   length                      () const { return size();  }
         inline bool     empty                       () const { return size() == 0; }
-        inline void     clear                       () { stack_string_size_ = 0; init(); }
+        inline void     clear                       () { m_stack_string_size = 0; init(); }
         // clang-format on
 
 
         // clang-format off
         // reserve / resize
-        inline void     reserve                     ( const size_t new_size ) { ensure_size( new_size ); if ( std_string_ ) { std_string_->reserve( new_size ); } else {} }
-        inline void     resize                      ( const size_t new_size ) { ensure_size( new_size ); if ( std_string_ ) { std_string_->resize( new_size ); } else { stack_string_size_ = new_size; stack_string_[ stack_string_size_ ] = '\0'; } }
-        inline void     shrink_to_fit               ()                        { if ( std_string_ ) { std_string_->shrink_to_fit(); } else {} }
+        inline void     reserve                     ( const size_t new_size ) { ensure_size( new_size ); if ( m_std_string ) { m_std_string->reserve( new_size ); } else {} }
+        inline void     resize                      ( const size_t new_size ) { ensure_size( new_size ); if ( m_std_string ) { m_std_string->resize( new_size ); } else { m_stack_string_size = new_size; m_stack_string[ m_stack_string_size ] = '\0'; } }
+        inline void     shrink_to_fit               ()                        { if ( m_std_string ) { m_std_string->shrink_to_fit(); } else {} }
         // clang-format on
 
 
         // clang-format off
         // data
-        inline const char* c_str                    () const { return std_string_ ? std_string_.get()->c_str() : stack_string_.data(); }
-        inline const char* data                     () const { return std_string_ ? std_string_.get()->data()  : stack_string_.data(); }
-        inline char*    data                        ()       { return std_string_ ? std_string_.get()->data()  : stack_string_.data(); }
+        inline const char* c_str                    () const { return m_std_string ? m_std_string.get()->c_str() : m_stack_string.data(); }
+        inline const char* data                     () const { return m_std_string ? m_std_string.get()->data()  : m_stack_string.data(); }
+        inline char*    data                        ()       { return m_std_string ? m_std_string.get()->data()  : m_stack_string.data(); }
         // clang-format off
 
         // clang-format off
         // as c_string
-        inline std::string c_string                 () const { return std_string_ ? *std_string_.get() : std::string( stack_string_.data(), stack_string_size_ ); }
+        inline std::string c_string                 () const { return m_std_string ? *m_std_string.get() : std::string( m_stack_string.data(), m_stack_string_size ); }
         inline std::string_view c_view              () const { return std::string_view{ data(), size() }; }
         inline std::wstring c_wstring               () const { return get_stringw_impl(); }
         // clang-format on
@@ -146,19 +145,19 @@ namespace small
         { 
             if ( this != &o ) 
             { 
-                stack_string_size_  = o.stack_string_size_; 
-                stack_string_       = std::copy( o.stack_string_ ); 
-                if ( o.std_string_ ) 
+                m_stack_string_size  = o.m_stack_string_size; 
+                m_stack_string          = std::copy( o.m_stack_string ); 
+                if ( o.m_std_string ) 
                 {  
-                    if ( !std_string_ )
+                    if ( !m_std_string )
                     { 
-                        std_string_ = std::make_unique<std::string>(); 
+                        m_std_string = std::make_unique<std::string>(); 
                     } 
-                    std_string_ = *o.std_string_.get(); 
+                    m_std_string = *o.m_std_string.get(); 
                 } 
                 else 
                 { 
-                    std_string_.reset(); 
+                    m_std_string.reset(); 
                 } 
             } 
             return *this; 
@@ -168,9 +167,9 @@ namespace small
         { 
             if ( this != &o ) 
             { 
-                stack_string_size_  = std::move( o.stack_string_size_ ); 
-                stack_string_       = std::move( o.stack_string_ );  
-                std_string_         = std::move( o.std_string_ ); 
+                m_stack_string_size  = std::move( o.m_stack_string_size ); 
+                m_stack_string       = std::move( o.m_stack_string );  
+                m_std_string         = std::move( o.m_std_string ); 
                 o.init(); 
             } 
             return *this; 
@@ -203,11 +202,11 @@ namespace small
 
         // clang-format off
         // []
-        inline char&    operator[]                  ( const size_t& index       ) { return stack_string_[ index ]; }
-        inline const char operator[]                ( const size_t& index       ) const { return stack_string_[ index ]; }
+        inline char&    operator[]                  ( const size_t& index       ) { return m_stack_string[ index ]; }
+        inline const char operator[]                ( const size_t& index       ) const { return m_stack_string[ index ]; }
         
-        inline char&    at                          ( const size_t& index       ) { return stack_string_[ index ]; }
-        inline const char at                        ( const size_t& index       ) const { return stack_string_[ index ]; }
+        inline char&    at                          ( const size_t& index       ) { return m_stack_string[ index ]; }
+        inline const char at                        ( const size_t& index       ) const { return m_stack_string[ index ]; }
         // clang-format on
 
         // clang-format off
@@ -224,20 +223,20 @@ namespace small
     
     private:
         // init
-        inline void     init                        () { stack_string_size_  = 0; stack_string_.fill( '\0' ); std_string_.reset(); }
+        inline void     init                        () { m_stack_string_size  = 0; m_stack_string.fill( '\0' ); m_std_string.reset(); }
 
         // ensure size
         inline void     ensure_size                 ( size_t new_size )
         {
-            if ( new_size < stack_string_.max_size() )
+            if ( new_size < m_stack_string.max_size() )
             {
 
             }
             else 
             {
-                if ( !std_string_ )
+                if ( !m_std_string )
                 {
-                    std_string_ = std::make_unique<std::string>( stack_string_.data(), stack_string_size_ );
+                    m_std_string = std::make_unique<std::string>( m_stack_string.data(), m_stack_string_size );
                 } 
             }
         }
@@ -246,13 +245,13 @@ namespace small
         inline void     set_impl                    ( const char* b, const size_t& b_length, const size_t& start_from = 0 ) 
         { 
             resize( start_from + b_length ); 
-            //if ( std_string_ )
+            //if ( m_std_string )
             //{
-            //    memcpy( std_string_.get()->data() + start_from, b, b_length );
+            //    memcpy( m_std_string.get()->data() + start_from, b, b_length );
             //}
             //else
             //{
-            //    memcpy( stack_string_.data() + start_from, b, b_length );
+            //    memcpy( m_stack_string.data() + start_from, b, b_length );
             //}
             memcpy( data() + start_from, b, b_length );
         }
@@ -324,18 +323,18 @@ namespace small
             size_t initial_length = size();
             reserve( insert_from <= initial_length ? initial_length + b_length : insert_from + b_length );
             
-            if ( std_string_ )
+            if ( m_std_string )
             {
-                std_string_->insert( insert_from, b, b_length );
+                m_std_string->insert( insert_from, b, b_length );
             }
             else
             {
                 resize( insert_from <= initial_length ? initial_length + b_length : insert_from + b_length );
                 if ( insert_from <= initial_length )
-                    memmove( stack_string_ + insert_from + b_length, stack_string_ + insert_from, initial_length - insert_from );
+                    memmove( m_stack_string + insert_from + b_length, m_stack_string + insert_from, initial_length - insert_from );
                 else
-                    memset( stack_string_ + initial_length, '\0', (insert_from - initial_length) );
-                memcpy( stack_string_ + insert_from, b, b_length );
+                    memset( m_stack_string + initial_length, '\0', (insert_from - initial_length) );
+                memcpy( m_stack_string + insert_from, b, b_length );
             }
         }
 
@@ -343,9 +342,9 @@ namespace small
         // erase
         inline void     erase_impl                       ( const size_t& start_from, const size_t& length ) 
         { 
-            if ( std_string_ )
+            if ( m_std_string )
             {
-                std_string_->erase( start_from, length );
+                m_std_string->erase( start_from, length );
             }
             else
             {
@@ -354,7 +353,7 @@ namespace small
                     if ( start_from + length < size() )
                     {
                         size_t move_length = size() - (start_from + length);
-                        memmove( stack_string_ + start_from, stack_string_ + start_from + length, move_length );
+                        memmove( m_stack_string + start_from, m_stack_string + start_from + length, move_length );
                         resize( size() - length );
                     }
                     else
@@ -369,18 +368,18 @@ namespace small
         // swap
         inline void     swap_impl                   ( stack_string& o )
         {
-            std::swap( stack_string_size_,  o.stack_string_size_ );
-            std::swap( stack_string_,       o.stack_string_ );
-            std::swap( std_string_,         o.std_string_ );
+            std::swap( m_stack_string_size,  o.m_stack_string_size );
+            std::swap( m_stack_string,       o.m_stack_string );
+            std::swap( m_std_string,         o.m_std_string );
         }
     
     private:
         // string by default uses the array and if it goes beyond makes use of the std_string
-        std::array<char, StackAllocSize> stack_string_;
-        size_t          stack_string_size_;
+        std::array<char, StackAllocSize> m_stack_string;
+        size_t          m_stack_string_size;
         
         // for larger string
-        std::unique_ptr<std::string> std_string_;
+        std::unique_ptr<std::string> m_std_string;
     };
 
 
