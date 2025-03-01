@@ -668,7 +668,7 @@ auto timeStart = small::time_now();
 auto elapsed = small::time_diff_ms(timeStart);
 ...
 auto timestamp = small::to_unix_timestamp(timeStart);
-auto time_str = small::to_iso_string()(timeStart);
+auto time_str = small::to_iso_string(timeStart);
 ```
 
 `rand8, rand16, rand32, rand64`

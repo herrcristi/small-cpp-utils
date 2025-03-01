@@ -19,21 +19,21 @@ namespace examples::utiltimeout {
 
         auto timeoutID1 = small::set_timeout(std::chrono::milliseconds(1000), [&time_start]() {
             std::cout << "Timeout1 executed after " << small::time_diff_ms(time_start) << " ms"
-                      << " at " << small::to_iso_string()(small::time_now()) << " ms\n";
+                      << " at " << small::to_iso_string(small::time_now()) << " ms\n";
         });
         auto timeoutID2 = small::set_timeout(std::chrono::milliseconds(1000), [&time_start]() {
             std::cout << "Timeout2 should not be executed even after " << small::time_diff_ms(time_start) << " ms\n";
         });
 
         std::cout << "Timeout1 created with timeoutID=" << timeoutID1
-                  << " at " << small::to_iso_string()(small::time_now()) << "\n";
+                  << " at " << small::to_iso_string(small::time_now()) << "\n";
         std::cout << "Timeout2 created with timeoutID=" << timeoutID2
-                  << " at " << small::to_iso_string()(small::time_now()) << "\n";
+                  << " at " << small::to_iso_string(small::time_now()) << "\n";
 
         // this will cancel the timeout2
         auto ret = small::clear_timeout(timeoutID2);
         std::cout << "Clear Timeout timeoutID=" << timeoutID2 << " returned " << ret
-                  << " at " << small::to_iso_string()(small::time_now()) << "\n";
+                  << " at " << small::to_iso_string(small::time_now()) << "\n";
 
         std::cout << "Waiting 2 seconds for execution\n\n";
         small::sleep(2000);
@@ -41,7 +41,7 @@ namespace examples::utiltimeout {
         // timeout1 already executed
         ret = small::clear_timeout(timeoutID1);
         std::cout << "Clear Timeout timeoutID=" << timeoutID1 << " returned " << ret
-                  << " at " << small::to_iso_string()(small::time_now()) << "\n";
+                  << " at " << small::to_iso_string(small::time_now()) << "\n";
 
         std::cout << "Utils Timeout finished\n\n";
 
@@ -59,11 +59,11 @@ namespace examples::utiltimeout {
 
         auto intervalID1 = small::set_interval(std::chrono::milliseconds(1000), [&time_start]() {
             std::cout << "Interval1 executed after " << small::time_diff_ms(time_start) << " ms"
-                      << " at " << small::to_iso_string()(small::time_now()) << " ms\n";
+                      << " at " << small::to_iso_string(small::time_now()) << " ms\n";
         });
 
         std::cout << "Interval1 created with intervalID=" << intervalID1
-                  << " at " << small::to_iso_string()(small::time_now()) << "\n";
+                  << " at " << small::to_iso_string(small::time_now()) << "\n";
 
         std::cout << "Waiting 2.6 seconds for multiple executions\n\n";
         small::sleep(2600);
@@ -71,7 +71,7 @@ namespace examples::utiltimeout {
         // interval1 already executed
         auto ret = small::clear_interval(intervalID1);
         std::cout << "Clear Interval intervalID=" << intervalID1 << " returned " << ret
-                  << " at " << small::to_iso_string()(small::time_now()) << "\n";
+                  << " at " << small::to_iso_string(small::time_now()) << "\n";
 
         std::cout << "Waiting 1.6 seconds for no executions\n\n";
         small::sleep(1600);

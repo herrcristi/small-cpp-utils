@@ -50,7 +50,7 @@ namespace small {
     //
     // to iso string format '2024-12-02T18:45:43.950Z'
     //
-    inline std::string to_iso_string()(std::chrono::system_clock::time_point time = std::chrono::system_clock::now())
+    inline std::string to_iso_string(std::chrono::system_clock::time_point time = std::chrono::system_clock::now())
     {
         auto    tt = std::chrono::system_clock::to_time_t(time);
         std::tm tt_tm; // = *std::gmtime(&tt) is not thread safe

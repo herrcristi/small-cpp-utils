@@ -71,7 +71,7 @@ namespace examples::worker_thread {
                         std::cout << "thread " << std::this_thread::get_id()
                                   << " processing {" << i << ", \"" << s << "\"}";
 
-                        std::cout << " time " << small::to_iso_string()(small::time_now()) << "\n";
+                        std::cout << " time " << small::to_iso_string(small::time_now()) << "\n";
                     }
                 }
                 small::sleep(100);

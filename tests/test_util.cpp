@@ -184,16 +184,16 @@ namespace {
         ASSERT_GE(timeElapsedNano, (100 - 1) * 1000 * 1000);
     }
 
-    TEST_F(UtilTest, time_to_iso_string() _and_UnixTimestamp)
+    TEST_F(UtilTest, time_to_iso_string_and_UnixTimestamp)
     {
         std::time_t t    = 0;
         auto        from = std::chrono::system_clock::from_time_t(t);
-        ASSERT_EQ(small::to_iso_string()(from), "1970-01-01T00:00:00.000Z");
+        ASSERT_EQ(small::to_iso_string(from), "1970-01-01T00:00:00.000Z");
         ASSERT_EQ(small::to_unix_timestamp(from), 0);
 
         t    = 1733172168; // time_t is in seconds
         from = std::chrono::system_clock::from_time_t(t);
-        ASSERT_EQ(small::to_iso_string()(from), "2024-12-02T20:42:48.000Z");
+        ASSERT_EQ(small::to_iso_string(from), "2024-12-02T20:42:48.000Z");
         ASSERT_EQ(small::to_unix_timestamp(from), 1733172168000ULL);
     }
 
