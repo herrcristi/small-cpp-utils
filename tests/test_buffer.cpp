@@ -3,6 +3,8 @@
 #include "../include/buffer.h"
 
 namespace {
+    using namespace std::literals;
+
     class BufferTest : public testing::Test
     {
     protected:
@@ -59,14 +61,14 @@ namespace {
         ASSERT_EQ(b1, "a");
 
         small::buffer b2;
-        b2 = {"abc", 3 /*length*/};
+        b2 = "abc"sv;
         ASSERT_EQ(b2, "abc");
 
         b2 = b1;
         ASSERT_EQ(b2, "a");
 
         small::buffer b3;
-        b3 = {"abc", 2};
+        b3 = std::string_view{"abc", 2}; // reduced size
         ASSERT_EQ(b3, "ab");
 
         constexpr std::string_view sv = "abc";
@@ -134,7 +136,7 @@ namespace {
         b += {"c", 1};
         ASSERT_EQ(b, m_test + "abc");
 
-        constexpr std::string_view sv  = "d";
+        constexpr std::string_view sv  = "d"sv;
         b                             += {sv};
         ASSERT_EQ(b, m_test + "abcd");
     }
@@ -145,7 +147,7 @@ namespace {
         b = m_test;
         ASSERT_EQ(b, m_test);
 
-        small::buffer b1 = std::string_view{"a"};
+        small::buffer b1 = "a"sv;
         ASSERT_EQ(b1, "a");
 
         b.swap(b1);

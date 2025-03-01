@@ -25,19 +25,19 @@ namespace small {
         // clang-format off
         stack_string() { init(); }
 
-        stack_string(const stack_string& o) noexcept                    : stack_string() { operator=(o); }
-        stack_string(stack_string&&      o) noexcept                    : stack_string() { operator=( std::forward<stack_string>(o)); }
-        
         stack_string(const char c) noexcept                             : stack_string() { operator=(c); }
         stack_string(const char* s, const size_t& s_length) noexcept    : stack_string() { set(0 /*from*/, s, s_length); }
-        stack_string(const std::string& s) noexcept                     : stack_string() { operator=(s); }
         stack_string(const std::string_view s) noexcept                 : stack_string() { operator=(s); }
         stack_string(const std::vector<char>& v) noexcept               : stack_string() { operator=(v); }
+        stack_string(const std::string& s) noexcept                     : stack_string(std::string_view{s}) {}
         
         stack_string(const wchar_t c) noexcept                          : stack_string() { operator=(c); }
         stack_string(const wchar_t *s, const size_t& s_length ) noexcept: stack_string() { set(0 /*from*/, s, s_length); }
-        stack_string(const std::wstring& s) noexcept                    : stack_string() { operator=(s); }
         stack_string(const std::wstring_view s) noexcept                : stack_string() { operator=(s); }
+        stack_string(const std::wstring& s) noexcept                    : stack_string(std::wstring_view{s}) {}
+
+        stack_string(const stack_string& o) noexcept                    : stack_string() { operator=(o); }
+        stack_string(stack_string&& o) noexcept                         : stack_string() { operator=(std::forward<stack_string>(o)); }
         
         // destructor
         ~stack_string() = default;
@@ -169,7 +169,7 @@ namespace small {
 
         // clang-format off
         // set
-        inline void         set             (std::size_t from, const stack_string& s)           { if (this != &s) { set_impl( from, s.data(), s.size()); } }
+        inline void         set             (std::size_t from, const stack_string& s)           { if (this != &s) { set_impl(from, s.data(), s.size()); } }
         inline void         set             (std::size_t from, const char c)                    { set_impl(from, &c, 1); }
         inline void         set             (std::size_t from, const char* s, size_t s_length)  { set_impl(from, s, s_length); }
         inline void         set             (std::size_t from, const std::string_view s)        { set_impl(from, s.data(), s.size()); }
@@ -177,7 +177,7 @@ namespace small {
         
         inline void         set             (std::size_t from, const wchar_t c)                 { set_impl(from, &c, 1); }
         inline void         set             (std::size_t from, const wchar_t* s, size_t s_length){set_impl(from, s, s_length); }
-        inline void         set             (std::size_t from, const std::string_view s)        { set_impl(from, s.data(), s.size()); }
+        inline void         set             (std::size_t from, const std::wstring_view s)       { set_impl(from, s.data(), s.size()); }
         // clang-format on
 
         // clang-format off
@@ -258,9 +258,11 @@ namespace small {
         inline stack_string& operator=      (const char c) noexcept                             { assign(c); return *this; }
         inline stack_string& operator=      (const std::string_view s) noexcept                 { assign(s); return *this; }
         inline stack_string& operator=      (const std::vector<char>& v) noexcept               { assign(v); return *this; }
+        inline stack_string& operator=      (const std::string& s) noexcept                     { assign(std::string_view{s}); return *this; }
         
         inline stack_string& operator=      (const wchar_t c) noexcept                          { assign(c); return *this; }
         inline stack_string& operator=      (const std::wstring_view s) noexcept                { assign(s); return *this; }
+        inline stack_string& operator=      (const std::wstring& s) noexcept                    { assign(std::wstring_view{s}); return *this; }
         // clang-format on
 
         // clang-format off
@@ -301,7 +303,7 @@ namespace small {
         // clang-format off
 
         // operator
-        inline              operator std::string_view() { return c_view(); }
+        inline              operator std::string_view() const { return c_view(); }
 
         // clang-format off
         //
@@ -392,7 +394,7 @@ namespace small {
         }
 
         // set impl
-        inline void set_impl(const char* b, const size_t& b_length, const size_t& start_from = 0)
+        inline void set_impl(const size_t& start_from, const char* b, const size_t& b_length)
         {
             resize(start_from + b_length);
             // if ( m_std_string )
@@ -466,7 +468,7 @@ namespace small {
         }
 
         // insert impl
-        inline void insert_impl(const char* b, const size_t& b_length, const size_t& insert_from = 0)
+        inline void insert_impl(const size_t& insert_from, const char* b, const size_t& b_length)
         {
             size_t initial_length = size();
             reserve(insert_from <= initial_length ? initial_length + b_length : insert_from + b_length);
@@ -475,11 +477,14 @@ namespace small {
                 m_std_string->insert(insert_from, b, b_length);
             } else {
                 resize(insert_from <= initial_length ? initial_length + b_length : insert_from + b_length);
-                if (insert_from <= initial_length)
-                    memmove(m_stack_string + insert_from + b_length, m_stack_string + insert_from, initial_length - insert_from);
-                else
-                    memset(m_stack_string + initial_length, '\0', (insert_from - initial_length));
-                memcpy(m_stack_string + insert_from, b, b_length);
+                if (insert_from <= initial_length) {
+                    memmove(m_stack_string.data() + insert_from + b_length,
+                            m_stack_string.data() + insert_from,
+                            initial_length - insert_from);
+                } else {
+                    memset(m_stack_string.data() + initial_length, '\0', (insert_from - initial_length));
+                }
+                memcpy(m_stack_string.data() + insert_from, b, b_length);
             }
         }
 

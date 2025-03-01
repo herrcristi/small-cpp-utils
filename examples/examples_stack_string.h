@@ -17,7 +17,11 @@ namespace examples::stack_string {
         small::stack_string s;
         s.clear();
 
-        s.assign(std::string("ancx"));
+        s = std::string("ancx");
+        // s < std::string("ancx");
+        // s.assign(std::string("ancx"));
+        // s.set(0, std::string("ancx"));
+        // s.overwrite(0, std::string("ancx"));
         std::cout << "assign ancx = " << s << "\n";
 
         s.set(2 /*from*/, "b", 1);
@@ -26,7 +30,7 @@ namespace examples::stack_string {
         s.insert(2 /*from*/, "a", 1);
         std::cout << "assign insert a = " << s << "\n";
 
-        char* e = b.data(); // "anab"
+        char* e = s.data(); // "anab"
         std::cout << "data = " << e << "\n";
 
         s.append("hello");
@@ -34,7 +38,7 @@ namespace examples::stack_string {
         s.clear();
         std::cout << "after clear = " << s << "\n";
 
-        char* e1 = b.data(); // ""
+        char* e1 = s.data(); // ""
         std::cout << "data empty = " << e1 << "\n";
 
         s.append("world", 5);

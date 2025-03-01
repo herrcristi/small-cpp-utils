@@ -162,10 +162,6 @@ namespace small::bufferimpl {
         // these specific operators must be implemented in derived classes
         inline base_buffer& operator=   (const base_buffer& o) = delete;
         inline base_buffer& operator=   (base_buffer&& o) = delete;
-        // =
-        inline base_buffer& operator=   (const char c) noexcept             { set(0 /*from*/, c); return *this; }
-        inline base_buffer& operator=   (const std::string_view s) noexcept { set(0 /*from*/, s); return *this; }
-        inline base_buffer& operator=   (const std::vector<char>& v) noexcept{set(0 /*from*/, v); return *this; }
         // clang-format on
 
         // clang-format off
