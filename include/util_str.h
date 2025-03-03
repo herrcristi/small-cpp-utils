@@ -155,8 +155,10 @@ namespace small {
     //
 
     // from utf8 -> utf16
-    inline std::wstring to_utf16(const char* mbstr)
+    inline std::wstring to_utf16(const char* mbstr, const std::size_t& /* length */)
     {
+        // TODO check if it is null terminated
+
         std::wstring wstr;
         std::size_t  new_length = small::strimpl::to_utf16_needed_length(mbstr);
         if (new_length == static_cast<std::size_t>(-1))
@@ -168,8 +170,10 @@ namespace small {
     }
 
     // from utf16 -> utf8
-    inline std::string to_utf8(const wchar_t* wstr)
+    inline std::string to_utf8(const wchar_t* wstr, const std::size_t& /* length */)
     {
+        // TODO check if it is null terminated
+
         std::string str;
         std::size_t new_length = small::strimpl::to_utf8_needed_length(wstr);
         if (new_length == static_cast<std::size_t>(-1))

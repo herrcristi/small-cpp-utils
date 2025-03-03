@@ -427,7 +427,7 @@ namespace small {
         // get the wstring
         inline std::wstring get_stringw_impl() const
         {
-            return small::to_utf16(data());
+            return small::to_utf16(data(), size());
         }
 
         // insert impl
@@ -452,9 +452,9 @@ namespace small {
         }
 
         // insert impl
-        inline void insert_impl(const size_t& insert_from, const wchar_t* wstr, const size_t& /* wstr_length */)
+        inline void insert_impl(const size_t& insert_from, const wchar_t* wstr, const size_t& wstr_length)
         {
-            std::string str = small::to_utf8(wstr);
+            std::string str = small::to_utf8(wstr, wstr_length);
             insert_impl(insert_from, str.data(), str.size());
         }
 
