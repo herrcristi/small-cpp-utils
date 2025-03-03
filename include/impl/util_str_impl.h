@@ -9,6 +9,10 @@
 #include <iomanip>
 #include <string>
 
+#if defined(_WIN32) || defined(_WIN64)
+#include <stringapiset.h>
+#endif
+
 namespace small::strimpl {
 
     //
