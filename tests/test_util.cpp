@@ -153,14 +153,20 @@ namespace {
         ASSERT_EQ(small::to_hex_fill(45ULL), "000000000000002d");
 
         // conversions
-        auto utf16_text = L"Some text zß水🍌"sv;
-        auto utf8text   = "Some text z\u00df\u6c34\U0001f34c"sv;
+        auto utf16text = L"Some text zß水🍌"sv;
+        auto utf8text  = "Some text z\u00df\u6c34\U0001f34c"sv;
+
+        // to utf16
+        ASSERT_EQ(small::to_utf16("", 0), L"\0");
+        ASSERT_EQ(small::to_utf16(nullptr, 0), L"\0");
+        ASSERT_EQ(small::to_utf16(utf8text), utf16text.data());
+        ASSERT_EQ(small::to_utf16(utf8text.data(), utf8text.size() - 11), L"Some text");
 
         // to utf8
         ASSERT_EQ(small::to_utf8(L"", 0), "\0");
         ASSERT_EQ(small::to_utf8(nullptr, 0), "\0");
-        ASSERT_EQ(small::to_utf8(utf16_text), utf8text.data());
-        ASSERT_EQ(small::to_utf8(utf16_text.data(), utf16_text.size() - 5), "Some text");
+        ASSERT_EQ(small::to_utf8(utf16text), utf8text.data());
+        ASSERT_EQ(small::to_utf8(utf16text.data(), utf16text.size() - 5), "Some text");
     }
 
     //

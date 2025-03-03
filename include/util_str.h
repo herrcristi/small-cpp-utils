@@ -171,7 +171,7 @@ namespace small {
             str = str_length.c_str();
         }
 
-        std::size_t new_length = small::strimpl::to_utf16_needed_length(mbstr);
+        std::size_t new_length = small::strimpl::to_utf16_needed_length(str);
         if (new_length == static_cast<std::size_t>(-1))
             return wstr;
 
