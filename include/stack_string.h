@@ -408,20 +408,20 @@ namespace small {
         }
 
         // set impl
-        inline void set_impl(size_t start_from, const wchar_t* wstr, const size_t& /* wstr_length */)
+        inline void set_impl(std::size_t start_from, const wchar_t* wstr, const std::size_t& wsize)
         {
             std::size_t initial_length = size();
 
             start_from = std::min(start_from, initial_length); // otherwise zeros are added
 
-            std::size_t new_length = small::strimpl::to_utf8_needed_length(wstr);
+            std::size_t new_length = small::strimpl::to_utf8_needed_length(wstr, wsize);
             if (new_length == static_cast<std::size_t>(-1)) {
                 resize(start_from);
                 return;
             }
 
             resize(start_from + new_length);
-            small::strimpl::to_utf8(wstr, data() + start_from, new_length);
+            small::strimpl::to_utf8(wstr, wsize, data() + start_from, new_length);
         }
 
         // get the wstring
