@@ -50,7 +50,7 @@ namespace {
         ASSERT_FALSE(locked);
 
         // signal thread to proceed further
-        auto timeStart = small::timeNow();
+        auto timeStart = small::time_now();
         sync_main.count_down();
 
         // wait for the thread to stop
@@ -63,7 +63,7 @@ namespace {
         // unlock
         event.unlock();
 
-        auto elapsed = small::timeDiffMs(timeStart);
+        auto elapsed = small::time_diff_ms(timeStart);
         ASSERT_GE(elapsed, 300 - 1);
     }
 
@@ -76,9 +76,9 @@ namespace {
         small::event event;
         event.set_event();
 
-        auto timeStart = small::timeNow();
+        auto timeStart = small::time_now();
         event.wait();
-        auto elapsed = small::timeDiffMs(timeStart);
+        auto elapsed = small::time_diff_ms(timeStart);
 
         ASSERT_LE(elapsed, 100);
     }
@@ -89,7 +89,7 @@ namespace {
         small::event event;
 
         // create thread
-        auto timeStart = small::timeNow();
+        auto timeStart = small::time_now();
         auto thread    = std::jthread([](small::event& e) {
             small::sleep(300);
             e.set_event();
@@ -98,7 +98,7 @@ namespace {
 
         // wait to be signaled in the thread
         event.wait();
-        auto elapsed = small::timeDiffMs(timeStart);
+        auto elapsed = small::time_diff_ms(timeStart);
 
         ASSERT_GE(elapsed, 300 - 1); // due conversion
     }
@@ -118,7 +118,7 @@ namespace {
         },
                                     std::ref(event));
 
-        auto timeStart = small::timeNow();
+        auto timeStart = small::time_now();
 
         // signal event
         small::sleep(300);
@@ -127,7 +127,7 @@ namespace {
         thread0.join();
         thread1.join();
 
-        auto elapsed = small::timeDiffMs(timeStart);
+        auto elapsed = small::time_diff_ms(timeStart);
 
         ASSERT_GE(elapsed, 300 - 1); // due conversion
     }
@@ -141,7 +141,7 @@ namespace {
         small::event event;
 
         // create thread
-        auto timeStart = small::timeNow();
+        auto timeStart = small::time_now();
         auto thread    = std::jthread([](small::event& e) {
             small::sleep(300);
             e.set_event(); // signal
@@ -155,7 +155,7 @@ namespace {
             conditionEvaluatedInc++;
             return true; // condition always true
         });
-        auto elapsed = small::timeDiffMs(timeStart);
+        auto elapsed = small::time_diff_ms(timeStart);
 
         ASSERT_GE(elapsed, 300 - 1);         // due conversion
         ASSERT_EQ(conditionEvaluatedInc, 1); // condition is evaluated after event is signaled
@@ -167,7 +167,7 @@ namespace {
         small::event event;
 
         // create thread
-        auto timeStart = small::timeNow();
+        auto timeStart = small::time_now();
         auto thread    = std::jthread([](small::event& e) {
             e.set_event(); // signal
         },
@@ -180,10 +180,10 @@ namespace {
         event.wait([&]() {
             // event is signaled by condition will return after some time
             conditionEvaluatedInc++;
-            auto diff = small::timeDiffMs(timeStart);
+            auto diff = small::time_diff_ms(timeStart);
             return diff >= waitTimeCondition ? true : false;
         });
-        auto elapsed = small::timeDiffMs(timeStart);
+        auto elapsed = small::time_diff_ms(timeStart);
 
         ASSERT_GE(elapsed, waitTimeCondition - 1); // due conversion
         ASSERT_GE(conditionEvaluatedInc, 3);       // condition is evaluated many times
@@ -196,7 +196,7 @@ namespace {
         small::event event(small::EventType::kManual);
         event.set_event();
 
-        auto timeStart = small::timeNow();
+        auto timeStart = small::time_now();
 
         const int waitTimeCondition     = 300;
         int       conditionEvaluatedInc = 0;
@@ -205,10 +205,10 @@ namespace {
         event.wait([&]() {
             // event is signaled by condition will return after some time
             conditionEvaluatedInc++;
-            auto diff = small::timeDiffMs(timeStart);
+            auto diff = small::time_diff_ms(timeStart);
             return diff >= waitTimeCondition ? true : false;
         });
-        auto elapsed = small::timeDiffMs(timeStart);
+        auto elapsed = small::time_diff_ms(timeStart);
 
         ASSERT_GE(elapsed, waitTimeCondition - 1); // due conversion
         ASSERT_GE(conditionEvaluatedInc, 3);       // condition is evaluated many times
@@ -223,10 +223,10 @@ namespace {
         // create event
         small::event event;
 
-        auto timeStart = small::timeNow();
+        auto timeStart = small::time_now();
 
         auto ret     = event.wait_for(std::chrono::milliseconds(300));
-        auto elapsed = small::timeDiffMs(timeStart);
+        auto elapsed = small::time_diff_ms(timeStart);
 
         ASSERT_GE(elapsed, 300 - 1); // due conversion
         ASSERT_EQ(ret, small::EnumLock::kTimeout);
@@ -238,10 +238,10 @@ namespace {
         small::event event;
         event.set_event();
 
-        auto timeStart = small::timeNow();
+        auto timeStart = small::time_now();
 
         auto ret     = event.wait_for(std::chrono::milliseconds(300));
-        auto elapsed = small::timeDiffMs(timeStart);
+        auto elapsed = small::time_diff_ms(timeStart);
 
         ASSERT_LE(elapsed, 100); // check some time even there is no delay
         ASSERT_EQ(ret, small::EnumLock::kElement);
@@ -255,14 +255,14 @@ namespace {
         // create manual event
         small::event event(small::EventType::kManual);
 
-        auto timeStart             = small::timeNow();
+        auto timeStart             = small::time_now();
         int  conditionEvaluatedInc = 0;
 
         // wait to be signaled in the thread
         auto ret     = event.wait_for(std::chrono::milliseconds(300), [&]() {
             return false;
         });
-        auto elapsed = small::timeDiffMs(timeStart);
+        auto elapsed = small::time_diff_ms(timeStart);
 
         ASSERT_GE(elapsed, 300 - 1); // due conversion
         ASSERT_EQ(conditionEvaluatedInc, 0);
@@ -275,7 +275,7 @@ namespace {
         small::event event;
         event.set_event();
 
-        auto timeStart             = small::timeNow();
+        auto timeStart             = small::time_now();
         int  conditionEvaluatedInc = 0;
 
         // wait to be signaled in the thread
@@ -283,7 +283,7 @@ namespace {
             conditionEvaluatedInc++;
             return true;
         });
-        auto elapsed = small::timeDiffMs(timeStart);
+        auto elapsed = small::time_diff_ms(timeStart);
 
         ASSERT_LE(elapsed, 100); // check some time even there is no delay
         ASSERT_EQ(conditionEvaluatedInc, 1);
@@ -298,10 +298,10 @@ namespace {
         // create event
         small::event event;
 
-        auto timeStart = small::timeNow();
+        auto timeStart = small::time_now();
 
         auto ret     = event.wait_until(timeStart + std::chrono::milliseconds(300));
-        auto elapsed = small::timeDiffMs(timeStart);
+        auto elapsed = small::time_diff_ms(timeStart);
 
         ASSERT_GE(elapsed, 300 - 1); // due conversion
         ASSERT_EQ(ret, small::EnumLock::kTimeout);
@@ -313,10 +313,10 @@ namespace {
         small::event event;
         event.set_event();
 
-        auto timeStart = small::timeNow();
+        auto timeStart = small::time_now();
 
         auto ret     = event.wait_until(timeStart + std::chrono::milliseconds(300));
-        auto elapsed = small::timeDiffMs(timeStart);
+        auto elapsed = small::time_diff_ms(timeStart);
 
         ASSERT_LE(elapsed, 100); // check some time even there is no delay
         ASSERT_EQ(ret, small::EnumLock::kElement);
@@ -330,14 +330,14 @@ namespace {
         // create manual event
         small::event event(small::EventType::kManual);
 
-        auto timeStart             = small::timeNow();
+        auto timeStart             = small::time_now();
         int  conditionEvaluatedInc = 0;
 
         // wait to be signaled in the thread
         auto ret     = event.wait_until(timeStart + std::chrono::milliseconds(300), [&]() {
             return false;
         });
-        auto elapsed = small::timeDiffMs(timeStart);
+        auto elapsed = small::time_diff_ms(timeStart);
 
         ASSERT_GE(elapsed, 300 - 1); // due conversion
         ASSERT_EQ(conditionEvaluatedInc, 0);
@@ -350,7 +350,7 @@ namespace {
         small::event event;
         event.set_event();
 
-        auto timeStart             = small::timeNow();
+        auto timeStart             = small::time_now();
         int  conditionEvaluatedInc = 0;
 
         // wait to be signaled in the thread
@@ -358,7 +358,7 @@ namespace {
             conditionEvaluatedInc++;
             return true;
         });
-        auto elapsed = small::timeDiffMs(timeStart);
+        auto elapsed = small::time_diff_ms(timeStart);
 
         ASSERT_LE(elapsed, 100); // check some time even there is no delay
         ASSERT_EQ(conditionEvaluatedInc, 1);

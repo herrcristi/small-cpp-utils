@@ -12,6 +12,7 @@
 #include "examples/examples_lock_queue.h"
 #include "examples/examples_prio_queue.h"
 #include "examples/examples_spinlock.h"
+#include "examples/examples_stack_string.h"
 #include "examples/examples_time_queue.h"
 #include "examples/examples_util.h"
 #include "examples/examples_util_timeout.h"
@@ -28,6 +29,7 @@ int main()
     examples::utiltimeout::Example1();
     examples::utiltimeout::Example2();
     examples::buffer::Example1();
+    examples::stack_string::Example1();
     examples::event::Example1();
     examples::lock_queue::Example1();
     examples::time_queue::Example1();

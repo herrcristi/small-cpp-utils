@@ -98,7 +98,7 @@ namespace {
         ASSERT_FALSE(locked);
 
         // signal thread to proceed further
-        auto timeStart = small::timeNow();
+        auto timeStart = small::time_now();
         sync_main.count_down();
 
         // wait for the thread to stop
@@ -111,7 +111,7 @@ namespace {
         // unlock
         j.unlock();
 
-        auto elapsed = small::timeDiffMs(timeStart);
+        auto elapsed = small::time_diff_ms(timeStart);
         ASSERT_GE(elapsed, 300 - 1);
     }
 
@@ -120,7 +120,7 @@ namespace {
     //
     TEST_F(JobsEngineTest, Jobs_Operations_Default_Processing)
     {
-        auto timeStart = small::timeNow();
+        auto timeStart = small::time_now();
 
         JobsEng::JobsConfig config = m_default_config;
         JobsEng             jobs(config);
@@ -163,7 +163,7 @@ namespace {
         // check size
         ASSERT_EQ(jobs.size(), 0);
 
-        auto elapsed = small::timeDiffMs(timeStart);
+        auto elapsed = small::time_diff_ms(timeStart);
         ASSERT_GE(elapsed, 300 - 1); // due conversion
         ASSERT_EQ(processing_count, 2);
 
@@ -179,7 +179,7 @@ namespace {
     //
     TEST_F(JobsEngineTest, Jobs_Default_Processing_Sleep_Between_Requests)
     {
-        auto timeStart = small::timeNow();
+        auto timeStart = small::time_now();
 
         JobsEng::JobsConfig config = m_default_config;
         JobsEng             jobs(config);
@@ -212,7 +212,7 @@ namespace {
         // check size
         ASSERT_EQ(jobs.size(), 0);
 
-        auto elapsed = small::timeDiffMs(timeStart);
+        auto elapsed = small::time_diff_ms(timeStart);
         ASSERT_GE(elapsed, 400 - 1); // due conversion
         ASSERT_EQ(processing_count, 1);
     }
@@ -222,7 +222,7 @@ namespace {
     //
     TEST_F(JobsEngineTest, Jobs_Default_Processing_Delay_Request)
     {
-        auto timeStart = small::timeNow();
+        auto timeStart = small::time_now();
 
         JobsEng::JobsConfig config = m_default_config;
         JobsEng             jobs(config);
@@ -262,7 +262,7 @@ namespace {
         // check size
         ASSERT_EQ(jobs.size(), 0);
 
-        auto elapsed = small::timeDiffMs(timeStart);
+        auto elapsed = small::time_diff_ms(timeStart);
         ASSERT_GE(elapsed, 300 - 1); // due conversion
         ASSERT_EQ(processing_count, 2);
     }
@@ -272,7 +272,7 @@ namespace {
     //
     TEST_F(JobsEngineTest, Jobs_Default_Processing_Timeout_Request)
     {
-        auto timeStart = small::timeNow();
+        auto timeStart = small::time_now();
 
         JobsEng::JobsConfig config = m_default_config;
         // set timeout to 300ms
@@ -317,7 +317,7 @@ namespace {
         // check size
         ASSERT_EQ(jobs.size(), 0);
 
-        auto elapsed = small::timeDiffMs(timeStart);
+        auto elapsed = small::time_diff_ms(timeStart);
         ASSERT_GE(elapsed, 300 - 1); // due conversion
         ASSERT_EQ(processing_count, 0);
         ASSERT_EQ(state_is_timeout, true);
@@ -679,7 +679,7 @@ namespace {
     //
     TEST_F(JobsEngineTest, Jobs_Operations_Force_Exit)
     {
-        auto timeStart = small::timeNow();
+        auto timeStart = small::time_now();
 
         JobsEng::JobsConfig config = m_default_config;
         JobsEng             jobs(config);
@@ -711,18 +711,18 @@ namespace {
         // check size
         ASSERT_EQ(jobs.size(), 1);
 
-        auto elapsed = small::timeDiffMs(timeStart);
+        auto elapsed = small::time_diff_ms(timeStart);
         ASSERT_GE(elapsed, 300 - 1); // due conversion
         ASSERT_EQ(processing_count, 0);
 
         // signal force exit
-        timeStart = small::timeNow();
+        timeStart = small::time_now();
 
         jobs.signal_exit_force();
         retw = jobs.wait();
         ASSERT_EQ(retw, small::EnumLock::kExit);
 
-        elapsed = small::timeDiffMs(timeStart);
+        elapsed = small::time_diff_ms(timeStart);
         ASSERT_LE(elapsed, 100);
     }
 

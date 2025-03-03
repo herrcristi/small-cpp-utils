@@ -563,7 +563,7 @@ namespace small {
         //
         // after child is finished
         //
-        inline void jobs_on_child_finished(std::shared_ptr<JobsItem> jobs_parent, std::shared_ptr<JobsItem> jobs_child)
+        inline void jobs_on_child_finished(std::shared_ptr<JobsItem> jobs_parent, std::shared_ptr<JobsItem> /* jobs_child */)
         {
             //
             // compute parent state and progress based on children

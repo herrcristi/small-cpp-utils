@@ -97,7 +97,7 @@ namespace small {
         {
             std::vector<T> vec_elems;
             const int      bulk_count = 1;
-            for (; true; small::sleepMicro(1)) {
+            for (; true; small::sleep_micro(1)) {
                 // wait
                 small::EnumLock ret = m_time_queue.wait_pop(vec_elems, bulk_count);
 

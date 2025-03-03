@@ -1,7 +1,11 @@
 #pragma once
 
+#include <stdlib.h>
+
 #include <iomanip>
 #include <string>
+
+#include "impl/util_str_impl.h"
 
 namespace small {
     // to lower
@@ -95,21 +99,21 @@ namespace small {
     };
 
     //
-    // conversion toLowerCase, toUpperCase
+    // conversion to_lower_case, to_upper_case
     //
-    inline std::string toLowerCase(std::string& u)
+    inline std::string to_lower_case(std::string& u)
     {
         std::transform(u.begin(), u.end(), u.begin(), ::tolower);
         return u;
     }
 
-    inline std::string toUpperCase(std::string& u)
+    inline std::string to_upper_case(std::string& u)
     {
         std::transform(u.begin(), u.end(), u.begin(), ::toupper);
         return u;
     }
 
-    inline std::string toCapitalizeCase(std::string& u)
+    inline std::string to_capitalize_case(std::string& u)
     {
         std::transform(u.begin(), u.end(), u.begin(), ::tolower);
         if (u.begin() != u.end()) {
@@ -121,13 +125,13 @@ namespace small {
     //
     // convert to hex representation
     //
-    struct toHex_config
+    struct to_hex_config
     {
         bool fill{}; // fill with zeroes up to the size
     };
 
     template <typename T>
-    inline std::string toHex(const T number, const toHex_config config = {})
+    inline std::string to_hex(const T number, const to_hex_config config = {})
     {
         std::stringstream ss;
         ss << std::hex;
@@ -141,8 +145,42 @@ namespace small {
     }
 
     template <typename T>
-    inline std::string toHexF(const T number)
+    inline std::string to_hex_fill(const T number)
     {
-        return toHex(number, {.fill = true});
+        return to_hex(number, {.fill = true});
+    }
+
+    //
+    // string conversions
+    //
+
+    // from utf8 -> utf16
+    inline std::wstring to_utf16(const char* mbstr, const std::size_t& /* length */)
+    {
+        // TODO check if it is null terminated
+
+        std::wstring wstr;
+        std::size_t  new_length = small::strimpl::to_utf16_needed_length(mbstr);
+        if (new_length == static_cast<std::size_t>(-1))
+            return wstr;
+
+        wstr.resize(new_length);
+        small::strimpl::to_utf16(mbstr, wstr.data(), wstr.size());
+        return wstr;
+    }
+
+    // from utf16 -> utf8
+    inline std::string to_utf8(const wchar_t* wstr, const std::size_t& /* length */)
+    {
+        // TODO check if it is null terminated
+
+        std::string str;
+        std::size_t new_length = small::strimpl::to_utf8_needed_length(wstr);
+        if (new_length == static_cast<std::size_t>(-1))
+            return str;
+
+        str.resize(new_length);
+        small::strimpl::to_utf8(wstr, str.data(), str.size());
+        return str;
     }
 } // namespace small

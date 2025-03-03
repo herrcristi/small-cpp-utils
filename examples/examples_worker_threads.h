@@ -71,7 +71,7 @@ namespace examples::worker_thread {
                         std::cout << "thread " << std::this_thread::get_id()
                                   << " processing {" << i << ", \"" << s << "\"}";
 
-                        std::cout << " time " << small::toISOString(small::timeNow()) << "\n";
+                        std::cout << " time " << small::to_iso_string(small::time_now()) << "\n";
                     }
                 }
                 small::sleep(100);
@@ -104,7 +104,7 @@ namespace examples::worker_thread {
         for (auto bulk_count : bulks) {
 
             for (int threads = 1; threads <= 4; ++threads) {
-                auto timeStart = small::timeNow();
+                auto timeStart = small::time_now();
 
                 // create worker
                 small::worker_thread<int> workers({.threads_count = threads, .bulk_count = bulk_count}, [](auto& w /*this*/, const std::vector<int>& elems) {
@@ -126,7 +126,7 @@ namespace examples::worker_thread {
                 workers.wait();
 
                 // time elapsed
-                auto elapsed = small::timeDiffMs(timeStart);
+                auto elapsed = small::time_diff_ms(timeStart);
                 std::cout << "Processing with " << threads << " threads " << elements << " elements and bulk " << bulk_count
                           << " took " << elapsed << " ms"
                           << ", at a rate of " << double(elements) / double(std::max(elapsed, 1LL)) << " elements/ms\n";
