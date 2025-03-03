@@ -414,14 +414,14 @@ namespace small {
 
             start_from = std::min(start_from, initial_length); // otherwise zeros are added
 
-            std::size_t new_length = small::impl::to_utf8_needed_length(wstr);
+            std::size_t new_length = small::strimpl::to_utf8_needed_length(wstr);
             if (new_length == static_cast<std::size_t>(-1)) {
                 resize(start_from);
                 return;
             }
 
             resize(start_from + new_length);
-            small::impl::to_utf8(wstr, data() + start_from, new_length);
+            small::strimpl::to_utf8(wstr, data() + start_from, new_length);
         }
 
         // get the wstring

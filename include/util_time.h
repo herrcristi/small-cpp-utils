@@ -55,9 +55,9 @@ namespace small {
         auto    tt = std::chrono::system_clock::to_time_t(time);
         std::tm tt_tm; // = *std::gmtime(&tt) is not thread safe
 #if defined(_WIN32) || defined(_WIN64)
-        gmtime_s(&tt_tm, &tt);
+        ::gmtime_s(&tt_tm, &tt);
 #else
-        gmtime_r(&tt, &tt_tm);
+        ::gmtime_r(&tt, &tt_tm);
 #endif
 
         auto timestamp = small::to_unix_timestamp(time);
