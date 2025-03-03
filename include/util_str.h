@@ -156,12 +156,22 @@ namespace small {
     //
 
     // from utf8 -> utf16
-    inline std::wstring to_utf16(const char* mbstr, const std::size_t& /* length */)
+    inline std::wstring to_utf16(const char* mbstr, const std::size_t& length)
     {
-        // TODO check if it is null terminated
-
         std::wstring wstr;
-        std::size_t  new_length = small::strimpl::to_utf16_needed_length(mbstr);
+        if (mbstr == nullptr || length == 0) {
+            return wstr;
+        }
+
+        // check if it is null terminated and create a string if it is not
+        const char* str = mbstr;
+        std::string str_length;
+        if (str[length] != '\0') {
+            str_length.append(mbstr, length);
+            str = str_length.c_str();
+        }
+
+        std::size_t new_length = small::strimpl::to_utf16_needed_length(mbstr);
         if (new_length == static_cast<std::size_t>(-1))
             return wstr;
 
@@ -170,12 +180,27 @@ namespace small {
         return wstr;
     }
 
-    // from utf16 -> utf8
-    inline std::string to_utf8(const wchar_t* wstr, const std::size_t& /* length */)
+    inline std::wstring to_utf16(const std::string_view sv)
     {
-        // TODO check if it is null terminated
+        return to_utf16(sv.data(), sv.size());
+    }
 
+    // from utf16 -> utf8
+    inline std::string to_utf8(const wchar_t* wstr16, const std::size_t& length)
+    {
         std::string str;
+        if (wstr16 == nullptr || length == 0) {
+            return str;
+        }
+
+        // check if it is null terminated and create a string if it is not
+        const wchar_t* wstr = wstr16;
+        std::wstring   wstr_length;
+        if (wstr[length] != '\0') {
+            wstr_length.append(wstr16, length);
+            wstr = wstr_length.c_str();
+        }
+
         std::size_t new_length = small::strimpl::to_utf8_needed_length(wstr);
         if (new_length == static_cast<std::size_t>(-1))
             return str;
@@ -183,5 +208,10 @@ namespace small {
         str.resize(new_length);
         small::strimpl::to_utf8(wstr, str.data(), str.size());
         return str;
+    }
+
+    inline std::string to_utf8(const std::wstring_view wstr16)
+    {
+        return to_utf8(wstr16.data(), wstr16.size());
     }
 } // namespace small

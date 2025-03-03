@@ -3,6 +3,8 @@
 #include "../include/util.h"
 
 namespace {
+    using namespace std::literals;
+
     class UtilTest : public testing::Test
     {
     protected:
@@ -149,6 +151,16 @@ namespace {
         // fill short version
         ASSERT_EQ(small::to_hex_fill(5), "00000005");
         ASSERT_EQ(small::to_hex_fill(45ULL), "000000000000002d");
+
+        // conversions
+        auto utf16_text = L"Some text zß水🍌"sv;
+        auto utf8text   = "Some text z\u00df\u6c34\U0001f34c"sv;
+
+        // to utf8
+        ASSERT_EQ(small::to_utf8(L"", 0), "\0");
+        ASSERT_EQ(small::to_utf8(nullptr, 0), "\0");
+        ASSERT_EQ(small::to_utf8(utf16_text), utf8text.data());
+        ASSERT_EQ(small::to_utf8(utf16_text.data(), utf16_text.size() - 5), "Some text");
     }
 
     //

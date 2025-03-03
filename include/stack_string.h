@@ -467,7 +467,9 @@ namespace small {
                 if (start_from < size()) {
                     if (start_from + length < size()) {
                         size_t move_length = size() - (start_from + length);
-                        memmove(m_stack_string + start_from /*dest*/, m_stack_string + start_from + length /*src*/, move_length /*length*/);
+                        memmove(m_stack_string.data() + start_from /*dest*/,
+                                m_stack_string.data() + start_from + length /*src*/,
+                                move_length /*length*/);
                         resize(size() - length);
                     } else {
                         resize(start_from);
