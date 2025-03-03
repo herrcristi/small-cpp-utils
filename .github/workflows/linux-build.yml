@@ -1,0 +1,23 @@
+name: Linux Build
+
+on: [push, pull_request]
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Set up CMake
+              run: sudo apt-get install -y cmake
+
+            - name: Configure CMake
+              run: cmake -B build
+
+            - name: Build with CMake
+              run: cmake --build build --config Release
+
+            - name: Run tests
+              run: ctest --test-dir build --output-on-failure -C Release
