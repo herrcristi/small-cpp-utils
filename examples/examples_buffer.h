@@ -4,6 +4,8 @@
 #include <map>
 #include <thread>
 
+#pragma warning(disable : 4464) // relative include path contains '..'
+
 #include "../include/buffer.h"
 
 namespace examples::buffer {

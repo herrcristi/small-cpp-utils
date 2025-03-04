@@ -2,6 +2,8 @@
 
 #include <unordered_map>
 
+#pragma warning(disable : 4464) // relative include path contains '..'
+
 #include "../prio_queue.h"
 #include "../time_queue_thread.h"
 

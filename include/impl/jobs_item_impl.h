@@ -7,6 +7,8 @@
 #include <unordered_map>
 #include <vector>
 
+#pragma warning(disable : 4464) // relative include path contains '..'
+
 #include "../base_lock.h"
 
 namespace small::jobsimpl {

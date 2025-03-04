@@ -5,6 +5,8 @@
 #include <string>
 #include <thread>
 
+#pragma warning(disable : 4464) // relative include path contains '..'
+
 #include "../include/util.h"
 
 namespace examples::util {

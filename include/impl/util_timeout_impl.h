@@ -4,6 +4,8 @@
 #include <chrono>
 #include <thread>
 
+#pragma warning(disable : 4464) // relative include path contains '..'
+
 #include "../jobs_engine.h"
 
 namespace small::timeoutimpl {

@@ -4,6 +4,8 @@
 #include <cstdio>
 #include <iostream>
 
+#pragma warning(disable : 4464) // relative include path contains '..'
+
 #include "../include/spinlock.h"
 
 namespace examples::spinlock {

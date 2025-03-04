@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#pragma warning(disable : 4464) // relative include path contains '..'
+
 #include "../include/buffer.h"
 #include "../include/stack_string.h"
 

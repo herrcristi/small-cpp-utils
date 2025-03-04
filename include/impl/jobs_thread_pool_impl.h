@@ -2,6 +2,8 @@
 
 #include <unordered_map>
 
+#pragma warning(disable : 4464) // relative include path contains '..'
+
 #include "../worker_thread.h"
 
 namespace small::jobsimpl {

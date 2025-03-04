@@ -393,7 +393,7 @@ namespace small::bufferimpl {
 
     private:
         // base_buffer empty
-        char m_empty_buffer[1]{'\0'};
+        char m_empty_buffer[8]{'\0'}; // to avoid padding
         // base_buffer use char* instead of vector<char> because it is much faster
         char*       m_buffer_data{nullptr};
         std::size_t m_buffer_length{0};

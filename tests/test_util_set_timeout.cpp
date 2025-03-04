@@ -2,6 +2,8 @@
 
 #include <latch>
 
+#pragma warning(disable : 4464) // relative include path contains '..'
+
 #include "../include/util.h"
 #include "../include/util_timeout.h"
 

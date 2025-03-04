@@ -3,6 +3,8 @@
 #include <latch>
 #include <thread>
 
+#pragma warning(disable : 4464) // relative include path contains '..'
+
 #include "../include/prio_queue.h"
 #include "../include/util.h"
 

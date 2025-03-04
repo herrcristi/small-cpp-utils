@@ -2,6 +2,8 @@
 
 #include <latch>
 
+#pragma warning(disable : 4464) // relative include path contains '..'
+
 #include "../include/event.h"
 #include "../include/util.h"
 

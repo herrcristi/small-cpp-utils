@@ -3,6 +3,8 @@
 #include <iostream>
 #include <thread>
 
+#pragma warning(disable : 4464) // relative include path contains '..'
+
 #include "../include/lock_queue.h"
 
 namespace examples::lock_queue {
