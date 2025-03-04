@@ -154,7 +154,7 @@ namespace {
 
         // conversions
         auto utf16text = L"Some text zß水🍌"sv;
-        auto utf8text  = "Some text z\u00df\u6c34\U0001f34c"sv;
+        auto utf8text  = "Some text z\xC3\x9F\xE6\xB0\xB4\xF0\x9F\x8D\x8C"sv; // "Some text z\u00df\u6c34\U0001f34c"sv;
 
         // to utf16
         ASSERT_EQ(small::to_utf16("", 0), L"\0");
