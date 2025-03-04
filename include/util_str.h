@@ -156,32 +156,64 @@ namespace small {
     //
 
     // from utf8 -> utf16
-    inline std::wstring to_utf16(const char* mbstr, const std::size_t& /* length */)
+    inline std::wstring to_utf16(const char* str8, const std::size_t& mbsize)
     {
-        // TODO check if it is null terminated
-
         std::wstring wstr;
-        std::size_t  new_length = small::strimpl::to_utf16_needed_length(mbstr);
-        if (new_length == static_cast<std::size_t>(-1))
+        if (str8 == nullptr || mbsize == 0) {
             return wstr;
+        }
 
-        wstr.resize(new_length);
-        small::strimpl::to_utf16(mbstr, wstr.data(), wstr.size());
+        // check if it is null terminated and create a string if it is not
+        const char* mbstr = str8;
+        std::string str_null_terminated;
+        if (mbstr[mbsize] != '\0') {
+            str_null_terminated.append(mbstr, mbsize);
+            mbstr = str_null_terminated.c_str();
+        }
+
+        std::size_t wsize = small::strimpl::to_utf16_needed_length(mbstr, mbsize);
+        if (wsize == static_cast<std::size_t>(-1)) {
+            return wstr;
+        }
+
+        wstr.resize(wsize);
+        small::strimpl::to_utf16(mbstr, mbsize, wstr.data(), wstr.size());
         return wstr;
     }
 
-    // from utf16 -> utf8
-    inline std::string to_utf8(const wchar_t* wstr, const std::size_t& /* length */)
+    inline std::wstring to_utf16(const std::string_view sv)
     {
-        // TODO check if it is null terminated
+        return to_utf16(sv.data(), sv.size());
+    }
 
+    // from utf16 -> utf8
+    inline std::string to_utf8(const wchar_t* wstr16, const std::size_t& wsize)
+    {
         std::string str;
-        std::size_t new_length = small::strimpl::to_utf8_needed_length(wstr);
-        if (new_length == static_cast<std::size_t>(-1))
+        if (wstr16 == nullptr || wsize == 0) {
             return str;
+        }
 
-        str.resize(new_length);
-        small::strimpl::to_utf8(wstr, str.data(), str.size());
+        // check if it is null terminated and create a string if it is not
+        const wchar_t* wstr = wstr16;
+        std::wstring   wstr_null_terminated;
+        if (wstr[wsize] != L'\0') {
+            wstr_null_terminated.append(wstr16, wsize);
+            wstr = wstr_null_terminated.c_str();
+        }
+
+        std::size_t mbsize = small::strimpl::to_utf8_needed_length(wstr, wsize);
+        if (mbsize == static_cast<std::size_t>(-1)) {
+            return str;
+        }
+
+        str.resize(mbsize);
+        small::strimpl::to_utf8(wstr, wsize, str.data(), str.size());
         return str;
+    }
+
+    inline std::string to_utf8(const std::wstring_view wstr16)
+    {
+        return to_utf8(wstr16.data(), wstr16.size());
     }
 } // namespace small

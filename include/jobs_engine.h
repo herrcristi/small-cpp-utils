@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -381,7 +382,7 @@ namespace small {
                 return small::EnumLock::kExit;
             }
 
-            int bulk_count = std::max(it_cfg_grp->second.m_bulk_count, 1);
+            int bulk_count = std::max<>(it_cfg_grp->second.m_bulk_count, 1);
 
             // delay request
             group_config.m_delay_next_request = it_cfg_grp->second.m_delay_next_request;
@@ -445,7 +446,7 @@ namespace small {
                     group_config.m_delay_next_request = type_config.m_delay_next_request;
                 } else {
                     if (type_config.m_delay_next_request) {
-                        group_config.m_delay_next_request = std::max(group_config.m_delay_next_request, type_config.m_delay_next_request);
+                        group_config.m_delay_next_request = std::max<>(group_config.m_delay_next_request, type_config.m_delay_next_request);
                     }
                 }
 

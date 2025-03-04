@@ -129,7 +129,7 @@ namespace examples::worker_thread {
                 auto elapsed = small::time_diff_ms(timeStart);
                 std::cout << "Processing with " << threads << " threads " << elements << " elements and bulk " << bulk_count
                           << " took " << elapsed << " ms"
-                          << ", at a rate of " << double(elements) / double(std::max(elapsed, 1LL)) << " elements/ms\n";
+                          << ", at a rate of " << double(elements) / double(std::max<>(elapsed, 1LL)) << " elements/ms\n";
             }
             std::cout << "\n";
         }

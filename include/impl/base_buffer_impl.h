@@ -66,9 +66,9 @@ namespace small::bufferimpl {
         {
             // vector is not null terminated, handle with care
             std::vector<char> v;
-            v.reserve(size() + 1);
-            v.resize(size());
+            v.resize(size() + 1);
             memcpy(v.data(), data(), size());
+            v.resize(size());
             return v;
         }
         // clang-format on
@@ -134,7 +134,7 @@ namespace small::bufferimpl {
         inline int compare(const char* s, std::size_t s_length) const
         {
             const std::size_t this_size = size();
-            int               cmp       = memcmp(data(), s, std::min(this_size, s_length));
+            int               cmp       = memcmp(data(), s, std::min<>(this_size, s_length));
 
             if (cmp != 0) {
                 // different

@@ -79,9 +79,9 @@ namespace small {
         {
             // vector is not null terminated, handle with care
             std::vector<char> v;
-            v.reserve(size() + 1);
-            v.resize(size());
+            v.resize(size() + 1);
             memcpy(v.data(), data(), size());
+            v.resize(size());
             return v;
         }
         // clang-format on
@@ -207,7 +207,7 @@ namespace small {
         inline int compare(const char* s, std::size_t s_length) const
         {
             const std::size_t this_size = size();
-            int               cmp       = memcmp(data(), s, std::min(this_size, s_length));
+            int               cmp       = memcmp(data(), s, std::min<>(this_size, s_length));
 
             if (cmp != 0) {
                 // different
@@ -402,26 +402,26 @@ namespace small {
         {
             std::size_t initial_length = size();
 
-            start_from = std::min(start_from, initial_length); // otherwise zeros are added
+            start_from = std::min<>(start_from, initial_length); // otherwise zeros are added
             resize(start_from + b_length);
             memcpy(data() + start_from /*dest*/, b /*src*/, b_length /*length*/);
         }
 
         // set impl
-        inline void set_impl(size_t start_from, const wchar_t* wstr, const size_t& /* wstr_length */)
+        inline void set_impl(std::size_t start_from, const wchar_t* wstr, const std::size_t& wsize)
         {
             std::size_t initial_length = size();
 
-            start_from = std::min(start_from, initial_length); // otherwise zeros are added
+            start_from = std::min<>(start_from, initial_length); // otherwise zeros are added
 
-            std::size_t new_length = small::strimpl::to_utf8_needed_length(wstr);
+            std::size_t new_length = small::strimpl::to_utf8_needed_length(wstr, wsize);
             if (new_length == static_cast<std::size_t>(-1)) {
                 resize(start_from);
                 return;
             }
 
             resize(start_from + new_length);
-            small::strimpl::to_utf8(wstr, data() + start_from, new_length);
+            small::strimpl::to_utf8(wstr, wsize, data() + start_from, new_length);
         }
 
         // get the wstring
@@ -434,7 +434,7 @@ namespace small {
         inline void insert_impl(size_t insert_from, const char* b, const size_t& b_length)
         {
             std::size_t initial_length = size();
-            insert_from                = std::min(insert_from, initial_length); // otherwise zeros are added
+            insert_from                = std::min<>(insert_from, initial_length); // otherwise zeros are added
             std::size_t new_length     = initial_length + b_length;
             reserve(new_length);
 
@@ -467,7 +467,9 @@ namespace small {
                 if (start_from < size()) {
                     if (start_from + length < size()) {
                         size_t move_length = size() - (start_from + length);
-                        memmove(m_stack_string + start_from /*dest*/, m_stack_string + start_from + length /*src*/, move_length /*length*/);
+                        memmove(m_stack_string.data() + start_from /*dest*/,
+                                m_stack_string.data() + start_from + length /*src*/,
+                                move_length /*length*/);
                         resize(size() - length);
                     } else {
                         resize(start_from);
