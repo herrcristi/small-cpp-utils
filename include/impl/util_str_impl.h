@@ -74,11 +74,11 @@ namespace small::strimpl {
         std::size_t new_length = 0;
 
 #if defined(_WIN32) || defined(_WIN64)
-        int wsize = WideCharToMultiByte(CP_UTF8, 0, wstr, (int)wsize, NULL, 0, NULL, NULL);
-        if (wsize <= 0) {
+        int mbsize = WideCharToMultiByte(CP_UTF8, 0, wstr, (int)wsize, NULL, 0, NULL, NULL);
+        if (mbsize <= 0) {
             return static_cast<std::size_t>(-1);
         }
-        new_length = static_cast<std::size_t>(wsize);
+        new_length = static_cast<std::size_t>(mbsize);
 #else
         new_length = std::wcsrtombs(nullptr, &wstr, 0, &state);
         if (new_length == static_cast<std::size_t>(-1)) {
