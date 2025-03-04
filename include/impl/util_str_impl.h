@@ -63,7 +63,7 @@ namespace small::strimpl {
         // int converted   = MultiByteToWideChar(CP_UTF8, 0, mbstr, (int)mbsize, wstr, wsize);
         // wstr[converted] = L'\0';
         size_t converted = 0;
-        /* ret              = */ ::mbsrtowcs_s(&converted, wstr, new_length + 1, &mbstr, new_length, &state);
+        /* ret              = */ ::mbsrtowcs_s(&converted, wstr, wsize + 1, &mbstr, wsize, &state);
         wstr[converted] = L'\0';
 #else
         /*size_t converted =*/std::mbsrtowcs(wstr, &mbstr, wsize, &state);
@@ -113,7 +113,7 @@ namespace small::strimpl {
         // int converted    = WideCharToMultiByte(CP_UTF8, 0, wstr, (int)wsize, mbstr, (int)mbsize, NULL, NULL);
         // mbstr[converted] = '\0';
         size_t converted = 0;
-        /* ret              = */ ::wcsrtombs_s(&converted, mbstr, new_length + 1, &wstr, new_length, &state);
+        /* ret              = */ ::wcsrtombs_s(&converted, mbstr, mbsize + 1, &wstr, mbsize, &state);
         mbstr[converted] = '\0';
 #else
         /*size_t converted =*/std::wcsrtombs(mbstr, &wstr, mbsize, &state);
