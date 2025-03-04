@@ -166,7 +166,7 @@ namespace {
         ASSERT_EQ(small::to_utf8(L"", 0), "\0");
         ASSERT_EQ(small::to_utf8(nullptr, 0), "\0");
         ASSERT_EQ(small::to_utf8(utf16text), utf8text.data());
-        ASSERT_EQ(small::to_utf8(utf16text.data(), utf16text.size() - 5), "Some text");
+        ASSERT_EQ(small::to_utf8(utf16text.data(), 9), "Some text");
     }
 
     //

@@ -197,7 +197,7 @@ namespace small {
         // check if it is null terminated and create a string if it is not
         const wchar_t* wstr = wstr16;
         std::wstring   wstr_null_terminated;
-        if (wstr[wsize] != '\0') {
+        if (wstr[wsize] != L'\0') {
             wstr_null_terminated.append(wstr16, wsize);
             wstr = wstr_null_terminated.c_str();
         }
