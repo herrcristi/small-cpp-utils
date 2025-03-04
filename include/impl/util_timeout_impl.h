@@ -1,10 +1,6 @@
 #pragma once
 
-#include <atomic>
-#include <chrono>
-#include <thread>
-
-#pragma warning(disable : 4464) // relative include path contains '..'
+#include "impl_common.h"
 
 #include "../jobs_engine.h"
 

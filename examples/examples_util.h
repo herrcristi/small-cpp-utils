@@ -1,11 +1,6 @@
-#include <condition_variable>
-#include <cstdio>
-#include <iostream>
-#include <map>
-#include <string>
-#include <thread>
+#pragma once
 
-#pragma warning(disable : 4464) // relative include path contains '..'
+#include "examples_common.h"
 
 #include "../include/util.h"
 

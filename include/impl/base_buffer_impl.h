@@ -1,13 +1,6 @@
 #pragma once
 
-#include <stddef.h>
-#include <string.h>
-
-#include <functional>
-#include <string>
-#include <string_view>
-#include <type_traits>
-#include <vector>
+#include "impl_common.h"
 
 namespace small::bufferimpl {
     // class for representing a base_buffer that implements

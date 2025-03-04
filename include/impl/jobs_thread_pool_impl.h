@@ -1,8 +1,6 @@
 #pragma once
 
-#include <unordered_map>
-
-#pragma warning(disable : 4464) // relative include path contains '..'
+#include "impl_common.h"
 
 #include "../worker_thread.h"
 

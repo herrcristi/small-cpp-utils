@@ -1,10 +1,6 @@
+#pragma once
 
-#include <cstdio>
-#include <iostream>
-#include <map>
-#include <thread>
-
-#pragma warning(disable : 4464) // relative include path contains '..'
+#include "examples_common.h"
 
 #include "../include/stack_string.h"
 

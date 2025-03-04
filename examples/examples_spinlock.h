@@ -1,10 +1,6 @@
 #pragma once
 
-#include <condition_variable>
-#include <cstdio>
-#include <iostream>
-
-#pragma warning(disable : 4464) // relative include path contains '..'
+#include "examples_common.h"
 
 #include "../include/spinlock.h"
 
