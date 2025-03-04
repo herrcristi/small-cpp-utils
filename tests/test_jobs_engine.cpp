@@ -40,13 +40,11 @@ namespace {
         void SetUp() override
         {
             m_default_config = {
-                .m_engine = {
-                    .m_config_prio   = {.priorities = {{small::EnumPriorities::kHighest, 2},
-                                                       {small::EnumPriorities::kHigh, 2},
-                                                       {small::EnumPriorities::kNormal, 2},
-                                                       {small::EnumPriorities::kLow, 1}}}, // overall config with default priorities
-                    .m_threads_count = 0,                                                  // dont start any thread yet
-                },
+                .m_engine = {.m_threads_count = 0, // dont start any thread yet
+                             .m_config_prio   = {.priorities = {{small::EnumPriorities::kHighest, 2},
+                                                                {small::EnumPriorities::kHigh, 2},
+                                                                {small::EnumPriorities::kNormal, 2},
+                                                                {small::EnumPriorities::kLow, 1}}}}, // overall config with default priorities
 
                 // config by jobs group
                 .m_groups = {{JobsGroupType::kJobsGroupDefault, {.m_threads_count = 1}},

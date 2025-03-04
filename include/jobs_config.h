@@ -22,8 +22,8 @@ namespace small {
         // config for the entire jobs engine
         struct ConfigJobsEngine
         {
-            small::config_prio_queue<JobsPrioT> m_config_prio{};
             int                                 m_threads_count{8}; // how many total threads for processing
+            small::config_prio_queue<JobsPrioT> m_config_prio{};
         };
 
         // config for the job group (where job types can be grouped)
