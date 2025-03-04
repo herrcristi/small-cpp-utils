@@ -319,6 +319,12 @@ namespace small {
             {
                 m_old_time = m_time_queue.get_next_time();
             }
+
+            auto_notification(const auto_notification&)            = delete;
+            auto_notification(auto_notification&&)                 = delete;
+            auto_notification& operator=(const auto_notification&) = delete;
+            auto_notification& operator=(auto_notification&&)      = delete;
+
             ~auto_notification()
             {
                 auto new_time = m_time_queue.get_next_time();
