@@ -46,8 +46,9 @@ namespace small::timeoutimpl {
             constexpr int threads_count = 4; // just like in node.js
 
             m_timeout_engine.set_config(
-                {.m_engine = {.m_threads_count = threads_count,
-                              .m_config_prio   = {.priorities = {{small::EnumPriorities::kNormal, 1}}}}, // overall config with default priorities
+                {.m_engine = {
+                     .m_config_prio   = {.priorities = {{small::EnumPriorities::kNormal, 1}}}, // overall config with default priorities
+                     .m_threads_count = threads_count},
 
                  // config by jobs group
                  .m_groups = {

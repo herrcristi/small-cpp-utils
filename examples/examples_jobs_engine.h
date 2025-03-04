@@ -304,11 +304,13 @@ namespace examples::jobs_engine {
         // CONFIG object for priorities, groups, types, threads, timeouts, sleeps, etc
         //
         impl::JobsEng::JobsConfig config{
-            .m_engine = {.m_threads_count = 0, // dont start any thread yet
-                         .m_config_prio   = {.priorities = {{small::EnumPriorities::kHighest, 2},
-                                                            {small::EnumPriorities::kHigh, 2},
-                                                            {small::EnumPriorities::kNormal, 2},
-                                                            {small::EnumPriorities::kLow, 1}}}}, // overall config with default priorities
+            .m_engine = {
+                .m_config_prio   = {.priorities = {{small::EnumPriorities::kHighest, 2},
+                                                   {small::EnumPriorities::kHigh, 2},
+                                                   {small::EnumPriorities::kNormal, 2},
+                                                   {small::EnumPriorities::kLow, 1}}}, // overall config with default priorities
+                .m_threads_count = 0,                                                  // dont start any thread yet
+            },
 
             .m_default_function_processing = jobs_function_processing, // default processing function, better use jobs.config_default_function_processing to set it
 
