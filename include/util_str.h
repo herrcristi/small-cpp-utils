@@ -172,8 +172,9 @@ namespace small {
         }
 
         std::size_t wsize = small::strimpl::to_utf16_needed_length(mbstr, mbsize);
-        if (wsize == static_cast<std::size_t>(-1))
+        if (wsize == static_cast<std::size_t>(-1)) {
             return wstr;
+        }
 
         wstr.resize(wsize);
         small::strimpl::to_utf16(mbstr, mbsize, wstr.data(), wstr.size());
@@ -202,8 +203,9 @@ namespace small {
         }
 
         std::size_t mbsize = small::strimpl::to_utf8_needed_length(wstr, wsize);
-        if (mbsize == static_cast<std::size_t>(-1))
+        if (mbsize == static_cast<std::size_t>(-1)) {
             return str;
+        }
 
         str.resize(mbsize);
         small::strimpl::to_utf8(wstr, wsize, str.data(), str.size());
