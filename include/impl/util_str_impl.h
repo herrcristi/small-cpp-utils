@@ -55,9 +55,8 @@ namespace small::strimpl {
         std::mbstate_t state{};
 
 #if defined(_WIN32) || defined(_WIN64)
-        size_t converted = 0;
-        int    converted = MultiByteToWideChar(CP_UTF8, 0, mbstr, (int)mbsize, wstr, wsize);
-        wstr[converted]  = L'\0';
+        int converted   = MultiByteToWideChar(CP_UTF8, 0, mbstr, (int)mbsize, wstr, wsize);
+        wstr[converted] = L'\0';
 #else
         /*size_t converted =*/std::mbsrtowcs(wstr, &mbstr, wsize, &state);
 #endif

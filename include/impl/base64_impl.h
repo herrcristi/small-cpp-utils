@@ -147,7 +147,7 @@ namespace small::base64impl {
                 break;
 
             // decode it
-            int add = get_indexof_base64char(ch);
+            int add = get_indexof_base64char(static_cast<unsigned char>(ch));
             if (add < 0)
                 continue;
 
