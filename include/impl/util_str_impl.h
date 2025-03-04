@@ -32,11 +32,16 @@ namespace small::strimpl {
         // determine size
         std::size_t new_length = 0;
 #if defined(_WIN32) || defined(_WIN64)
-        int wsize = MultiByteToWideChar(CP_UTF8, 0, mbstr, (int)mbsize, NULL, 0);
-        if (wsize <= 0) {
+        // int wsize = MultiByteToWideChar(CP_UTF8, 0, mbstr, (int)mbsize, NULL, 0);
+        // if (wsize <= 0) {
+        //     return static_cast<std::size_t>(-1);
+        // }
+        // new_length = static_cast<std::size_t>(wsize);
+        int ret = ::mbsrtowcs_s(&new_length, nullptr, 0, &mbstr, 0, &state);
+        if (ret != 0 || new_length == 0) {
             return static_cast<std::size_t>(-1);
         }
-        new_length = static_cast<std::size_t>(wsize);
+        --new_length; // because it adds the null terminator in length
 #else
         new_length = std::mbsrtowcs(nullptr, &mbstr, 0, &state);
         if (new_length == static_cast<std::size_t>(-1)) {
@@ -55,7 +60,10 @@ namespace small::strimpl {
         std::mbstate_t state{};
 
 #if defined(_WIN32) || defined(_WIN64)
-        int converted   = MultiByteToWideChar(CP_UTF8, 0, mbstr, (int)mbsize, wstr, wsize);
+        // int converted   = MultiByteToWideChar(CP_UTF8, 0, mbstr, (int)mbsize, wstr, wsize);
+        // wstr[converted] = L'\0';
+        size_t converted = 0;
+        /* ret              = */ ::mbsrtowcs_s(&converted, wstr, new_length + 1, &mbstr, new_length, &state);
         wstr[converted] = L'\0';
 #else
         /*size_t converted =*/std::mbsrtowcs(wstr, &mbstr, wsize, &state);
@@ -74,11 +82,16 @@ namespace small::strimpl {
         std::size_t new_length = 0;
 
 #if defined(_WIN32) || defined(_WIN64)
-        int mbsize = WideCharToMultiByte(CP_UTF8, 0, wstr, (int)wsize, NULL, 0, NULL, NULL);
-        if (mbsize <= 0) {
+        // int mbsize = WideCharToMultiByte(CP_UTF8, 0, wstr, (int)wsize, NULL, 0, NULL, NULL);
+        // if (mbsize <= 0) {
+        //     return static_cast<std::size_t>(-1);
+        // }
+        // new_length = static_cast<std::size_t>(mbsize);
+        int ret = ::wcsrtombs_s(&new_length, nullptr, 0, &wstr, 0, &state);
+        if (ret != 0 || new_length == 0) {
             return static_cast<std::size_t>(-1);
         }
-        new_length = static_cast<std::size_t>(mbsize);
+        --new_length; // because it adds the null terminator in length
 #else
         new_length = std::wcsrtombs(nullptr, &wstr, 0, &state);
         if (new_length == static_cast<std::size_t>(-1)) {
@@ -97,7 +110,10 @@ namespace small::strimpl {
         std::mbstate_t state{};
 
 #if defined(_WIN32) || defined(_WIN64)
-        int converted    = WideCharToMultiByte(CP_UTF8, 0, wstr, (int)wsize, mbstr, (int)mbsize, NULL, NULL);
+        // int converted    = WideCharToMultiByte(CP_UTF8, 0, wstr, (int)wsize, mbstr, (int)mbsize, NULL, NULL);
+        // mbstr[converted] = '\0';
+        size_t converted = 0;
+        /* ret              = */ ::wcsrtombs_s(&converted, mbstr, new_length + 1, &wstr, new_length, &state);
         mbstr[converted] = '\0';
 #else
         /*size_t converted =*/std::wcsrtombs(mbstr, &wstr, mbsize, &state);
