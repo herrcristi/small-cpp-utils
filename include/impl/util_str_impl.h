@@ -1,5 +1,11 @@
 #pragma once
 
+#if defined(_WIN32) || defined(_WIN64)
+#define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
+
+#include <windows.h>
+#endif
+
 #include <locale.h>
 #include <stdlib.h>
 
@@ -8,10 +14,6 @@
 #include <cstring>
 #include <iomanip>
 #include <string>
-
-#if defined(_WIN32) || defined(_WIN64)
-#include <stringapiset.h>
-#endif
 
 namespace small::strimpl {
 
