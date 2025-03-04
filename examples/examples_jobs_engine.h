@@ -425,7 +425,7 @@ namespace examples::jobs_engine {
         //
         // create a cache server (with workers to simulate access to it)
         // as an external engine outside the jobs engine for demo purposes
-        small::worker_thread<std::shared_ptr<impl::JobsEng::JobsItem>> cache_server({.threads_count = 1}, [&jobs](auto& w /*this*/, const auto& items) {
+        small::worker_thread<std::shared_ptr<impl::JobsEng::JobsItem>> cache_server({.threads_count = 1}, [&jobs](auto& /*w*/ /*this*/, const auto& items) {
             // simulate small time for cache server (let's say one roundtrip to the server)
             small::sleep(10);
 
