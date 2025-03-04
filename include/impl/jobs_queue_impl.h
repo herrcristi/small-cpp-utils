@@ -1,6 +1,6 @@
 #pragma once
 
-#include <unordered_map>
+#include "impl_common.h"
 
 #include "../prio_queue.h"
 #include "../time_queue_thread.h"
@@ -77,7 +77,7 @@ namespace small::jobsimpl {
         //
         // create threads
         //
-        inline void start_threads(const int threads_count /* = 1 */)
+        inline void start_threads(const int /* threads_count */ /* = 1 */)
         {
             m_delayed_items.start_threads();
         }

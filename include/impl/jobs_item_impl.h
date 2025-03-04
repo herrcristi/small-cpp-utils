@@ -1,11 +1,6 @@
 #pragma once
 
-#include <atomic>
-#include <deque>
-#include <functional>
-#include <queue>
-#include <unordered_map>
-#include <vector>
+#include "impl_common.h"
 
 #include "../base_lock.h"
 

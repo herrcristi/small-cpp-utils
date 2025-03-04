@@ -1,6 +1,4 @@
-#include <gtest/gtest.h>
-
-#include <latch>
+#include "test_common.h"
 
 #include "../include/jobs_engine.h"
 #include "../include/util.h"

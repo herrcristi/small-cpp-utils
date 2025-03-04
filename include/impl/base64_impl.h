@@ -1,5 +1,7 @@
 #pragma once
 
+#include "impl_common.h"
+
 #include <array>
 #include <stdlib.h>
 #include <string>

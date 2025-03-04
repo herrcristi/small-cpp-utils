@@ -1,4 +1,4 @@
-#include <gtest/gtest.h>
+#include "test_common.h"
 
 #include "../include/buffer.h"
 #include "../include/stack_string.h"

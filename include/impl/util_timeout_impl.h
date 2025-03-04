@@ -1,8 +1,6 @@
 #pragma once
 
-#include <atomic>
-#include <chrono>
-#include <thread>
+#include "impl_common.h"
 
 #include "../jobs_engine.h"
 
@@ -208,6 +206,12 @@ namespace small::timeoutimpl {
         {
             return m_timeout_engine.wait_until(__atime);
         }
+
+    private:
+        timeout_engine(const timeout_engine&)            = delete;
+        timeout_engine(timeout_engine&&)                 = delete;
+        timeout_engine& operator=(const timeout_engine&) = delete;
+        timeout_engine& operator=(timeout_engine&&)      = delete;
 
     private:
         //

@@ -118,7 +118,7 @@ namespace small {
     {
         std::transform(u.begin(), u.end(), u.begin(), ::tolower);
         if (u.begin() != u.end()) {
-            *u.begin() = ::toupper(*u.begin());
+            *u.begin() = static_cast<char>(::toupper(*u.begin()));
         }
         return u;
     }

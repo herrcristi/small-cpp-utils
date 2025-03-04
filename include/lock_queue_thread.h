@@ -41,7 +41,7 @@ namespace small {
         {
             std::unique_lock l(m_lock_queue);
 
-            m_threads_futures.resize(threads_count);
+            m_threads_futures.resize(static_cast<std::size_t>(threads_count));
             for (auto& tf : m_threads_futures) {
                 if (!tf.valid()) {
                     tf = std::async(std::launch::async, &lock_queue_thread::thread_function, this);

@@ -44,7 +44,7 @@ namespace small {
     //
     inline unsigned long long to_unix_timestamp(std::chrono::system_clock::time_point time = std::chrono::system_clock::now())
     {
-        return std::chrono::duration_cast<std::chrono::milliseconds>(time.time_since_epoch()).count();
+        return static_cast<unsigned long long>(std::chrono::duration_cast<std::chrono::milliseconds>(time.time_since_epoch()).count());
     }
 
     //

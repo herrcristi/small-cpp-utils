@@ -1,8 +1,6 @@
+#pragma once
 
-#include <cstdio>
-#include <iostream>
-#include <map>
-#include <thread>
+#include "examples_common.h"
 
 #include "../include/buffer.h"
 
