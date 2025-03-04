@@ -134,7 +134,7 @@ namespace small::bufferimpl {
         inline int compare(const char* s, std::size_t s_length) const
         {
             const std::size_t this_size = size();
-            int               cmp       = memcmp(data(), s, std::min(this_size, s_length));
+            int               cmp       = memcmp(data(), s, std::min<>(this_size, s_length));
 
             if (cmp != 0) {
                 // different

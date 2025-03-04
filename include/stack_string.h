@@ -207,7 +207,7 @@ namespace small {
         inline int compare(const char* s, std::size_t s_length) const
         {
             const std::size_t this_size = size();
-            int               cmp       = memcmp(data(), s, std::min(this_size, s_length));
+            int               cmp       = memcmp(data(), s, std::min<>(this_size, s_length));
 
             if (cmp != 0) {
                 // different
@@ -402,7 +402,7 @@ namespace small {
         {
             std::size_t initial_length = size();
 
-            start_from = std::min(start_from, initial_length); // otherwise zeros are added
+            start_from = std::min<>(start_from, initial_length); // otherwise zeros are added
             resize(start_from + b_length);
             memcpy(data() + start_from /*dest*/, b /*src*/, b_length /*length*/);
         }
@@ -412,7 +412,7 @@ namespace small {
         {
             std::size_t initial_length = size();
 
-            start_from = std::min(start_from, initial_length); // otherwise zeros are added
+            start_from = std::min<>(start_from, initial_length); // otherwise zeros are added
 
             std::size_t new_length = small::strimpl::to_utf8_needed_length(wstr, wsize);
             if (new_length == static_cast<std::size_t>(-1)) {
@@ -434,7 +434,7 @@ namespace small {
         inline void insert_impl(size_t insert_from, const char* b, const size_t& b_length)
         {
             std::size_t initial_length = size();
-            insert_from                = std::min(insert_from, initial_length); // otherwise zeros are added
+            insert_from                = std::min<>(insert_from, initial_length); // otherwise zeros are added
             std::size_t new_length     = initial_length + b_length;
             reserve(new_length);
 

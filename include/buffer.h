@@ -202,7 +202,7 @@ namespace small {
         // init
         inline void init()
         {
-            m_config.chunk_size       = std::max(m_config.chunk_size, std::size_t(1));
+            m_config.chunk_size       = std::max<>(m_config.chunk_size, std::size_t(1));
             m_chunk_buffer_data       = (char*)get_empty_buffer();
             m_chunk_buffer_length     = 0;
             m_chunk_buffer_alloc_size = 0;

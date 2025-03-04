@@ -94,7 +94,7 @@ namespace small {
         inline void thread_function()
         {
             std::vector<T> vec_elems;
-            const int      bulk_count = std::max(m_parent_caller.config().bulk_count, 1);
+            const int      bulk_count = std::max<>(m_parent_caller.config().bulk_count, 1);
             for (; true; small::sleep_micro(1)) {
                 // wait
                 small::EnumLock ret = m_lock_queue.wait_pop_front(vec_elems, bulk_count);

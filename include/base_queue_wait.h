@@ -186,7 +186,7 @@ namespace small {
                 }
 
                 // wait for notification
-                auto min_time = std::min(atime, time_wait_until);
+                auto min_time = std::min<>(atime, time_wait_until);
 
                 auto ret_w = m_lock.wait_until(l, min_time);
                 if (ret_w == EnumLock::kExit) {
@@ -237,7 +237,7 @@ namespace small {
                 }
 
                 // wait for notification
-                auto min_time = std::min(atime, time_wait_until);
+                auto min_time = std::min<>(atime, time_wait_until);
 
                 auto ret_w = m_lock.wait_until(l, min_time);
                 if (ret_w == EnumLock::kExit) {
