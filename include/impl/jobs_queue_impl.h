@@ -77,7 +77,7 @@ namespace small::jobsimpl {
         //
         // create threads
         //
-        inline void start_threads(const int threads_count /* = 1 */)
+        inline void start_threads(const int /* threads_count */ /* = 1 */)
         {
             m_delayed_items.start_threads();
         }

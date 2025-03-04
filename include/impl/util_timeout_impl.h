@@ -208,6 +208,12 @@ namespace small::timeoutimpl {
         }
 
     private:
+        timeout_engine(const timeout_engine&)            = delete;
+        timeout_engine(timeout_engine&&)                 = delete;
+        timeout_engine& operator=(const timeout_engine&) = delete;
+        timeout_engine& operator=(timeout_engine&&)      = delete;
+
+    private:
         //
         // members
         //

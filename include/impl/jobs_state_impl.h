@@ -338,7 +338,7 @@ namespace small::jobsimpl {
                 *jobs_state = small::jobsimpl::EnumJobsState::kWaitChildren;
             }
             if (jobs_progress) {
-                *jobs_progress = count_progress / (int)count_total_children; // will not be zero due to count_total_children == count_completed_children
+                *jobs_progress = count_progress / static_cast<int>(count_total_children); // will not be zero due to count_total_children == count_completed_children
             }
         }
 
