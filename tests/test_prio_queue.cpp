@@ -1,9 +1,10 @@
+#pragma warning(disable : 4464) // relative include path contains '..'
+#pragma warning(disable : 4577) // 'noexcept' used with no exception handling mode specified; termination on exception is not guaranteed
+
 #include <gtest/gtest.h>
 
 #include <latch>
 #include <thread>
-
-#pragma warning(disable : 4464) // relative include path contains '..'
 
 #include "../include/prio_queue.h"
 #include "../include/util.h"
