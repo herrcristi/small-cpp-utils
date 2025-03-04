@@ -79,9 +79,9 @@ namespace small {
         {
             // vector is not null terminated, handle with care
             std::vector<char> v;
-            v.reserve(size() + 1);
-            v.resize(size());
+            v.resize(size() + 1);
             memcpy(v.data(), data(), size());
+            v.resize(size());
             return v;
         }
         // clang-format on

@@ -213,7 +213,7 @@ namespace {
 
         auto v = b.c_vector();
         ASSERT_EQ(v.size(), m_test.size());
-        ASSERT_EQ(v.data(), m_test);
+        ASSERT_EQ(std::string(v.data(), v.size()), m_test);
     }
 
     TEST_F(BufferTest, buffer_assign)
@@ -581,8 +581,7 @@ namespace {
     {
         small::buffer b = m_test;
         auto          h = std::hash<std::string_view>{}(b);
-        ASSERT_EQ(h, 3766111187626408651);
-        ASSERT_EQ(h, std::hash<std::string>{}(m_test));
+        ASSERT_EQ(h, std::hash<std::string>{}(m_test)); // 3766111187626408651 in linux
     }
 
 } // namespace
