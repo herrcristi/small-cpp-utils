@@ -171,6 +171,7 @@ namespace small {
         {
             std::unique_lock l(m_lock);
 
+            TimePoint atime = std::chrono::time_point_cast<TimeDuration>(__atime);
             TimePoint time_wait_until{};
             for (; true;) {
                 // check queue and element
@@ -185,13 +186,13 @@ namespace small {
                 }
 
                 // wait for notification
-                auto min_time = std::min(std::chrono::time_point_cast<TimeDuration>(__atime), time_wait_until);
+                auto min_time = std::min(atime, time_wait_until);
 
                 auto ret_w = m_lock.wait_until(l, min_time);
                 if (ret_w == EnumLock::kExit) {
                     return EnumLock::kExit;
                 }
-                if (min_time == std::chrono::time_point_cast<TimeDuration>(__atime) && ret_w == EnumLock::kTimeout) {
+                if (min_time == atime && ret_w == EnumLock::kTimeout) {
                     return EnumLock::kTimeout;
                 }
 
@@ -208,6 +209,7 @@ namespace small {
             std::unique_lock l(m_lock);
 
             T         elem{};
+            TimePoint atime = std::chrono::time_point_cast<TimeDuration>(__atime);
             TimePoint time_wait_until{};
             for (; true;) {
                 // check queue and element
@@ -235,13 +237,13 @@ namespace small {
                 }
 
                 // wait for notification
-                auto min_time = std::min(std::chrono::time_point_cast<TimeDuration>(__atime), time_wait_until);
+                auto min_time = std::min(atime, time_wait_until);
 
                 auto ret_w = m_lock.wait_until(l, min_time);
                 if (ret_w == EnumLock::kExit) {
                     return EnumLock::kExit;
                 }
-                if (min_time == std::chrono::time_point_cast<TimeDuration>(__atime) && ret_w == EnumLock::kTimeout) {
+                if (min_time == atime && ret_w == EnumLock::kTimeout) {
                     return EnumLock::kTimeout;
                 }
 
