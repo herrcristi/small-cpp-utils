@@ -204,7 +204,7 @@ namespace small {
         inline EnumLock wait_pop_until(const std::chrono::time_point<TimeClock, TimeDuration>& __atime, std::vector<T>& vec_elems, int max_count = 1)
         {
             vec_elems.clear();
-            vec_elems.reserve(max_count);
+            vec_elems.reserve(static_cast<std::size_t>(max_count));
 
             std::unique_lock l(m_lock);
 
