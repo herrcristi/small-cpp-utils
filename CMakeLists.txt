@@ -11,13 +11,17 @@ project(small-cpp-utils)
 #
 include_directories(include)
 
-file(GLOB SOURCES "*.cpp")
-add_executable(small-cpp-utils ${SOURCES})
-target_link_libraries(small-cpp-utils pthread rt)
-
-
 # find_package(pthread)
 # find_package(rt)
+find_package(Threads REQUIRED)
+
+file(GLOB SOURCES "*.cpp")
+add_executable(small-cpp-utils ${SOURCES})
+# target_link_libraries(small-cpp-utils pthread rt)
+
+target_link_libraries(small-cpp-utils PRIVATE Threads::Threads)
+
+
 
 #
 # CASE 1 download google test 
