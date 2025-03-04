@@ -42,7 +42,8 @@ enable_testing()
 
 file(GLOB TEST_SOURCES "tests/*.cpp")
 add_executable(small-cpp-utils-tests ${TEST_SOURCES})
-target_link_libraries(small-cpp-utils-tests GTest::gtest_main)
+# target_link_libraries(small-cpp-utils-tests GTest::gtest_main)
+target_link_libraries(small-cpp-utils-tests PRIVATE Threads::Threads GTest::gtest_main)
 
 include(GoogleTest)
 gtest_discover_tests(small-cpp-utils-tests)

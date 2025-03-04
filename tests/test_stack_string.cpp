@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include "../include/buffer.h"
 #include "../include/stack_string.h"
 
 namespace {
@@ -30,6 +31,11 @@ namespace {
         small::stack_string s = m_test;
         ASSERT_EQ(s, m_test);
 
+        small::buffer       b0 = m_test;
+        small::stack_string s0 = b0.c_view();
+        s0                     = b0;
+        ASSERT_EQ(s0, m_test);
+
         small::stack_string s1{'a'};
         ASSERT_EQ(s1, "a");
 
@@ -45,6 +51,7 @@ namespace {
 
         small::stack_string s5{sv};
         ASSERT_EQ(s5, "abc");
+        // TODO s<1>
     }
 
     TEST_F(StackStringTest, stack_string_operator_eq)
@@ -284,7 +291,7 @@ namespace {
         ASSERT_EQ(s, "f");
 
         s.set(2, "g");
-        ASSERT_EQ(s, std::string_view("f\0g", 3));
+        ASSERT_EQ(s, std::string_view("fg", 2)); // does not add zeros to be f\0g
     }
 
     TEST_F(StackStringTest, stack_string_overwrite_same_as_set)
@@ -310,7 +317,7 @@ namespace {
         ASSERT_EQ(s, "f");
 
         s.overwrite(2, "g");
-        ASSERT_EQ(s, std::string_view("f\0g", 3));
+        ASSERT_EQ(s, std::string_view("fg", 2)); // does not add zeros to be f\0g
     }
 
     TEST_F(StackStringTest, stack_string_erase)
