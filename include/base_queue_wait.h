@@ -185,13 +185,13 @@ namespace small {
                 }
 
                 // wait for notification
-                auto min_time = std::min(__atime, time_wait_until);
+                auto min_time = std::min(std::chrono::time_point_cast<TimeDuration>(__atime), time_wait_until);
 
                 auto ret_w = m_lock.wait_until(l, min_time);
                 if (ret_w == EnumLock::kExit) {
                     return EnumLock::kExit;
                 }
-                if (min_time == __atime && ret_w == EnumLock::kTimeout) {
+                if (min_time == std::chrono::time_point_cast<TimeDuration>(__atime) && ret_w == EnumLock::kTimeout) {
                     return EnumLock::kTimeout;
                 }
 
@@ -235,13 +235,13 @@ namespace small {
                 }
 
                 // wait for notification
-                auto min_time = std::min(__atime, time_wait_until);
+                auto min_time = std::min(std::chrono::time_point_cast<TimeDuration>(__atime), time_wait_until);
 
                 auto ret_w = m_lock.wait_until(l, min_time);
                 if (ret_w == EnumLock::kExit) {
                     return EnumLock::kExit;
                 }
-                if (min_time == __atime && ret_w == EnumLock::kTimeout) {
+                if (min_time == std::chrono::time_point_cast<TimeDuration>(__atime) && ret_w == EnumLock::kTimeout) {
                     return EnumLock::kTimeout;
                 }
 
