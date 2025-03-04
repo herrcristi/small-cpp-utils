@@ -1,8 +1,6 @@
 #pragma once
 
-#include <condition_variable>
-#include <cstdio>
-#include <iostream>
+#include "examples_common.h"
 
 #include "../include/spinlock.h"
 

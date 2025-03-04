@@ -1,10 +1,6 @@
-#include <algorithm>
-#include <chrono>
-#include <condition_variable>
-#include <cstdio>
-#include <iostream>
-#include <map>
-#include <thread>
+#pragma once
+
+#include "examples_common.h"
 
 #include "../include/worker_thread.h"
 
@@ -107,7 +103,7 @@ namespace examples::worker_thread {
                 auto timeStart = small::time_now();
 
                 // create worker
-                small::worker_thread<int> workers({.threads_count = threads, .bulk_count = bulk_count}, [](auto& w /*this*/, const std::vector<int>& elems) {
+                small::worker_thread<int> workers({.threads_count = threads, .bulk_count = bulk_count}, [](auto& /*w*/ /*this*/, const std::vector<int>& elems) {
                     // simulate some work
                     int sum = 0;
                     for (auto& elem : elems) {

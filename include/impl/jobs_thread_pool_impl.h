@@ -1,6 +1,6 @@
 #pragma once
 
-#include <unordered_map>
+#include "impl_common.h"
 
 #include "../worker_thread.h"
 

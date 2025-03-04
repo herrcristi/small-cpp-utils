@@ -1,6 +1,6 @@
 #pragma once
 
-#include <unordered_map>
+#include "impl_common.h"
 
 #include "jobs_item_impl.h"
 
@@ -338,7 +338,7 @@ namespace small::jobsimpl {
                 *jobs_state = small::jobsimpl::EnumJobsState::kWaitChildren;
             }
             if (jobs_progress) {
-                *jobs_progress = count_progress / (int)count_total_children; // will not be zero due to count_total_children == count_completed_children
+                *jobs_progress = static_cast<int>(count_progress / count_total_children); // will not be zero due to count_total_children == count_completed_children
             }
         }
 

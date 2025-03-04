@@ -1,10 +1,6 @@
-#include <algorithm>
-#include <chrono>
-#include <condition_variable>
-#include <cstdio>
-#include <iostream>
-#include <map>
-#include <thread>
+#pragma once
+
+#include "examples_common.h"
 
 #include "../include/jobs_engine.h"
 
@@ -366,7 +362,7 @@ namespace examples::jobs_engine {
         //
         // default processing used for kJobsSettings with custom delay in between requests
         // one request will succeed and one request will timeout for demo purposes
-        jobs.config_default_function_processing([&fn_print_item](auto& j /*this jobs engine*/, const auto& jobs_items, auto& jobs_config) {
+        jobs.config_default_function_processing([&fn_print_item](auto& /*j*/ /* this jobs engine */, const auto& jobs_items, auto& jobs_config) {
             for (auto& item : jobs_items) {
                 fn_print_item(item, "DEFAULT PROCESSING");
             }
@@ -375,7 +371,7 @@ namespace examples::jobs_engine {
             jobs_config.m_delay_next_request = std::chrono::milliseconds(600);
         });
 
-        jobs.config_default_function_finished([&fn_print_item](auto& j /*this jobs engine*/, const auto& jobs_items) {
+        jobs.config_default_function_finished([&fn_print_item](auto& /*j*/ /*this jobs engine*/, const auto& jobs_items) {
             for (auto& item : jobs_items) {
                 fn_print_item(item, "DEFAULT FINISHED");
             }
@@ -387,7 +383,7 @@ namespace examples::jobs_engine {
         // and setup specific finish function for kJobsSettings
         // to setup the promises/futures for the requests and complete them on finish
         std::unordered_map<impl::JobsEng::JobsID, std::promise<bool>> settings_promises;
-        jobs.config_jobs_function_finished(impl::JobsType::kJobsSettings, [&fn_print_item, &settings_promises](auto& j /*this jobs engine*/, const auto& jobs_items) {
+        jobs.config_jobs_function_finished(impl::JobsType::kJobsSettings, [&fn_print_item, &settings_promises](auto& /*j*/ /*this jobs engine*/, const auto& jobs_items) {
             for (auto& item : jobs_items) {
                 fn_print_item(item, "FINISHED");
 
@@ -429,7 +425,7 @@ namespace examples::jobs_engine {
         //
         // create a cache server (with workers to simulate access to it)
         // as an external engine outside the jobs engine for demo purposes
-        small::worker_thread<std::shared_ptr<impl::JobsEng::JobsItem>> cache_server({.threads_count = 1}, [&jobs](auto& w /*this*/, const auto& items) {
+        small::worker_thread<std::shared_ptr<impl::JobsEng::JobsItem>> cache_server({.threads_count = 1}, [&jobs](auto& /*w*/ /*this*/, const auto& items) {
             // simulate small time for cache server (let's say one roundtrip to the server)
             small::sleep(10);
 
@@ -463,7 +459,7 @@ namespace examples::jobs_engine {
         // will create 2 children (DB+CACHE) and will be finished when ALL will be finished
         // also CACHE will depend on DB and will start only after DB is finished
         //      (this is the default case for finish function AND and default for children function)
-        jobs.config_jobs_function_processing(impl::JobsType::kJobsApiPost, [&fn_print_item, &db_requests](auto& j /*this jobs engine*/, const auto& jobs_items, auto& /* config */, auto b /*extra param b*/) {
+        jobs.config_jobs_function_processing(impl::JobsType::kJobsApiPost, [&fn_print_item, &db_requests](auto& j /*this jobs engine*/, const auto& jobs_items, auto& /* config */, auto /*b*/ /*extra param b*/) {
             for (auto &jobs_item : jobs_items) {
                 fn_print_item(jobs_item, "POST");
 
@@ -592,7 +588,7 @@ namespace examples::jobs_engine {
         // will create 2 children (DB+CACHE)
         //  also CACHE will depend on DB and will start only after DB is finished
         //  (this will demonstrate the default case)
-        jobs.config_jobs_function_processing(impl::JobsType::kJobsApiDelete, [&fn_print_item, &db_requests](auto& j /*this jobs engine*/, const auto& jobs_items, auto& jobs_config) {
+        jobs.config_jobs_function_processing(impl::JobsType::kJobsApiDelete, [&fn_print_item, &db_requests](auto& j /*this jobs engine*/, const auto& jobs_items, auto& /* jobs_config */) {
             for (auto& jobs_item : jobs_items) {
                 fn_print_item(jobs_item, "DELETE");
 

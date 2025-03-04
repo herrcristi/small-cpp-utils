@@ -1,6 +1,4 @@
-#include <gtest/gtest.h>
-
-#include <latch>
+#include "test_common.h"
 
 #include "../include/util.h"
 #include "../include/util_timeout.h"

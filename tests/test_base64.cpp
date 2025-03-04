@@ -1,4 +1,4 @@
-#include <gtest/gtest.h>
+#include "test_common.h"
 
 #include "../include/base64.h"
 

@@ -1,8 +1,6 @@
-#include <condition_variable>
-#include <cstdio>
-#include <iostream>
-#include <map>
-#include <thread>
+#pragma once
+
+#include "examples_common.h"
 
 #include "../include/base64.h"
 

@@ -1,8 +1,4 @@
-#include <condition_variable>
-#include <cstdio>
-#include <iostream>
-#include <map>
-#include <thread>
+#include "include/impl/impl_common.h"
 
 #include "examples/examples_base64.h"
 #include "examples/examples_buffer.h"

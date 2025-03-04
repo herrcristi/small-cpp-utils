@@ -1,9 +1,6 @@
-#include <condition_variable>
-#include <cstdio>
-#include <iostream>
-#include <map>
-#include <string>
-#include <thread>
+#pragma once
+
+#include "examples_common.h"
 
 #include "../include/util.h"
 

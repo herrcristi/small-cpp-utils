@@ -1,7 +1,6 @@
-#include <condition_variable>
-#include <cstdio>
-#include <iostream>
-#include <thread>
+#pragma once
+
+#include "examples_common.h"
 
 #include "../include/prio_queue.h"
 
