@@ -16,12 +16,17 @@
 #include <cerrno>
 #include <chrono>
 #include <clocale>
+#include <cstdio>
 #include <cstring>
 #include <deque>
 #include <functional>
 #include <iomanip>
+#include <iostream>
+#include <list>
 #include <locale.h>
+#include <map>
 #include <queue>
+#include <set>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,4 +35,5 @@
 #include <thread>
 #include <type_traits>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
