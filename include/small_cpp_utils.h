@@ -8,6 +8,8 @@
 #include "prio_queue.h"
 #include "time_queue.h"
 
+#include "lru_cache.h"
+
 #include "buffer.h"
 #include "stack_string.h"
 
