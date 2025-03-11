@@ -150,8 +150,12 @@ namespace {
         ASSERT_EQ(*cache2.get(2), "B");
         cache2.set(3, "C");
         ASSERT_EQ(cache2.size(), 2); // capacity is 2 like cache1
+        cache2.erase(2);
+        ASSERT_EQ(cache2.size(), 1);
 
         ASSERT_EQ(cache1.size(), 2); // cache1 should not be affected
+        ASSERT_EQ(*cache1.get(1), "A");
+        ASSERT_EQ(*cache1.get(2), "B");
     }
 
     TEST_F(LRUCacheTest, copy_assignment)
