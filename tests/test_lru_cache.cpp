@@ -181,6 +181,7 @@ namespace {
         ASSERT_EQ(cache2.size(), 2);
         ASSERT_EQ(*cache2.get(1), "A");
         ASSERT_EQ(*cache2.get(2), "B");
+        cache2.set(3, "C");
         ASSERT_EQ(cache2.size(), 2); // capacity is 2 like cache1
 
         ASSERT_EQ(cache1.size(), 0); // cache1 should be empty after move
