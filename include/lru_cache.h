@@ -10,7 +10,7 @@ namespace small {
     //
     struct lru_cache_config
     {
-        std::size_t capacity{};
+        std::size_t capacity{static_cast<std::size_t>(-1)};
     };
 
     template <typename Key, typename Value>
@@ -29,6 +29,12 @@ namespace small {
         inline std::size_t size() const
         {
             return m_cache.size();
+        }
+
+        inline void clear()
+        {
+            m_cache.clear();
+            m_list.clear();
         }
 
         inline void set(const Key& key, const Value& value)
@@ -67,13 +73,24 @@ namespace small {
             return &(it->second->second);
         }
 
+        inline void erase(const Key& key)
+        {
+            auto it = m_cache.find(key);
+            if (it == m_cache.end()) {
+                return;
+            }
+
+            m_list.erase(it->second);
+            m_cache.erase(it);
+        }
+
         // operators
-        inline Value& operator[](const Key& key)
+        inline Value* operator[](const Key& key)
         {
             return get(key);
         }
 
-        inline Value& operator[](Key&& key)
+        inline Value* operator[](Key&& key)
         {
             return get(std::move(key));
         }
@@ -84,8 +101,9 @@ namespace small {
         //
         lru_cache_config m_config{};
 
-        // simulate a fast list
-        std::list<std::pair<Key, Value>>                                             m_list;
-        std::unordered_map<Key, typename std::list<std::pair<Key, Value>>::iterator> m_cache;
+        // simulate an ordered map
+        using Node = std::pair<Key, Value>;
+        std::list<Node>                                             m_list;
+        std::unordered_map<Key, typename std::list<Node>::iterator> m_cache;
     };
 } // namespace small

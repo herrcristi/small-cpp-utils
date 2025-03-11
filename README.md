@@ -29,6 +29,7 @@ This can be used in following ways:
 -   <b>qhash</b> (a quick hash function for buffers and null termination strings)
 -   <b>util</b> functions (like <b>icasecmp</b> for use with map/set, <b>sleep</b>, <b>time_now</b>, <b>time_diff_ms</b>, <b>to_iso_string</b>, <b>rand</b>, <b>uuid</b>, ...)
 -   <b>set_timeout</b> and <b>set_interval</b> util functions to execute custom functions after a timeout interval
+-   <b>lru_cache</b> a LRU cache with capacity
 
 #
 
@@ -724,5 +725,23 @@ auto intervalID = small::set_interval(std::chrono::milliseconds(1000), [&]() {
 // cancel everything from the timeout engine
 small::timeout::signal_exit_force();
 small::timeout::wait();
+...
+```
+
+### lru_cache
+
+`set, get`
+
+Use it like this
+
+```
+small::lru_cache<int, std::string> cache({.capacity = 2});
+...
+cache.set(1, "A");
+...
+auto* v = cache.get(1);
+if (v) {
+  ...
+}
 ...
 ```
