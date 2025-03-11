@@ -21,6 +21,27 @@ namespace small {
         {
         }
 
+        lru_cache(const lru_cache& o) { operator=(o); }
+        lru_cache(lru_cache&& o) noexcept { operator=(std::move(o)); }
+
+        lru_cache& operator=(const lru_cache& o)
+        {
+            m_config = o.m_config;
+            m_list   = o.m_list;
+            m_cache.clear();
+            for (auto it = m_list.begin(); it != m_list.end(); ++it) {
+                m_cache[it->first] = it;
+            }
+            return *this;
+        }
+        lru_cache& operator=(lru_cache&& o) noexcept
+        {
+            m_config = std::move(o.m_config);
+            m_list   = std::move(o.m_list);
+            m_cache  = std::move(o.m_cache);
+            return *this;
+        }
+
         ~lru_cache() = default;
 
         //
