@@ -138,4 +138,69 @@ namespace {
         ASSERT_EQ(cache.size(), 2);
     }
 
+    TEST_F(LRUCacheTest, copy_constructor)
+    {
+        small::lru_cache<int, std::string> cache1({.capacity = 2});
+        cache1.set(1, "A");
+        cache1.set(2, "B");
+
+        small::lru_cache<int, std::string> cache2 = cache1;
+        ASSERT_EQ(cache2.size(), 2);
+        ASSERT_EQ(*cache2.get(1), "A");
+        ASSERT_EQ(*cache2.get(2), "B");
+        cache2.set(3, "C");
+        ASSERT_EQ(cache2.size(), 2); // capacity is 2 like cache1
+
+        ASSERT_EQ(cache1.size(), 2); // cache1 should not be affected
+    }
+
+    TEST_F(LRUCacheTest, copy_assignment)
+    {
+        small::lru_cache<int, std::string> cache1({.capacity = 2});
+        cache1.set(1, "A");
+        cache1.set(2, "B");
+
+        small::lru_cache<int, std::string> cache2({.capacity = 3});
+        cache2 = cache1;
+        ASSERT_EQ(cache2.size(), 2);
+        ASSERT_EQ(*cache2.get(1), "A");
+        ASSERT_EQ(*cache2.get(2), "B");
+        cache2.set(3, "C");
+        ASSERT_EQ(cache2.size(), 2); // capacity is 2 like cache1
+
+        ASSERT_EQ(cache1.size(), 2); // cache1 should not be affected
+    }
+
+    TEST_F(LRUCacheTest, move_constructor)
+    {
+        small::lru_cache<int, std::string> cache1({.capacity = 2});
+        cache1.set(1, "A");
+        cache1.set(2, "B");
+
+        small::lru_cache<int, std::string> cache2 = std::move(cache1);
+        ASSERT_EQ(cache2.size(), 2);
+        ASSERT_EQ(*cache2.get(1), "A");
+        ASSERT_EQ(*cache2.get(2), "B");
+        ASSERT_EQ(cache2.size(), 2); // capacity is 2 like cache1
+
+        ASSERT_EQ(cache1.size(), 0); // cache1 should be empty after move
+    }
+
+    TEST_F(LRUCacheTest, move_assignment)
+    {
+        small::lru_cache<int, std::string> cache1({.capacity = 2});
+        cache1.set(1, "A");
+        cache1.set(2, "B");
+
+        small::lru_cache<int, std::string> cache2({.capacity = 3});
+        cache2 = std::move(cache1);
+        ASSERT_EQ(cache2.size(), 2);
+        ASSERT_EQ(*cache2.get(1), "A");
+        ASSERT_EQ(*cache2.get(2), "B");
+        cache2.set(3, "C");
+        ASSERT_EQ(cache2.size(), 2); // capacity is 2 like cache1
+
+        ASSERT_EQ(cache1.size(), 0); // cache1 should be empty after move
+    }
+
 } // namespace
