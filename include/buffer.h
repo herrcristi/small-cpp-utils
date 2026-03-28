@@ -289,8 +289,8 @@ namespace small {
         friend inline buffer operator+  (const buffer& b, const std::vector<char>& v){buffer br = b; br.append(v);  return br; }
 
         // +
-        friend inline buffer operator+  (const char c, const buffer& b)             { buffer br({.chunk_size = b.get_chunk_size()}); br.append(c); br += b; return br; }
-        friend inline buffer operator+  (const std::vector<char>& v, const buffer& b){buffer br({.chunk_size = b.get_chunk_size()}); br.append(v); br += b; return br; }
+        friend inline buffer operator+  (const char c, const buffer& b)             { buffer br(small::config_buffer{.chunk_size = b.get_chunk_size()}); br.append(c); br += b; return br; }
+        friend inline buffer operator+  (const std::vector<char>& v, const buffer& b){buffer br(small::config_buffer{.chunk_size = b.get_chunk_size()}); br.append(v); br += b; return br; }
         // clang-format on
 
     private:

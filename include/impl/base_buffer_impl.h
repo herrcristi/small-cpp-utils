@@ -160,19 +160,31 @@ namespace small::bufferimpl {
         // clang-format on
 
         // clang-format off
-        // [] / at
-        inline char&        operator[]  (std::size_t index)         { return m_buffer_data[index]; }
-        inline char         operator[]  (std::size_t index) const   { return m_buffer_data[index]; }
+        // operator[] traditionally doesn't bounds check for performance; 
+        // consider adding at() alternatives that do.
+        inline char&        operator[]  (std::size_t index)         { return at_unsafe(index); }
+        inline char         operator[]  (std::size_t index) const   { return at_unsafe(index); }
 
-        inline char&        at          (std::size_t index)         { return m_buffer_data[index]; }
-        inline char         at          (std::size_t index) const   { return m_buffer_data[index]; }
+        // at / at_unsafe - core access methods with bounds checking
+        inline char&        at          (std::size_t index)         { if (index >= size()) { throw std::out_of_range("buffer at() index out of range"); } return m_buffer_data[index]; }
+        inline char         at          (std::size_t index) const   { if (index >= size()) { throw std::out_of_range("buffer at() index out of range"); } return m_buffer_data[index]; }
 
-        // front / back
-        inline char&        front       ()                          { return m_buffer_data[0]; }
-        inline char         front       () const                    { return m_buffer_data[0]; }
+        // front / back - use at() with index 0 and size()-1
+        inline char&        front       ()                          { if (empty()) { throw std::out_of_range("front() on empty buffer"); } return m_buffer_data[0]; }
+        inline char         front       () const                    { if (empty()) { throw std::out_of_range("front() on empty buffer"); } return m_buffer_data[0]; }
 
-        inline char&        back        ()                          { return size() > 0 ? m_buffer_data[size() - 1] : m_buffer_data[0]; }
-        inline char         back        () const                    { return size() > 0 ? m_buffer_data[size() - 1] : m_buffer_data[0]; }
+        inline char&        back        ()                          { if (empty()) { throw std::out_of_range("back() on empty buffer"); } return m_buffer_data[size() - 1]; }
+        inline char         back        () const                    { if (empty()) { throw std::out_of_range("back() on empty buffer"); } return m_buffer_data[size() - 1]; }
+        
+        // unsafe variants (no bounds checking for backward compatibility)
+        inline char&        at_unsafe   (std::size_t index)         { return m_buffer_data[index]; }
+        inline char         at_unsafe   (std::size_t index) const   { return m_buffer_data[index]; }
+
+        inline char&        front_unsafe()                          { return at_unsafe(0); }
+        inline char         front_unsafe() const                    { return at_unsafe(0); }
+
+        inline char&        back_unsafe ()                          { return size() > 0 ? at_unsafe(size() - 1) : at_unsafe(0); }
+        inline char         back_unsafe () const                    { return size() > 0 ? at_unsafe(size() - 1) : at_unsafe(0); }
 
         // push / pop
         inline void         push_back   (const char c)              { append(c); }

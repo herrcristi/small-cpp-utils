@@ -134,24 +134,47 @@ namespace small::base64impl {
     }
 
     //
-    // decode from base 64 (returns length)
+    // decode from base 64 with inline RFC 4648 validation
+    // returns: decoded length (0 if invalid), sets decoded_buffer[0] = '\0' on error
     //
     inline std::size_t frombase64(char* decoded_buffer, const char* base64, const std::size_t base64_length)
     {
-        std::size_t decoded_length = 0;
+        // Quick validation of length multiple of 4
+        if (base64_length % 4 != 0) {
+            decoded_buffer[0] = '\0';
+            return 0; // invalid: base64 length must be multiple of 4
+        }
 
-        int decoded_word = 0;
-        int count_bits   = 0;
+        std::size_t decoded_length = 0;
+        char*       decoded_ptr    = decoded_buffer;
+
+        int  decoded_word  = 0;
+        int  count_bits    = 0;
+        bool found_padding = false;
+        int  padding_count = 0;
 
         for (std::size_t i = 0; i < base64_length; ++i, ++base64) {
-            const char ch = *base64;
-            if (ch == '=')
-                break;
+            const unsigned char ch = static_cast<unsigned char>(*base64);
 
-            // decode it
-            int add = get_indexof_base64char(static_cast<unsigned char>(ch));
-            if (add < 0)
+            if (ch == '=') {
+                // Once we see padding, all remaining chars must be padding
+                found_padding = true;
+                ++padding_count;
                 continue;
+            }
+
+            // No non-padding characters after padding characters (RFC 4648 compliance)
+            if (found_padding) {
+                decoded_buffer[0] = '\0';
+                return 0; // invalid: non-padding character after padding
+            }
+
+            // Check if it's a valid base64 character
+            int add = get_indexof_base64char(ch);
+            if (add < 0) {
+                decoded_buffer[0] = '\0';
+                return 0; // invalid: invalid character
+            }
 
             decoded_word  = decoded_word << 6 | add;
             count_bits   += 6;
@@ -160,9 +183,15 @@ namespace small::base64impl {
                 count_bits               -= 8;
                 unsigned char decoded_ch  = (unsigned char)(0xFF & (decoded_word >> count_bits));
 
-                *decoded_buffer++ = static_cast<char>(decoded_ch);
+                *decoded_ptr++ = static_cast<char>(decoded_ch);
                 ++decoded_length;
             }
+        }
+
+        // Validate padding rules: 0, 1, or 2 '=' at the end, not 3 or 4
+        if (padding_count > 2) {
+            decoded_buffer[0] = '\0';
+            return 0; // invalid: too much padding
         }
 
         return decoded_length;

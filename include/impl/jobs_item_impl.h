@@ -78,7 +78,7 @@ namespace small::jobsimpl {
         }
 
         //
-        // set job state (can only go from lower to upper state)
+        // set job state (can only go from lower to any upper state)
         //
         inline bool set_state(const EnumJobsState& new_state)
         {
@@ -110,11 +110,11 @@ namespace small::jobsimpl {
 
         inline bool is_state_none           () const { return is_state(EnumJobsState::kNone); }
         inline bool is_state_inprogress     () const { return is_state(EnumJobsState::kInProgress); }
-        inline void is_state_waitchildren   () const { return is_state(EnumJobsState::kWaitChildren); }
+        inline bool is_state_waitchildren   () const { return is_state(EnumJobsState::kWaitChildren); }
         inline bool is_state_finished       () const { return is_state(EnumJobsState::kFinished); }
         inline bool is_state_timeout        () const { return is_state(EnumJobsState::kTimeout); }
-        inline void is_state_failed         () const { return is_state(EnumJobsState::kFailed); }
-        inline void is_state_cancelled      () const { return is_state(EnumJobsState::kCancelled); }
+        inline bool is_state_failed         () const { return is_state(EnumJobsState::kFailed); }
+        inline bool is_state_cancelled      () const { return is_state(EnumJobsState::kCancelled); }
         // clang-format on
 
         //

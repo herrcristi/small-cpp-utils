@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <deque>
+#include <limits>
 #include <queue>
 
 #include "base_queue_wait.h"
@@ -29,6 +30,13 @@
 //
 
 namespace small {
+    //
+    // queue configuration
+    //
+    struct time_queue_config
+    {
+        std::size_t max_size = std::numeric_limits<std::size_t>::max(); // unlimited by default
+    };
 
     //
     // queue which have elements time controlled
@@ -46,21 +54,24 @@ namespace small {
         // time_queue
         //
         time_queue() = default;
+        explicit time_queue(const time_queue_config& config) : m_config(config) {}
         time_queue(const time_queue& o) : time_queue() { operator=(o); };
         time_queue(time_queue&& o) noexcept : time_queue() { operator=(std::move(o)); };
 
         inline time_queue& operator=(const time_queue& o)
         {
             std::scoped_lock l(m_wait, o.m_wait);
-            m_wait  = o.m_wait;
-            m_queue = o.m_queue;
+            m_config = o.m_config;
+            m_wait   = o.m_wait;
+            m_queue  = o.m_queue;
             return *this;
         }
         inline time_queue& operator=(time_queue&& o) noexcept
         {
             std::scoped_lock l(m_wait, o.m_wait);
-            m_wait  = std::move(o.m_wait);
-            m_queue = std::move(o.m_queue);
+            m_config = o.m_config;
+            m_wait   = std::move(o.m_wait);
+            m_queue  = std::move(o.m_queue);
             return *this;
         }
 
@@ -112,7 +123,10 @@ namespace small {
                 return 0;
             }
 
-            std::unique_lock  l(m_wait);
+            std::unique_lock l(m_wait);
+            if (m_queue.size() >= m_config.max_size) {
+                return 0; // queue at max capacity
+            }
             auto_notification n(this);
             m_queue.push({__atime, elem});
             return 1;
@@ -136,11 +150,17 @@ namespace small {
                 return 0;
             }
 
-            std::unique_lock  l(m_wait);
+            std::unique_lock l(m_wait);
+            if (m_queue.size() >= m_config.max_size) {
+                return 0; // queue at max capacity
+            }
             auto_notification n(this);
 
             std::size_t count = 0;
             for (auto& elem : elems) {
+                if (m_queue.size() >= m_config.max_size) {
+                    break; // stop if queue becomes full
+                }
                 m_queue.push({__atime, elem});
                 ++count;
             }
@@ -166,7 +186,10 @@ namespace small {
                 return 0;
             }
 
-            std::unique_lock  l(m_wait);
+            std::unique_lock l(m_wait);
+            if (m_queue.size() >= m_config.max_size) {
+                return 0; // queue at max capacity
+            }
             auto_notification n(this);
             m_queue.push({__atime, std::forward<T>(elem)});
             return 1;
@@ -190,11 +213,17 @@ namespace small {
                 return 0;
             }
 
-            std::unique_lock  l(m_wait);
+            std::unique_lock l(m_wait);
+            if (m_queue.size() >= m_config.max_size) {
+                return 0; // queue at max capacity
+            }
             auto_notification n(this);
 
             std::size_t count = 0;
             for (auto& elem : elems) {
+                if (m_queue.size() >= m_config.max_size) {
+                    break; // stop if queue becomes full
+                }
                 m_queue.push({__atime, std::forward<T>(elem)});
                 ++count;
             }
@@ -384,6 +413,7 @@ namespace small {
         //
         // members
         //
+        time_queue_config     m_config;      // queue configuration (limits, etc)
         mutable BaseQueueWait m_wait{*this}; // implements locks & wait
 
         using PriorityQueueElemT = std::pair<TimePoint, T>;

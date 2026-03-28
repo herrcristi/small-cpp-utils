@@ -1,30 +1,34 @@
 #pragma once
 
 #include <list>
+#include <mutex>
 #include <unordered_map>
 
 namespace small {
 
     //
-    // a simple LRU cache
+    // a simple LRU cache configuration
     //
     struct lru_cache_config
     {
         std::size_t capacity{static_cast<std::size_t>(-1)};
     };
 
+    //
+    // NOT thread-safe LRU cache (use lru_cache for thread-safe version)
+    //
     template <typename Key, typename Value>
-    class lru_cache
+    class lru_cache_unsafe
     {
     public:
-        lru_cache(const lru_cache_config& config = {}) : m_config(config)
+        lru_cache_unsafe(const lru_cache_config& config = {}) : m_config(config)
         {
         }
 
-        lru_cache(const lru_cache& o) { operator=(o); }
-        lru_cache(lru_cache&& o) noexcept { operator=(std::move(o)); }
+        lru_cache_unsafe(const lru_cache_unsafe& o) { operator=(o); }
+        lru_cache_unsafe(lru_cache_unsafe&& o) noexcept { operator=(std::move(o)); }
 
-        lru_cache& operator=(const lru_cache& o)
+        lru_cache_unsafe& operator=(const lru_cache_unsafe& o)
         {
             m_config = o.m_config;
             m_list   = o.m_list;
@@ -34,7 +38,7 @@ namespace small {
             }
             return *this;
         }
-        lru_cache& operator=(lru_cache&& o) noexcept
+        lru_cache_unsafe& operator=(lru_cache_unsafe&& o) noexcept
         {
             m_config = std::move(o.m_config);
             m_list   = std::move(o.m_list);
@@ -42,7 +46,7 @@ namespace small {
             return *this;
         }
 
-        ~lru_cache() = default;
+        ~lru_cache_unsafe() = default;
 
         //
         // lru functions
@@ -126,5 +130,101 @@ namespace small {
         using Node = std::pair<Key, Value>;
         std::list<Node>                                             m_list;
         std::unordered_map<Key, typename std::list<Node>::iterator> m_cache;
+    };
+
+    //
+    // Thread-safe LRU cache wrapper around lru_cache_unsafe
+    //
+    template <typename Key, typename Value>
+    class lru_cache
+    {
+    public:
+        lru_cache(const lru_cache_config& config = {}) : m_impl(config)
+        {
+        }
+
+        lru_cache(const lru_cache& o)
+        {
+            std::unique_lock lock(o.m_mutex);
+            m_impl = o.m_impl;
+        }
+        lru_cache(lru_cache&& o) noexcept
+        {
+            std::unique_lock lock(o.m_mutex);
+            m_impl = std::move(o.m_impl);
+        }
+
+        lru_cache& operator=(const lru_cache& o)
+        {
+            if (this == &o)
+                return *this;
+            std::unique_lock lock1(m_mutex, std::defer_lock);
+            std::unique_lock lock2(o.m_mutex, std::defer_lock);
+            std::lock(lock1, lock2);
+            m_impl = o.m_impl;
+            return *this;
+        }
+        lru_cache& operator=(lru_cache&& o) noexcept
+        {
+            if (this == &o)
+                return *this;
+            std::unique_lock lock1(m_mutex, std::defer_lock);
+            std::unique_lock lock2(o.m_mutex, std::defer_lock);
+            std::lock(lock1, lock2);
+            m_impl = std::move(o.m_impl);
+            return *this;
+        }
+
+        ~lru_cache() = default;
+
+        //
+        // thread-safe lru functions
+        //
+        inline std::size_t size() const
+        {
+            std::unique_lock lock(m_mutex);
+            return m_impl.size();
+        }
+
+        inline void clear()
+        {
+            std::unique_lock lock(m_mutex);
+            m_impl.clear();
+        }
+
+        inline void set(const Key& key, const Value& value)
+        {
+            std::unique_lock lock(m_mutex);
+            m_impl.set(key, value);
+        }
+
+        inline Value* get(const Key& key)
+        {
+            std::unique_lock lock(m_mutex);
+            return m_impl.get(key);
+        }
+
+        inline void erase(const Key& key)
+        {
+            std::unique_lock lock(m_mutex);
+            m_impl.erase(key);
+        }
+
+        // operators (thread-safe)
+        inline Value* operator[](const Key& key)
+        {
+            std::unique_lock lock(m_mutex);
+            return m_impl.get(key);
+        }
+
+        inline Value* operator[](Key&& key)
+        {
+            std::unique_lock lock(m_mutex);
+            return m_impl.get(std::forward<Key>(key));
+        }
+
+    private:
+        mutable std::mutex           m_mutex;
+        lru_cache_unsafe<Key, Value> m_impl;
     };
 } // namespace small
