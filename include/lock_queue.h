@@ -30,6 +30,14 @@
 namespace small {
 
     //
+    // queue size configuration
+    //
+    struct lock_queue_config
+    {
+        std::size_t max_size{static_cast<std::size_t>(-1)}; // unlimited by default
+    };
+
+    //
     // queue which is event controlled
     //
     template <typename T>
@@ -40,21 +48,24 @@ namespace small {
         // lock_queue
         //
         lock_queue() = default;
+        explicit lock_queue(const lock_queue_config& config) : m_config(config) {}
         lock_queue(const lock_queue& o) : lock_queue() { operator=(o); };
         lock_queue(lock_queue&& o) noexcept : lock_queue() { operator=(std::move(o)); };
 
         inline lock_queue& operator=(const lock_queue& o)
         {
             std::scoped_lock l(m_wait, o.m_wait);
-            m_wait  = o.m_wait;
-            m_queue = o.m_queue;
+            m_config = o.m_config;
+            m_wait   = o.m_wait;
+            m_queue  = o.m_queue;
             return *this;
         }
         inline lock_queue& operator=(lock_queue&& o) noexcept
         {
             std::scoped_lock l(m_wait, o.m_wait);
-            m_wait  = std::move(o.m_wait);
-            m_queue = std::move(o.m_queue);
+            m_config = o.m_config;
+            m_wait   = std::move(o.m_wait);
+            m_queue  = std::move(o.m_queue);
             return *this;
         }
 
@@ -95,6 +106,9 @@ namespace small {
             }
 
             std::unique_lock l(m_wait);
+            if (m_queue.size() >= m_config.max_size) {
+                return 0; // queue at max capacity
+            }
             m_queue.push_back(elem);
             m_wait.notify_one();
             return 1;
@@ -110,10 +124,15 @@ namespace small {
 
             std::size_t count = 0;
             for (auto& elem : elems) {
+                if (m_queue.size() >= m_config.max_size) {
+                    break; // reached capacity
+                }
                 m_queue.push_back(elem);
                 ++count;
             }
-            m_wait.notify_all();
+            if (count > 0) {
+                m_wait.notify_all();
+            }
             return count;
         }
 
@@ -125,6 +144,9 @@ namespace small {
             }
 
             std::unique_lock l(m_wait);
+            if (m_queue.size() >= m_config.max_size) {
+                return 0; // queue at max capacity
+            }
             m_queue.push_back(std::forward<T>(elem));
             m_wait.notify_one();
             return 1;
@@ -140,10 +162,15 @@ namespace small {
 
             std::size_t count = 0;
             for (auto& elem : elems) {
+                if (m_queue.size() >= m_config.max_size) {
+                    break; // reached capacity
+                }
                 m_queue.push_back(std::forward<T>(elem));
                 ++count;
             }
-            m_wait.notify_all();
+            if (count > 0) {
+                m_wait.notify_all();
+            }
             return count;
         }
 
@@ -156,6 +183,9 @@ namespace small {
             }
 
             std::unique_lock l(m_wait);
+            if (m_queue.size() >= m_config.max_size) {
+                return 0; // queue at max capacity
+            }
             m_queue.emplace_back(std::forward<_Args>(__args)...);
             m_wait.notify_one();
             return 1;
@@ -271,6 +301,7 @@ namespace small {
         //
         // members
         //
+        lock_queue_config     m_config{};    // queue configuration (limits, etc)
         mutable BaseQueueWait m_wait{*this}; // implements locks & wait
         std::deque<T>         m_queue;       // queue
     };

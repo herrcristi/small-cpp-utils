@@ -43,6 +43,10 @@ namespace small {
     //
     inline int stricmp(const char* dst, const char* src)
     {
+        if (dst == nullptr || src == nullptr) {
+            return dst == src ? 0 : (dst == nullptr ? -1 : 1);
+        }
+
         int f = 0;
         int l = 0;
         do {
@@ -65,6 +69,10 @@ namespace small {
     //
     inline int strnicmp(const char* dst, const char* src, std::size_t num)
     {
+        if (dst == nullptr || src == nullptr) {
+            return dst == src ? 0 : (dst == nullptr ? -1 : 1);
+        }
+
         int f = 0;
         int l = 0;
         for (; num > 0; num--) {

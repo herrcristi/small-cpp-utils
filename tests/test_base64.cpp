@@ -110,4 +110,113 @@ namespace {
         auto          decoded = small::frombase64(b);
         ASSERT_EQ(decoded, m_text);
     }
+
+    //
+    // Base64 RFC 4648 Validation Tests
+    //
+    TEST_F(Base64Test, Base64_RFC4648_ValidPadding)
+    {
+        // Valid base64 strings with proper padding
+        ASSERT_EQ(small::frombase64("YWJjZA=="), "abcd");
+
+        ASSERT_EQ(small::frombase64("YWJj"), "abc");
+        ASSERT_EQ(small::frombase64("YWI="), "ab");
+
+        // Mixed content
+        ASSERT_EQ(small::frombase64("SGVsbG8gV29ybGQ="), "Hello World");
+        ASSERT_EQ(small::frombase64("VGhpcyBpcyBhIHRlc3Q="), "This is a test");
+    }
+
+    TEST_F(Base64Test, Base64_RFC4648_InvalidPadding)
+    {
+        // Invalid padding patterns - should return empty string
+        // 3 padding characters (invalid)
+        ASSERT_EQ(small::frombase64("YQ==="), "");
+
+        // 4 padding characters (invalid)
+        ASSERT_EQ(small::frombase64("===="), "");
+
+        // Padding in the middle (invalid)
+        ASSERT_EQ(small::frombase64("YQ==YQ=="), "");
+
+        // Padding not at multiple of 4 (invalid length)
+        ASSERT_EQ(small::frombase64("YQ="), "");     // 3 chars
+        ASSERT_EQ(small::frombase64("YQ==YQ="), ""); // 7 chars
+    }
+
+    TEST_F(Base64Test, Base64_RFC4648_InvalidCharacters)
+    {
+        // Invalid characters - should return empty string
+        // Space characters
+        ASSERT_EQ(small::frombase64("YQ == "), "");
+
+        // Special characters not in base64 alphabet
+        ASSERT_EQ(small::frombase64("YQ!@#="), "");
+
+        // Newlines or whitespace
+        ASSERT_EQ(small::frombase64("YQ\n=="), "");
+        ASSERT_EQ(small::frombase64("\tYQ=="), "");
+    }
+
+    TEST_F(Base64Test, Base64_RFC4648_LengthValidation)
+    {
+        // Length must be multiple of 4 (RFC 4648 requirement)
+        ASSERT_EQ(small::frombase64(""), "");             // empty is valid
+        ASSERT_EQ(small::frombase64("YQ=="), "a");        // 4 chars
+        ASSERT_EQ(small::frombase64("YWJjZA=="), "abcd"); // 8 chars
+
+        // Invalid lengths (not multiple of 4)
+        ASSERT_EQ(small::frombase64("YQ"), "");      // 2 chars
+        ASSERT_EQ(small::frombase64("YQ="), "");     // 3 chars
+        ASSERT_EQ(small::frombase64("YQ==Y"), "");   // 5 chars
+        ASSERT_EQ(small::frombase64("YQ==YLB"), ""); // 7 chars
+    }
+
+    TEST_F(Base64Test, Base64_RFC4648_RoundTrip)
+    {
+        // Test round-trip encoding/decoding with validation
+        std::vector<std::string> test_strings = {
+            "",
+            "a",
+            "ab",
+            "abc",
+            "abcd",
+            "hello",
+            "hello world",
+            "This is a test with spaces",
+            "Special!@#$%^&*()_+-=[]{}|;:',.<>?/",
+            "\x00\x01\x02\x03\x04\x05", // binary data
+        };
+
+        for (const auto& original : test_strings) {
+            // Encode
+            auto encoded = small::tobase64(original);
+
+            // Decode and verify round-trip
+            auto decoded = small::frombase64(encoded);
+            ASSERT_EQ(decoded, original);
+        }
+    }
+
+    TEST_F(Base64Test, Base64_ErrorHandling)
+    {
+        // Test that invalid base64 returns empty string and sets null terminator
+        char buffer[32] = {0};
+
+        // Invalid input should set first byte to '\0' and return 0
+        std::size_t len = small::base64impl::frombase64(buffer, "!!!!", 4);
+        ASSERT_EQ(len, 0);
+        ASSERT_EQ(buffer[0], '\0');
+
+        // Non-multiple of 4 length
+        len = small::base64impl::frombase64(buffer, "YQ", 2);
+        ASSERT_EQ(len, 0);
+        ASSERT_EQ(buffer[0], '\0');
+
+        // Valid input should work
+        len = small::base64impl::frombase64(buffer, "YQ==", 4);
+        ASSERT_GT(len, 0);
+        buffer[len] = '\0'; // null terminate for comparison
+        ASSERT_EQ(std::string(buffer, len), "a");
+    }
 } // namespace
