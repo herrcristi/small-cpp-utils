@@ -156,22 +156,22 @@ namespace small {
 
         lru_cache& operator=(const lru_cache& o)
         {
-            if (this == &o)
-                return *this;
-            std::unique_lock lock1(m_mutex, std::defer_lock);
-            std::unique_lock lock2(o.m_mutex, std::defer_lock);
-            std::lock(lock1, lock2);
-            m_impl = o.m_impl;
+            if (this != &o) {
+                std::unique_lock lock1(m_mutex, std::defer_lock);
+                std::unique_lock lock2(o.m_mutex, std::defer_lock);
+                std::lock(lock1, lock2);
+                m_impl = o.m_impl;
+            }
             return *this;
         }
         lru_cache& operator=(lru_cache&& o) noexcept
         {
-            if (this == &o)
-                return *this;
-            std::unique_lock lock1(m_mutex, std::defer_lock);
-            std::unique_lock lock2(o.m_mutex, std::defer_lock);
-            std::lock(lock1, lock2);
-            m_impl = std::move(o.m_impl);
+            if (this != &o) {
+                std::unique_lock lock1(m_mutex, std::defer_lock);
+                std::unique_lock lock2(o.m_mutex, std::defer_lock);
+                std::lock(lock1, lock2);
+                m_impl = std::move(o.m_impl);
+            }
             return *this;
         }
 
