@@ -223,8 +223,17 @@ namespace small {
         inline std::size_t ensure_size(std::size_t new_size, const bool shrink = false)
         {
             const auto chunk_size = m_config.chunk_size;
+
+            // Check for multiplication overflow
             // we always append a '\0' to the end so we can use as string
-            std::size_t new_alloc_size = ((new_size + sizeof(char) /*for '\0'*/ + (chunk_size - 1)) / chunk_size) * chunk_size;
+            std::size_t chunks_needed = (new_size + sizeof(char) /*for '\0'*/ + (chunk_size - 1)) / chunk_size;
+
+            if (chunks_needed > std::numeric_limits<std::size_t>::max() / chunk_size) {
+                init();
+                return 0;
+            }
+
+            std::size_t new_alloc_size = chunks_needed * chunk_size;
             bool        reallocate     = false;
             if (shrink) {
                 reallocate = (m_chunk_buffer_alloc_size == 0) || (new_alloc_size != m_chunk_buffer_alloc_size); // we need another size

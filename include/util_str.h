@@ -109,26 +109,27 @@ namespace small {
 
     //
     // conversion to_lower_case, to_upper_case
+    // the string is modified in place and returned for chaining
     //
-    inline std::string to_lower_case(std::string& u)
+    inline std::string to_lower_case(std::string* u)
     {
-        std::transform(u.begin(), u.end(), u.begin(), ::tolower);
-        return u;
+        std::transform(u->begin(), u->end(), u->begin(), ::tolower);
+        return *u;
     }
 
-    inline std::string to_upper_case(std::string& u)
+    inline std::string to_upper_case(std::string* u)
     {
-        std::transform(u.begin(), u.end(), u.begin(), ::toupper);
-        return u;
+        std::transform(u->begin(), u->end(), u->begin(), ::toupper);
+        return *u;
     }
 
-    inline std::string to_capitalize_case(std::string& u)
+    inline std::string to_capitalize_case(std::string* u)
     {
-        std::transform(u.begin(), u.end(), u.begin(), ::tolower);
-        if (u.begin() != u.end()) {
-            *u.begin() = static_cast<char>(::toupper(*u.begin()));
+        std::transform(u->begin(), u->end(), u->begin(), ::tolower);
+        if (u->begin() != u->end()) {
+            *u->begin() = static_cast<char>(::toupper(*u->begin()));
         }
-        return u;
+        return *u;
     }
 
     //
@@ -179,12 +180,12 @@ namespace small {
             mbstr = str_null_terminated.c_str();
         }
 
-        std::size_t wsize = small::strimpl::to_utf16_needed_length(mbstr, mbsize);
-        if (wsize == static_cast<std::size_t>(-1)) {
+        std::optional<std::size_t> wsize = small::strimpl::to_utf16_needed_length(mbstr, mbsize);
+        if (!wsize.has_value()) {
             return wstr;
         }
 
-        wstr.resize(wsize);
+        wstr.resize(wsize.value());
         small::strimpl::to_utf16(mbstr, mbsize, wstr.data(), wstr.size());
         return wstr;
     }
@@ -210,12 +211,12 @@ namespace small {
             wstr = wstr_null_terminated.c_str();
         }
 
-        std::size_t mbsize = small::strimpl::to_utf8_needed_length(wstr, wsize);
-        if (mbsize == static_cast<std::size_t>(-1)) {
+        std::optional<std::size_t> mbsize = small::strimpl::to_utf8_needed_length(wstr, wsize);
+        if (!mbsize.has_value()) {
             return str;
         }
 
-        str.resize(mbsize);
+        str.resize(mbsize.value());
         small::strimpl::to_utf8(wstr, wsize, str.data(), str.size());
         return str;
     }

@@ -116,13 +116,13 @@ namespace {
     TEST_F(UtilTest, conversion_strings)
     {
         std::string s = "Some Text";
-        small::to_lower_case(s);
+        small::to_lower_case(&s);
         ASSERT_EQ(s, "some text");
 
-        small::to_upper_case(s);
+        small::to_upper_case(&s);
         ASSERT_EQ(s, "SOME TEXT");
 
-        small::to_capitalize_case(s);
+        small::to_capitalize_case(&s);
         ASSERT_EQ(s, "Some text");
 
         ASSERT_EQ(small::to_hex(false), "0");

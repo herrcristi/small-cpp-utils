@@ -645,7 +645,7 @@ int r = small::stricmp( "a", "C" );
 std::map<std::string, int, small::icasecmp> m;
 ...
 std::string s = "Some text";
-small::to_lower_case(s);
+small::to_lower_case(&s);
 
 ```
 
