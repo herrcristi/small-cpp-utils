@@ -264,7 +264,7 @@ namespace {
             int value{5};
             _q.push_delay_for(std::chrono::milliseconds(300), value);
         },
-                                   std::ref(q));
+                                      std::ref(q));
 
         // wait and pop
         int  value   = {};
@@ -301,7 +301,7 @@ namespace {
             small::sleep(300);
             _q.signal_exit_force();
         },
-                                   std::ref(q));
+                                      std::ref(q));
 
         // check
         value        = {};
@@ -340,7 +340,7 @@ namespace {
             small::sleep(300);
             _q.signal_exit_when_done();
         },
-                                   std::ref(q));
+                                      std::ref(q));
 
         // check that exit happened because there is nothing in queue
         value        = {};
@@ -354,6 +354,152 @@ namespace {
         auto r_push = q.push_delay_for(std::chrono::milliseconds(0), 5);
         ASSERT_EQ(r_push, 0);
         ASSERT_EQ(q.size(), 0);
+    }
+
+    //
+    // capacity checking tests
+    //
+    TEST_F(TimeQueueTest, Capacity_Check_Single_Element)
+    {
+        small::time_queue_config config;
+        config.max_size = 3;
+        small::time_queue<int> q(config);
+
+        // Push 3 elements successfully
+        ASSERT_EQ(q.push_delay_for(std::chrono::milliseconds(0), 1), 1);
+        ASSERT_EQ(q.size(), 1);
+
+        ASSERT_EQ(q.push_delay_for(std::chrono::milliseconds(0), 2), 1);
+        ASSERT_EQ(q.size(), 2);
+
+        ASSERT_EQ(q.push_delay_for(std::chrono::milliseconds(0), 3), 1);
+        ASSERT_EQ(q.size(), 3);
+
+        // Push should fail due to capacity limit
+        ASSERT_EQ(q.push_delay_for(std::chrono::milliseconds(0), 4), 0);
+        ASSERT_EQ(q.size(), 3);
+    }
+
+    TEST_F(TimeQueueTest, Capacity_Check_Move_Semantics)
+    {
+        small::time_queue_config config;
+        config.max_size = 2;
+        small::time_queue<int> q(config);
+
+        // Push 2 elements with move semantics
+        ASSERT_EQ(q.push_delay_for(std::chrono::milliseconds(0), std::make_unique<int>(1) ? 1 : 0), 1);
+        ASSERT_EQ(q.size(), 1);
+
+        ASSERT_EQ(q.push_delay_for(std::chrono::milliseconds(0), std::make_unique<int>(2) ? 1 : 0), 1);
+        ASSERT_EQ(q.size(), 2);
+
+        // Push should fail due to capacity limit
+        ASSERT_EQ(q.push_delay_for(std::chrono::milliseconds(0), std::make_unique<int>(3) ? 1 : 0), 0);
+        ASSERT_EQ(q.size(), 2);
+    }
+
+    TEST_F(TimeQueueTest, Capacity_Check_Vector_Elements)
+    {
+        small::time_queue_config config;
+        config.max_size = 5;
+        small::time_queue<int> q(config);
+
+        // Push vector of 3 elements successfully
+        std::vector<int> vec1{1, 2, 3};
+        ASSERT_EQ(q.push_delay_for(std::chrono::milliseconds(0), vec1), 3);
+        ASSERT_EQ(q.size(), 3);
+
+        // Push vector of 2 more elements successfully
+        std::vector<int> vec2{4, 5};
+        ASSERT_EQ(q.push_delay_for(std::chrono::milliseconds(0), vec2), 2);
+        ASSERT_EQ(q.size(), 5);
+
+        // Push vector when at capacity - should return 0
+        std::vector<int> vec3{6, 7};
+        ASSERT_EQ(q.push_delay_for(std::chrono::milliseconds(0), vec3), 0);
+        ASSERT_EQ(q.size(), 5);
+    }
+
+    TEST_F(TimeQueueTest, Capacity_Check_Vector_Partial_Insert)
+    {
+        small::time_queue_config config;
+        config.max_size = 4;
+        small::time_queue<int> q(config);
+
+        // Push vector of 2 elements
+        std::vector<int> vec1{1, 2};
+        ASSERT_EQ(q.push_delay_for(std::chrono::milliseconds(0), vec1), 2);
+        ASSERT_EQ(q.size(), 2);
+
+        // Push vector of 3 elements - should insert only 2 due to capacity
+        std::vector<int> vec2{3, 4, 5};
+        ASSERT_EQ(q.push_delay_for(std::chrono::milliseconds(0), vec2), 2);
+        ASSERT_EQ(q.size(), 4); // 2 + 2, not 2 + 3
+    }
+
+    TEST_F(TimeQueueTest, Capacity_Check_With_Push_Until)
+    {
+        small::time_queue_config config;
+        config.max_size = 3;
+        small::time_queue<int> q(config);
+
+        auto timePoint = std::chrono::system_clock::now() + std::chrono::milliseconds(100);
+
+        // Push 3 elements with push_delay_until
+        ASSERT_EQ(q.push_delay_until(timePoint, 1), 1);
+        ASSERT_EQ(q.push_delay_until(timePoint, 2), 1);
+        ASSERT_EQ(q.push_delay_until(timePoint, 3), 1);
+        ASSERT_EQ(q.size(), 3);
+
+        // Push should fail due to capacity
+        ASSERT_EQ(q.push_delay_until(timePoint, 4), 0);
+        ASSERT_EQ(q.size(), 3);
+    }
+
+    TEST_F(TimeQueueTest, Capacity_Check_Vector_Push_Until)
+    {
+        small::time_queue_config config;
+        config.max_size = 5;
+        small::time_queue<int> q(config);
+
+        auto timePoint = std::chrono::system_clock::now() + std::chrono::milliseconds(100);
+
+        // Push vector of 3 elements
+        std::vector<int> vec1{1, 2, 3};
+        ASSERT_EQ(q.push_delay_until(timePoint, vec1), 3);
+        ASSERT_EQ(q.size(), 3);
+
+        // Push vector of 3 elements - should insert only 2 due to capacity
+        std::vector<int> vec2{4, 5, 6};
+        ASSERT_EQ(q.push_delay_until(timePoint, vec2), 2);
+        ASSERT_EQ(q.size(), 5);
+    }
+
+    TEST_F(TimeQueueTest, Capacity_Zero_Rejects_All)
+    {
+        small::time_queue_config config;
+        config.max_size = 0;
+        small::time_queue<int> q(config);
+
+        // All pushes should fail when max_size is 0
+        ASSERT_EQ(q.push_delay_for(std::chrono::milliseconds(0), 1), 0);
+        ASSERT_EQ(q.size(), 0);
+
+        std::vector<int> vec{1, 2, 3};
+        ASSERT_EQ(q.push_delay_for(std::chrono::milliseconds(0), vec), 0);
+        ASSERT_EQ(q.size(), 0);
+    }
+
+    TEST_F(TimeQueueTest, Capacity_Unlimited_Default)
+    {
+        // Default config has unlimited capacity
+        small::time_queue<int> q;
+
+        // Should be able to push many elements
+        for (int i = 0; i < 1000; ++i) {
+            ASSERT_EQ(q.push_delay_for(std::chrono::milliseconds(0), i), 1);
+        }
+        ASSERT_EQ(q.size(), 1000);
     }
 
 } // namespace

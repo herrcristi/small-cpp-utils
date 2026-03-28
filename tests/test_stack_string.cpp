@@ -642,16 +642,20 @@ namespace {
         ASSERT_EQ(s, "abcd");
         ASSERT_EQ(s[0], 'a');
         ASSERT_EQ(s[1], 'b');
+        ASSERT_THROW(s[4], std::out_of_range);
 
         ASSERT_EQ(s.at(2), 'c');
+        ASSERT_EQ(s.at_unsafe(2), 'c');
         ASSERT_EQ(s.at(3), 'd');
+        ASSERT_THROW(s.at(4), std::out_of_range);
 
         ASSERT_EQ(s.front(), 'a');
         ASSERT_EQ(s.back(), 'd');
 
         s.erase(0);
         ASSERT_EQ(s, "");
-        ASSERT_EQ(s.back(), '\0');
+        ASSERT_THROW(s.front(), std::out_of_range);
+        ASSERT_THROW(s.back(), std::out_of_range);
 
         // same tests as above for stack_string<1> which will use std::string
         small::stack_string<1> s_1 = std::string_view{"abcd"};
@@ -660,6 +664,7 @@ namespace {
         ASSERT_EQ(s_1[1], 'b');
 
         ASSERT_EQ(s_1.at(2), 'c');
+        ASSERT_EQ(s_1.at_unsafe(2), 'c');
         ASSERT_EQ(s_1.at(3), 'd');
 
         ASSERT_EQ(s_1.front(), 'a');
@@ -667,7 +672,8 @@ namespace {
 
         s_1.erase(0);
         ASSERT_EQ(s_1, "");
-        ASSERT_EQ(s_1.back(), '\0');
+        ASSERT_THROW(s_1.front(), std::out_of_range);
+        ASSERT_THROW(s_1.back(), std::out_of_range);
     }
 
     TEST_F(StackStringTest, stack_string_push_pop)

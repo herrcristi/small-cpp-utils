@@ -21,6 +21,7 @@ int main()
 
     examples::spinlock::Example1();
     examples::hash::Example1();
+    examples::hash::Example2();
     examples::base64::Example1();
     examples::util::Example1();
     examples::utiltimeout::Example1();

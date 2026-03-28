@@ -6,30 +6,30 @@ Contains useful every day features and also a great material for didactic purpos
 
 This can be used in following ways:
 
--   <b>event</b> (it combines mutex and condition variable to create an event which is either automatic or manual)
+- <b>event</b> (it combines mutex and condition variable to create an event which is either automatic or manual)
 
--   <b>lock_queue</b> (thread safe queue with waiting mechanism to be used in concurrent environment)
--   <b>time_queue</b> (thread safe queue for delay requests)
--   <b>prio_queue</b> (thread safe queue for requests with priority like high, normal, low, etc)
+- <b>lock_queue</b> (thread safe queue with waiting mechanism to be used in concurrent environment)
+- <b>time_queue</b> (thread safe queue for delay requests)
+- <b>prio_queue</b> (thread safe queue for requests with priority like high, normal, low, etc)
 
--   <b>worker_thread</b> (creates workers on separate threads that do task when requested, based on lock_queue and time_queue)
+- <b>worker_thread</b> (creates workers on separate threads that do task when requested, based on lock_queue and time_queue)
 
--   <b>jobs_engine</b> (uses a thread pool based on worker_thread to process different jobs with config execution pattern)
+- <b>jobs_engine</b> (uses a thread pool based on worker_thread to process different jobs with config execution pattern)
 
--   <b>spinlock</b> (or critical_section to do quick locks)
-
-#
-
--   <b>buffer</b> (a class for manipulating buffers)
--   <b>stack_string</b> (a string that first uses the stack to allocate space, it works faster when using multithreading environment and has conversion to/from wstring)
+- <b>spinlock</b> (or critical_section to do quick locks)
 
 #
 
--   <b>base64</b> (quick functions for base64 encode & decode)
--   <b>qhash</b> (a quick hash function for buffers and null termination strings)
--   <b>util</b> functions (like <b>icasecmp</b> for use with map/set, <b>sleep</b>, <b>time_now</b>, <b>time_diff_ms</b>, <b>to_iso_string</b>, <b>rand</b>, <b>uuid</b>, ...)
--   <b>set_timeout</b> and <b>set_interval</b> util functions to execute custom functions after a timeout interval
--   <b>lru_cache</b> a LRU cache with capacity
+- <b>buffer</b> (a class for manipulating buffers)
+- <b>stack_string</b> (a string that first uses the stack to allocate space, it works faster when using multithreading environment and has conversion to/from wstring)
+
+#
+
+- <b>base64</b> (quick functions for base64 encode & decode)
+- <b>qhash</b> (a quick hash function for buffers and null termination strings, 131 or 1a variants)
+- <b>util</b> functions (like <b>icasecmp</b> for use with map/set, <b>sleep</b>, <b>time_now</b>, <b>time_diff_ms</b>, <b>to_iso_string</b>, <b>rand</b>, <b>uuid</b>, ...)
+- <b>set_timeout</b> and <b>set_interval</b> util functions to execute custom functions after a timeout interval
+- <b>lru_cache</b> a LRU cache with capacity
 
 #
 
@@ -379,18 +379,18 @@ A class that process different jobs type using the same thread pool
 
 Every job is defined by
 
--   id
--   type
-    -   for each type multiple callback functions can be defined for processing, finishing, child finished
-    -   timeout can be setup after which the job is cancelled
--   group
-    -   multiple jobs type can be grouped to use same threads, this is configurable (if 1 thread is setup for a group all that job type requests will actually behave like serialized., if 0 threads will mean that some processing will be done outside the jobs engine)
-    -   delay between requests (to have throttle) - this can be override in the processing function
--   priority inside a group (high, normal, etc)
--   request / response
--   relationship - one job can be parent for another child job, and by default will be finished when all children are finished (this behaviour can be overriden usign the callbacks)
--   state (in progress, finished, failed, timeout, cancelled, etc)
--   progress
+- id
+- type
+    - for each type multiple callback functions can be defined for processing, finishing, child finished
+    - timeout can be setup after which the job is cancelled
+- group
+    - multiple jobs type can be grouped to use same threads, this is configurable (if 1 thread is setup for a group all that job type requests will actually behave like serialized., if 0 threads will mean that some processing will be done outside the jobs engine)
+    - delay between requests (to have throttle) - this can be override in the processing function
+- priority inside a group (high, normal, etc)
+- request / response
+- relationship - one job can be parent for another child job, and by default will be finished when all children are finished (this behaviour can be overriden usign the callbacks)
+- state (in progress, finished, failed, timeout, cancelled, etc)
+- progress
 
 The following functions are available
 
@@ -540,6 +540,8 @@ b.set( 2/*start from*/, "b", 1/*length*/ ); // "anb"
 
 char* e = b.extract();                      // extract "anb"
 small::buffer::free( e );                   // free buffer in the class context
+or use
+extracted_buffer eb(b);                     // will be freed when it goes out of scope
 
 small::buffer b1 = { 8192/*chunksize*/, "buffer", 6/*specified length*/ };
 small::buffer b2 = { 8192/*chunksize*/, "buffer" };
@@ -610,17 +612,17 @@ When you want to do a simple hash
 
 The following function is available
 
-`qhash, qhashz`
+`qhash131, qhash131z, qhash1a, qhash1az`
 
 Use it like this
 
 ```
-unsigned long long h = small::qhash( "some text", 9/*strlen(...)*/ );
+unsigned long long h = small::qhash131( "some text", 9/*strlen(...)*/ );
 ...
 // or you can used like this
-unsigned long long h1 = small::qhash( "some ", 5/*strlen(...)*/ );
+unsigned long long h1 = small::qhash131( "some ", 5/*strlen(...)*/ );
 or
-unsigned long long h2 = small::qhashz( "text" /*null terminating string*/,  h1/*continue from h1*/ );
+unsigned long long h2 = small::qhash131z( "text" /*null terminating string*/,  h1/*continue from h1*/ );
 ```
 
 #
@@ -728,7 +730,7 @@ small::timeout::wait();
 ...
 ```
 
-### lru_cache
+### lru_cache, lru_cache_unsafe
 
 `set, get`
 

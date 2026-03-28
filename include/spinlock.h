@@ -25,8 +25,8 @@ namespace small {
         // spinlock
         //
         spinlock(const int& spin_count = 4000, const int& wait_in_micro_seconds = 1000 /*1 millisecond*/)
-            : m_spin_count(spin_count),
-              m_wait_in_microseconds(wait_in_micro_seconds)
+            : m_spin_count(spin_count < 0 ? 0 : spin_count),
+              m_wait_in_microseconds(wait_in_micro_seconds < 0 ? 0 : wait_in_micro_seconds)
         {
         }
 

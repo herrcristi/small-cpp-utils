@@ -55,6 +55,7 @@ namespace small {
 
         // clang-format off
         // data
+        // WARNING: Returned pointer becomes invalid if *this is moved from
         inline const char*  c_str           () const { return m_std_string ? m_std_string.get()->c_str() : m_stack_string.data(); }
         inline const char*  data            () const { return m_std_string ? m_std_string.get()->c_str() : m_stack_string.data(); }
         inline char*        data            ()       { return m_std_string ? m_std_string.get()->data()  : m_stack_string.data(); } // direct access
@@ -277,19 +278,25 @@ namespace small {
         // clang-format on
 
         // clang-format off
-        // [] / at
-        inline char&        operator[]      (std::size_t index)                                 { return data()[index]; }
-        inline char         operator[]      (std::size_t index) const                           { return data()[index]; }
+        // operator[]
+        //   consider adding at_unsafe() alternatives that doesn't bounds check for performance
+        inline char&        operator[]      (std::size_t index)                                 { return at(index); }
+        inline char         operator[]      (std::size_t index) const                           { return at(index); }
         
-        inline char&        at              (std::size_t index)                                 { return data()[index]; }
-        inline char         at              (std::size_t index) const                           { return data()[index]; }
+        // at - core access methods with bounds checking
+        inline char&        at              (std::size_t index)                                 { if (index >= size()) { throw std::out_of_range("string at() index out of range"); } return data()[index]; }
+        inline char         at              (std::size_t index) const                           { if (index >= size()) { throw std::out_of_range("string at() index out of range"); } return data()[index]; }
 
         // front / back
-        inline char&        front           ()                                                  { return size() > 0 ? data()[0] : m_stack_string[0]; }
-        inline char         front           () const                                            { return size() > 0 ? data()[0] : '\0'; }
+        inline char&        front           ()                                                  { if (empty()) { throw std::out_of_range("front() on empty string"); } return data()[0]; }
+        inline char         front           () const                                            { if (empty()) { throw std::out_of_range("front() on empty string"); } return data()[0]; }
 
-        inline char&        back            ()                                                  { return size() > 0 ? data()[size() - 1] : m_stack_string[0]; }
-        inline char         back            () const                                            { return size() > 0 ? data()[size() - 1] : '\0'; }
+        inline char&        back            ()                                                  { if (empty()) { throw std::out_of_range("back() on empty string"); } return data()[size() - 1]; }
+        inline char         back            () const                                            { if (empty()) { throw std::out_of_range("back() on empty string"); } return data()[size() - 1]; }
+
+        // unsafe variants (no bounds checking)
+        inline char&        at_unsafe       (std::size_t index)                                 { return data()[index]; }
+        inline char         at_unsafe       (std::size_t index) const                           { return data()[index]; }
 
         // clang-format on
 

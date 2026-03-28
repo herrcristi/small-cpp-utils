@@ -56,7 +56,6 @@ namespace small {
         {
             std::scoped_lock l(m_wait, o.m_wait);
             m_config = o.m_config;
-            m_wait   = o.m_wait;
             m_queue  = o.m_queue;
             return *this;
         }
@@ -64,7 +63,6 @@ namespace small {
         {
             std::scoped_lock l(m_wait, o.m_wait);
             m_config = o.m_config;
-            m_wait   = std::move(o.m_wait);
             m_queue  = std::move(o.m_queue);
             return *this;
         }

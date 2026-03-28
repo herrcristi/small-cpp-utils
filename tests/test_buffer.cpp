@@ -110,15 +110,11 @@ namespace {
         small::buffer b1;
         ASSERT_EQ(b1, "");
 
-        auto e1 = b1.extract();
-        {
-            AutoDelete ad1(e1);
-            b1 += 'a';
+        small::extracted_buffer e1(b1);
+        b1 += 'a';
 
-            ASSERT_EQ(b1, "a");
-            ASSERT_EQ(e1, std::string());
-        }
-        ASSERT_EQ(e1, nullptr);
+        ASSERT_EQ(b1, "a");
+        ASSERT_EQ(e1.get(), std::string());
     }
 
     TEST_F(BufferTest, buffer_plus)
@@ -386,6 +382,7 @@ namespace {
         ASSERT_EQ(b[1], 'b');
 
         ASSERT_EQ(b.at(2), 'c');
+        ASSERT_EQ(b.at_unsafe(2), 'c');
         ASSERT_EQ(b.at(3), 'd');
 
         ASSERT_EQ(b.front(), 'a');
@@ -393,7 +390,8 @@ namespace {
 
         b.erase(0);
         ASSERT_EQ(b, "");
-        ASSERT_EQ(b.back_unsafe(), '\0');
+        ASSERT_THROW(b.front(), std::out_of_range);
+        ASSERT_THROW(b.back(), std::out_of_range);
     }
 
     TEST_F(BufferTest, buffer_push_pop)
@@ -614,21 +612,20 @@ namespace {
         ASSERT_NO_THROW(b.at_unsafe(4));
     }
 
-    TEST_F(BufferTest, buffer_unbounded_access_operator_bracket)
+    TEST_F(BufferTest, buffer_access_operator_bracket)
     {
         small::buffer b = std::string_view{"abcd"};
 
-        // operator[] should delegate to at() and throw on bounds violation
+        // operator[] now delegates to at() and throws on bounds violation (secure by default)
         ASSERT_EQ(b[0], 'a');
         ASSERT_EQ(b[1], 'b');
         ASSERT_EQ(b[3], 'd');
 
-        // Unsafe accesses - no bounds checking, should not throw
-        // These would access memory beyond buffer (undefined behavior, but no throw)
-        ASSERT_NO_THROW(b[4]);
+        // Out-of-bounds access via operator[] should throw
+        ASSERT_THROW(b[4], std::out_of_range);
     }
 
-    TEST_F(BufferTest, buffer_unbounded_access_front_back)
+    TEST_F(BufferTest, buffer_access_front_back)
     {
         small::buffer b = std::string_view{"abcd"};
 
@@ -640,20 +637,6 @@ namespace {
         small::buffer empty;
         ASSERT_THROW(empty.front(), std::out_of_range);
         ASSERT_THROW(empty.back(), std::out_of_range);
-    }
-
-    TEST_F(BufferTest, buffer_unbounded_access_front_back_unsafe)
-    {
-        small::buffer b = std::string_view{"abcd"};
-
-        // Valid accesses via unsafe methods
-        ASSERT_EQ(b.front_unsafe(), 'a');
-        ASSERT_EQ(b.back_unsafe(), 'd');
-
-        // Empty buffer - unsafe methods should not throw
-        small::buffer empty;
-        ASSERT_NO_THROW(empty.front_unsafe());
-        ASSERT_NO_THROW(empty.back_unsafe());
     }
 
     TEST_F(BufferTest, buffer_mutable_unbounded_access)

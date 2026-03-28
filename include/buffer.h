@@ -31,8 +31,7 @@
 // b.append( "hello", 5 );
 // b.clear( true );
 //
-// char* e1 = b.extract(); // extract ""
-// small::buffer::free( e1 );
+// extracted_buffer e1 = b.extract(); // extract "", e1 will be freed when it goes out of scope
 //
 // b.append( "world", 5 );
 // b.clear();
@@ -300,6 +299,21 @@ namespace small {
         char*       m_chunk_buffer_data{};
         std::size_t m_chunk_buffer_length{};
         std::size_t m_chunk_buffer_alloc_size{};
+    };
+
+    //
+    // helper class to extract buffer and automatically free it when it goes out of scope
+    //
+    class extracted_buffer
+    {
+    public:
+        extracted_buffer(buffer& b) : m_data(b.extract()) {}
+        ~extracted_buffer() { small::buffer::free(m_data); }
+
+        char* get() { return m_data; }
+
+    private:
+        char* m_data{};
     };
 
 } // namespace small

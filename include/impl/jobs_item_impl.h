@@ -47,7 +47,7 @@ namespace small::jobsimpl {
             : m_type(jobs_type), m_request(std::forward<JobsRequestT>(jobs_request)) {}
 
         jobs_item(const jobs_item& other) { operator=(other); };
-        jobs_item(jobs_item&& other) noexcept { operator=(other); };
+        jobs_item(jobs_item&& other) noexcept { operator=(std::move(other)); };
         jobs_item& operator=(const jobs_item& other)
         {
             m_id           = other.m_id;

@@ -33,9 +33,8 @@ namespace examples::buffer {
         b.clear();
         std::cout << "after clear = " << b << "\n";
 
-        char* e1 = b.extract(); // extract ""
-        std::cout << "extracting empty = " << e1 << "\n";
-        small::buffer::free(e1);
+        small::extracted_buffer e1(b); // extract ""
+        std::cout << "extracting empty = " << e1.get() << "\n";
 
         b.append("world", 5);
         std::cout << "append world = " << b << "\n";
