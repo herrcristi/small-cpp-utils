@@ -64,4 +64,4 @@ jobs:
               if: always()
               with:
                   sarif_file: results.sarif
-                  category: 'codacy-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.tool }}'
+                  category: 'codacy-${{ github.run_id }}'
