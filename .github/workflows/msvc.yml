@@ -67,6 +67,19 @@ jobs:
                 
                 $sarif | ConvertTo-Json -Depth 100 | Set-Content "${{ steps.run-analysis.outputs.sarif }}"
 
+            # - name: Merge SARIF runs
+            #   run: |
+            #     pip install sarif-tools
+            #     python -c "
+            #       import json, glob
+            #       merged = {'version':'2.1.0','runs':[]}
+            #       for f in glob.glob('build/*.sarif'):
+            #         with open(f) as s: 
+            #           merged['runs'] += json.load(s)['runs']
+            #       with open('build/results.sarif','w') as out: 
+            #         json.dump(merged, out)
+            #           "
+
 
             # Upload SARIF file to GitHub Code Scanning Alerts
             - name: Upload SARIF to GitHub
