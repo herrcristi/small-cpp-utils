@@ -108,7 +108,12 @@ namespace small {
             clear();
         }
 
-        // extract buffer - be sure to call free after you use it
+        /**
+         * @brief Extract pointer from buffer
+         * @warning Pointer becomes invalid when buffer is destroyed
+         * @note Call buffer::free() to release memory or use extracted_buffer which will automatically free memory when it goes out of scope
+         * @return Raw pointer to buffer data
+         */
         inline char* extract()
         {
             char* b = nullptr;
@@ -223,8 +228,17 @@ namespace small {
         inline std::size_t ensure_size(std::size_t new_size, const bool shrink = false)
         {
             const auto chunk_size = m_config.chunk_size;
+
+            // Check for multiplication overflow
             // we always append a '\0' to the end so we can use as string
-            std::size_t new_alloc_size = ((new_size + sizeof(char) /*for '\0'*/ + (chunk_size - 1)) / chunk_size) * chunk_size;
+            std::size_t chunks_needed = (new_size + sizeof(char) /*for '\0'*/ + (chunk_size - 1)) / chunk_size;
+
+            if (chunks_needed > std::numeric_limits<std::size_t>::max() / chunk_size) {
+                init();
+                throw std::overflow_error("Buffer size is too large");
+            }
+
+            std::size_t new_alloc_size = chunks_needed * chunk_size;
             bool        reallocate     = false;
             if (shrink) {
                 reallocate = (m_chunk_buffer_alloc_size == 0) || (new_alloc_size != m_chunk_buffer_alloc_size); // we need another size
@@ -245,7 +259,7 @@ namespace small {
             // failure
             if (m_chunk_buffer_data == nullptr) {
                 init();
-                return 0;
+                throw std::bad_alloc();
             }
             // return new_length of the buffer
             m_chunk_buffer_data[new_size] = '\0';

@@ -560,7 +560,10 @@ b.clear();
 constexpr std::stringview text{ "hello world" }
 std::string s64 = small::tobase64( text );
 b.clear();
-b = small::frombase64<small::buffer>( s64 );
+auto decoded = small::frombase64<small::buffer>( s64 );
+if (decoded) {
+    b = *decoded;  // Use decoded value
+}
 
 ```
 
@@ -587,11 +590,11 @@ small::stack_string<256/*on stack*/> s;
 
 ### base64
 
-Functions to encode or decode base64
+Functions to encode or decode base64 (with RFC 4648 compliance validation)
 
 The following functions are available
 
-`tobase64, frombase64`
+`tobase64` (returns encoded type), `frombase64` (returns std::optional<decoded_type>)
 
 Use it like this
 
@@ -600,8 +603,16 @@ constexpr std::stringview text{ "hello world" }
 std::string b64 = small::tobase64( text );
 std::vector<char> vb64 = small::tobase64<std::vector<char>>( text );
 ...
-std::string decoded = small::frombase64( b64 );
-std::vector<char> vd64 = small::frombase64<std::vector<char>>( b64 );
+auto decoded = small::frombase64( b64 );
+if (decoded) {
+    std::string decoded_text = *decoded;
+    // decoded_text now contains the decoded value
+}
+
+auto vd64 = small::frombase64<std::vector<char>>( b64 );
+if (vd64) {
+    // Use *vd64 to access the decoded vector
+}
 ```
 
 #
@@ -635,7 +646,7 @@ The following functions are available
 
 `stricmp, struct icasecmp`
 
-`to_lower_case`, `to_upper_case`, `to_capitalize_case`, `to_hex`, `to_hex_fill with 0 prefill`
+`to_lower_case`, `to_lower_case_inplace`, `to_upper_case`, `to_upper_case_inplce`, `to_capitalize_case`, `to_capitalize_case_inplace`, `to_hex`, `to_hex_fill with 0 prefill`
 
 Use it like this
 
@@ -645,7 +656,7 @@ int r = small::stricmp( "a", "C" );
 std::map<std::string, int, small::icasecmp> m;
 ...
 std::string s = "Some text";
-small::to_lower_case(s);
+small::to_lower_case_inplace(s);
 
 ```
 

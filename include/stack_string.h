@@ -53,9 +53,13 @@ namespace small {
         inline void         clear           () { init(); }
         // clang-format on
 
+        /**
+         * @brief Get pointer to string data
+         * @warning Pointer becomes invalid if this object is moved from or destroyed
+         * @return Pointer to internal data
+         */
         // clang-format off
         // data
-        // WARNING: Returned pointer becomes invalid if *this is moved from
         inline const char*  c_str           () const { return m_std_string ? m_std_string.get()->c_str() : m_stack_string.data(); }
         inline const char*  data            () const { return m_std_string ? m_std_string.get()->c_str() : m_stack_string.data(); }
         inline char*        data            ()       { return m_std_string ? m_std_string.get()->data()  : m_stack_string.data(); } // direct access
@@ -421,14 +425,14 @@ namespace small {
 
             start_from = std::min<>(start_from, initial_length); // otherwise zeros are added
 
-            std::size_t new_length = small::strimpl::to_utf8_needed_length(wstr, wsize);
-            if (new_length == static_cast<std::size_t>(-1)) {
+            std::optional<std::size_t> new_length = small::strimpl::to_utf8_needed_length(wstr, wsize);
+            if (!new_length.has_value()) {
                 resize(start_from);
                 return;
             }
 
-            resize(start_from + new_length);
-            small::strimpl::to_utf8(wstr, wsize, data() + start_from, new_length);
+            resize(start_from + new_length.value());
+            small::strimpl::to_utf8(wstr, wsize, data() + start_from, new_length.value());
         }
 
         // get the wstring

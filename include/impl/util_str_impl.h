@@ -1,6 +1,7 @@
 #pragma once
 
 #include "impl_common.h"
+#include <optional>
 
 // #if defined(_WIN32) || defined(_WIN64)
 // #define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
@@ -17,7 +18,7 @@ namespace small::strimpl {
     //
     // from utf8 -> utf16 needed length
     //
-    inline std::size_t to_utf16_needed_length(const char* mbstr /*src*/, [[maybe_unused]] const std::size_t& mbsize)
+    inline std::optional<std::size_t> to_utf16_needed_length(const char* mbstr /*src*/, [[maybe_unused]] const std::size_t& mbsize)
     {
         std::setlocale(LC_ALL, "");
         std::mbstate_t state{};
@@ -38,7 +39,7 @@ namespace small::strimpl {
 #else
         new_length = std::mbsrtowcs(nullptr, &mbstr, 0, &state);
         if (new_length == static_cast<std::size_t>(-1)) {
-            return static_cast<std::size_t>(-1);
+            return std::nullopt;
         }
 #endif
         return new_length;
@@ -65,7 +66,7 @@ namespace small::strimpl {
     //
     // from utf16 -> utf8 needed length
     //
-    inline std::size_t to_utf8_needed_length(const wchar_t* wstr /*src*/, [[maybe_unused]] const std::size_t& wsize)
+    inline std::optional<std::size_t> to_utf8_needed_length(const wchar_t* wstr /*src*/, [[maybe_unused]] const std::size_t& wsize)
     {
         std::setlocale(LC_ALL, "");
         std::mbstate_t state{};
@@ -87,7 +88,7 @@ namespace small::strimpl {
 #else
         new_length = std::wcsrtombs(nullptr, &wstr, 0, &state);
         if (new_length == static_cast<std::size_t>(-1)) {
-            return static_cast<std::size_t>(-1);
+            return std::nullopt;
         }
 #endif
         return new_length;

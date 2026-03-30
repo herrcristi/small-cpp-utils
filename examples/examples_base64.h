@@ -24,10 +24,20 @@ namespace examples::base64 {
         }
         std::cout << "\n";
 
-        std::string decoded     = small::frombase64(vb64);
-        auto        decodedvd64 = small::frombase64<std::vector<char>>(b64);
+        // frombase64 now returns std::optional<T>
+        auto decoded_opt = small::frombase64(vb64);
+        if (decoded_opt) {
+            std::cout << "decoded base64 is \"" << *decoded_opt << "\"\n";
+        } else {
+            std::cout << "failed to decode base64\n";
+        }
 
-        std::cout << "decoded base64 is \"" << decoded << "\"\n";
+        auto decodedvd64_opt = small::frombase64<std::vector<char>>(b64);
+        if (decodedvd64_opt) {
+            std::cout << "decoded vector is valid\n";
+        } else {
+            std::cout << "failed to decode base64 to vector\n";
+        }
 
         std::cout << "Base64 finished\n\n";
 

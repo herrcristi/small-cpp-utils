@@ -62,41 +62,44 @@ namespace small {
     // frombase64
     //
     template <typename T = std::string /*decoded may not be always string*/>
-    inline T frombase64(const char* base64, const std::size_t base64_length)
+    inline std::optional<T> frombase64(const char* base64, const std::size_t base64_length)
     {
         T           decoded;
         std::size_t decoded_size = base64impl::get_decodedbase64_size(base64_length);
-        decoded.resize(decoded_size);
+        decoded.resize(decoded_size + 1); // +1 for null terminator in case of error
 
         // decode
-        std::size_t decoded_length = base64impl::frombase64(reinterpret_cast<char*>(decoded.data()), base64, base64_length);
-        decoded.resize(decoded_length);
+        std::optional<std::size_t> decoded_length = base64impl::frombase64(reinterpret_cast<char*>(decoded.data()), base64, base64_length);
+        if (!decoded_length.has_value()) {
+            return std::nullopt;
+        }
+        decoded.resize(*decoded_length);
 
         // compiler should do move
         return decoded;
     }
 
     template <typename T = std::string>
-    inline T frombase64(const unsigned char* base64, const std::size_t base64_length)
+    inline std::optional<T> frombase64(const unsigned char* base64, const std::size_t base64_length)
     {
         return frombase64<T>(reinterpret_cast<const char*>(base64), base64_length);
     }
 
     // frombase64
     template <typename T = std::string>
-    inline T frombase64(const std::string_view base64)
+    inline std::optional<T> frombase64(const std::string_view base64)
     {
         return frombase64<T>(reinterpret_cast<const char*>(base64.data()), base64.size());
     }
 
     template <typename T = std::string>
-    inline T frombase64(const std::vector<char>& base64)
+    inline std::optional<T> frombase64(const std::vector<char>& base64)
     {
         return frombase64<T>(reinterpret_cast<const char*>(base64.data()), base64.size());
     }
 
     template <typename T = std::string>
-    inline T frombase64(const std::vector<unsigned char>& base64)
+    inline std::optional<T> frombase64(const std::vector<unsigned char>& base64)
     {
         return frombase64<T>(reinterpret_cast<const char*>(base64.data()), base64.size());
     }

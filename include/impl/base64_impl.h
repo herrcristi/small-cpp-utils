@@ -3,6 +3,7 @@
 #include "impl_common.h"
 
 #include <array>
+#include <optional>
 #include <stdlib.h>
 #include <string>
 #include <vector>
@@ -118,8 +119,9 @@ namespace small::base64impl {
             *base64++ = ch;
 
             //  add '='
-            for (int k = multiple; k < 3; k++)
+            for (int k = multiple; k < 3; k++) {
                 *base64++ = '=';
+            }
         }
 
         return true;
@@ -137,12 +139,12 @@ namespace small::base64impl {
     // decode from base 64 with inline RFC 4648 validation
     // returns: decoded length (0 if invalid), sets decoded_buffer[0] = '\0' on error
     //
-    inline std::size_t frombase64(char* decoded_buffer, const char* base64, const std::size_t base64_length)
+    inline std::optional<std::size_t> frombase64(char* decoded_buffer, const char* base64, const std::size_t base64_length)
     {
         // Quick validation of length multiple of 4
         if (base64_length % 4 != 0) {
             decoded_buffer[0] = '\0';
-            return 0; // invalid: base64 length must be multiple of 4
+            return std::nullopt; // invalid: base64 length must be multiple of 4
         }
 
         std::size_t decoded_length = 0;
@@ -166,14 +168,14 @@ namespace small::base64impl {
             // No non-padding characters after padding characters (RFC 4648 compliance)
             if (found_padding) {
                 decoded_buffer[0] = '\0';
-                return 0; // invalid: non-padding character after padding
+                return std::nullopt; // invalid: non-padding character after padding
             }
 
             // Check if it's a valid base64 character
             int add = get_indexof_base64char(ch);
             if (add < 0) {
                 decoded_buffer[0] = '\0';
-                return 0; // invalid: invalid character
+                return std::nullopt; // invalid: invalid character
             }
 
             decoded_word  = decoded_word << 6 | add;
@@ -191,9 +193,37 @@ namespace small::base64impl {
         // Validate padding rules: 0, 1, or 2 '=' at the end, not 3 or 4
         if (padding_count > 2) {
             decoded_buffer[0] = '\0';
-            return 0; // invalid: too much padding
+            return std::nullopt; // invalid: too much padding
         }
 
-        return decoded_length;
+        // After counting padding_count and valid chars
+        // Validate padding count matches data alignment
+        const std::size_t valid_chars = base64_length - padding_count; // Non-padding chars
+        // const std::size_t data_groups = valid_chars / 4; // Complete groups
+        const std::size_t extra_chars = valid_chars % 4; // Remaining chars
+
+        // Expected padding by extra chars:
+        //  extra=0: 0 padding (complete)
+        //  extra=1: invalid (need at least 2 chars to decode)
+        //  extra=2: 2 padding
+        //  extra=3: 1 padding
+        if (extra_chars == 0 && padding_count != 0) {
+            decoded_buffer[0] = '\0';
+            return std::nullopt; // No extra, no padding
+        }
+        if (extra_chars == 1) {
+            decoded_buffer[0] = '\0';
+            return std::nullopt; // Invalid
+        }
+        if (extra_chars == 2 && padding_count != 2) {
+            decoded_buffer[0] = '\0';
+            return std::nullopt; // Extra 2, need 2 padding
+        }
+        if (extra_chars == 3 && padding_count != 1) {
+            decoded_buffer[0] = '\0';
+            return std::nullopt; // Extra 3, need 1 padding
+        }
+
+        return std::make_optional(decoded_length);
     }
 } // namespace small::base64impl

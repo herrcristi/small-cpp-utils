@@ -24,9 +24,9 @@ namespace small {
         //
         // spinlock
         //
-        spinlock(const int& spin_count = 4000, const int& wait_in_micro_seconds = 1000 /*1 millisecond*/)
-            : m_spin_count(spin_count < 0 ? 0 : spin_count),
-              m_wait_in_microseconds(wait_in_micro_seconds < 0 ? 0 : wait_in_micro_seconds)
+        spinlock(const unsigned int& spin_count = 4000, const unsigned int& wait_in_micro_seconds = 1000 /*1 millisecond*/)
+            : m_spin_count(spin_count),
+              m_wait_in_microseconds(wait_in_micro_seconds)
         {
         }
 
@@ -52,7 +52,7 @@ namespace small {
         inline void lock()
         {
             // Atomically changes the state of a std::atomic_flag to set (true) and returns the value it held before.
-            for (int count = 0; m_lock.test_and_set(std::memory_order_acquire); ++count) {
+            for (unsigned int count = 0; m_lock.test_and_set(std::memory_order_acquire); ++count) {
                 // lock is true but is not set in this lock
                 if (count >= m_spin_count) {
                     // wait
@@ -80,7 +80,7 @@ namespace small {
     private:
         // members
         mutable std::atomic_flag m_lock{};
-        int                      m_spin_count{};
-        int                      m_wait_in_microseconds{};
+        unsigned int             m_spin_count{};
+        unsigned int             m_wait_in_microseconds{};
     };
 } // namespace small
