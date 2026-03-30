@@ -38,8 +38,10 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@v4
 
-            - name: Configure CMake
-              run: cmake -B build
+            - name: Configure and Build CMake
+              run: |
+                cmake -B build
+                cmake --build build
 
             # Execute Codacy Analysis CLI and generate a SARIF output with the security issues identified during the analysis
             - name: Run Codacy Analysis CLI
