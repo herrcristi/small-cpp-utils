@@ -53,9 +53,13 @@ namespace small {
         inline void         clear           () { init(); }
         // clang-format on
 
+        /**
+         * @brief Get pointer to string data
+         * @warning Pointer becomes invalid if this object is moved from or destroyed
+         * @return Pointer to internal data
+         */
         // clang-format off
         // data
-        // WARNING: Returned pointer becomes invalid if *this is moved from
         inline const char*  c_str           () const { return m_std_string ? m_std_string.get()->c_str() : m_stack_string.data(); }
         inline const char*  data            () const { return m_std_string ? m_std_string.get()->c_str() : m_stack_string.data(); }
         inline char*        data            ()       { return m_std_string ? m_std_string.get()->data()  : m_stack_string.data(); } // direct access

@@ -73,23 +73,28 @@ namespace {
     {
         // as char + length
         auto decoded = small::frombase64(m_base64.c_str(), m_base64.size());
-        ASSERT_EQ(decoded, m_text);
+        ASSERT_TRUE(decoded.has_value());
+        ASSERT_EQ(*decoded, m_text);
     }
 
     TEST_F(Base64Test, FromBase64_string)
     {
         // as string_view
         auto decoded = small::frombase64(m_base64);
-        ASSERT_EQ(decoded, m_text);
+        ASSERT_TRUE(decoded.has_value());
+        ASSERT_EQ(*decoded, m_text);
 
         auto dv = small::frombase64<std::vector<char>>(m_base64.data(), m_base64.size());
-        ASSERT_EQ(std::string_view(dv.data(), dv.size()), m_text);
+        ASSERT_TRUE(dv.has_value());
+        ASSERT_EQ(std::string_view(dv->data(), dv->size()), m_text);
 
         auto dvu = small::frombase64<std::vector<unsigned char>>(m_base64);
-        ASSERT_EQ(std::string_view(reinterpret_cast<const char*>(dvu.data()), dvu.size()), m_text);
+        ASSERT_TRUE(dvu.has_value());
+        ASSERT_EQ(std::string_view(reinterpret_cast<const char*>(dvu->data()), dvu->size()), m_text);
 
         auto db = small::frombase64<small::buffer>(m_base64);
-        ASSERT_EQ(db, m_text);
+        ASSERT_TRUE(db.has_value());
+        ASSERT_EQ(*db, m_text);
     }
 
     TEST_F(Base64Test, FromBase64_vector)
@@ -100,7 +105,8 @@ namespace {
             v.push_back(ch);
         }
         auto decoded = small::frombase64(v);
-        ASSERT_EQ(decoded, m_text);
+        ASSERT_TRUE(decoded.has_value());
+        ASSERT_EQ(*decoded, m_text);
     }
 
     TEST_F(Base64Test, FromBase64_buffer)
@@ -108,7 +114,8 @@ namespace {
         // as buffer
         small::buffer b       = m_base64;
         auto          decoded = small::frombase64(b);
-        ASSERT_EQ(decoded, m_text);
+        ASSERT_TRUE(decoded.has_value());
+        ASSERT_EQ(*decoded, m_text);
     }
 
     //
@@ -117,59 +124,82 @@ namespace {
     TEST_F(Base64Test, Base64_RFC4648_ValidPadding)
     {
         // Valid base64 strings with proper padding
-        ASSERT_EQ(small::frombase64("YWJjZA=="), "abcd");
+        auto result = small::frombase64("YWJjZA==");
+        ASSERT_TRUE(result.has_value());
+        ASSERT_EQ(*result, "abcd");
 
-        ASSERT_EQ(small::frombase64("YWJj"), "abc");
-        ASSERT_EQ(small::frombase64("YWI="), "ab");
+        result = small::frombase64("YWJj");
+        ASSERT_TRUE(result.has_value());
+        ASSERT_EQ(*result, "abc");
+
+        result = small::frombase64("YWI=");
+        ASSERT_TRUE(result.has_value());
+        ASSERT_EQ(*result, "ab");
 
         // Mixed content
-        ASSERT_EQ(small::frombase64("SGVsbG8gV29ybGQ="), "Hello World");
-        ASSERT_EQ(small::frombase64("VGhpcyBpcyBhIHRlc3Q="), "This is a test");
+        result = small::frombase64("SGVsbG8gV29ybGQ=");
+        ASSERT_TRUE(result.has_value());
+        ASSERT_EQ(*result, "Hello World");
+
+        result = small::frombase64("VGhpcyBpcyBhIHRlc3Q=");
+        ASSERT_TRUE(result.has_value());
+        ASSERT_EQ(*result, "This is a test");
     }
 
     TEST_F(Base64Test, Base64_RFC4648_InvalidPadding)
     {
-        // Invalid padding patterns - should return empty string
+        // Invalid padding patterns - should return nullopt
         // 3 padding characters (invalid)
-        ASSERT_EQ(small::frombase64("YQ==="), "");
+        ASSERT_FALSE(small::frombase64("YQ===").has_value());
 
         // 4 padding characters (invalid)
-        ASSERT_EQ(small::frombase64("===="), "");
+        ASSERT_FALSE(small::frombase64("====").has_value());
 
         // Padding in the middle (invalid)
-        ASSERT_EQ(small::frombase64("YQ==YQ=="), "");
+        ASSERT_FALSE(small::frombase64("YQ==YQ==").has_value());
 
         // Padding not at multiple of 4 (invalid length)
-        ASSERT_EQ(small::frombase64("YQ="), "");     // 3 chars
-        ASSERT_EQ(small::frombase64("YQ==YQ="), ""); // 7 chars
+        ASSERT_FALSE(small::frombase64("YQ=").has_value());     // 3 chars
+        ASSERT_FALSE(small::frombase64("YQ==YQ=").has_value()); // 7 chars
     }
 
     TEST_F(Base64Test, Base64_RFC4648_InvalidCharacters)
     {
-        // Invalid characters - should return empty string
+        // Invalid characters - should return nullopt
         // Space characters
-        ASSERT_EQ(small::frombase64("YQ == "), "");
+        ASSERT_FALSE(small::frombase64("YQ == ").has_value());
 
         // Special characters not in base64 alphabet
-        ASSERT_EQ(small::frombase64("YQ!@#="), "");
+        ASSERT_FALSE(small::frombase64("YQ!@#=").has_value());
 
         // Newlines or whitespace
-        ASSERT_EQ(small::frombase64("YQ\n=="), "");
-        ASSERT_EQ(small::frombase64("\tYQ=="), "");
+        ASSERT_FALSE(small::frombase64("YQ\n==").has_value());
+        ASSERT_FALSE(small::frombase64("\tYQ==").has_value());
     }
 
     TEST_F(Base64Test, Base64_RFC4648_LengthValidation)
     {
         // Length must be multiple of 4 (RFC 4648 requirement)
-        ASSERT_EQ(small::frombase64(""), "");             // empty is valid
-        ASSERT_EQ(small::frombase64("YQ=="), "a");        // 4 chars
-        ASSERT_EQ(small::frombase64("YWJjZA=="), "abcd"); // 8 chars
+        // Empty is valid
+        auto result = small::frombase64("");
+        ASSERT_TRUE(result.has_value());
+        ASSERT_EQ(*result, "");
+
+        // 4 chars is valid
+        result = small::frombase64("YQ==");
+        ASSERT_TRUE(result.has_value());
+        ASSERT_EQ(*result, "a");
+
+        // 8 chars is valid
+        result = small::frombase64("YWJjZA==");
+        ASSERT_TRUE(result.has_value());
+        ASSERT_EQ(*result, "abcd");
 
         // Invalid lengths (not multiple of 4)
-        ASSERT_EQ(small::frombase64("YQ"), "");      // 2 chars
-        ASSERT_EQ(small::frombase64("YQ="), "");     // 3 chars
-        ASSERT_EQ(small::frombase64("YQ==Y"), "");   // 5 chars
-        ASSERT_EQ(small::frombase64("YQ==YLB"), ""); // 7 chars
+        ASSERT_FALSE(small::frombase64("YQ").has_value());      // 2 chars
+        ASSERT_FALSE(small::frombase64("YQ=").has_value());     // 3 chars
+        ASSERT_FALSE(small::frombase64("YQ==Y").has_value());   // 5 chars
+        ASSERT_FALSE(small::frombase64("YQ==YLB").has_value()); // 7 chars
     }
 
     TEST_F(Base64Test, Base64_RFC4648_RoundTrip)
@@ -194,29 +224,31 @@ namespace {
 
             // Decode and verify round-trip
             auto decoded = small::frombase64(encoded);
-            ASSERT_EQ(decoded, original);
+            ASSERT_TRUE(decoded.has_value());
+            ASSERT_EQ(*decoded, original);
         }
     }
 
     TEST_F(Base64Test, Base64_ErrorHandling)
     {
-        // Test that invalid base64 returns empty string and sets null terminator
+        // Test that invalid base64 returns nullopt and sets null terminator
         char buffer[32] = {0};
 
-        // Invalid input should set first byte to '\0' and return 0
-        std::size_t len = small::base64impl::frombase64(buffer, "!!!!", 4);
-        ASSERT_EQ(len, 0);
+        // Invalid input should return nullopt and set buffer[0] = '\0'
+        auto result = small::base64impl::frombase64(buffer, "!!!!", 4);
+        ASSERT_FALSE(result.has_value());
         ASSERT_EQ(buffer[0], '\0');
 
         // Non-multiple of 4 length
-        len = small::base64impl::frombase64(buffer, "YQ", 2);
-        ASSERT_EQ(len, 0);
+        result = small::base64impl::frombase64(buffer, "YQ", 2);
+        ASSERT_FALSE(result.has_value());
         ASSERT_EQ(buffer[0], '\0');
 
-        // Valid input should work
-        len = small::base64impl::frombase64(buffer, "YQ==", 4);
-        ASSERT_GT(len, 0);
-        buffer[len] = '\0'; // null terminate for comparison
-        ASSERT_EQ(std::string(buffer, len), "a");
+        // Valid input should return decoded length
+        result = small::base64impl::frombase64(buffer, "YQ==", 4);
+        ASSERT_TRUE(result.has_value());
+        ASSERT_GT(*result, 0);
+        buffer[*result] = '\0'; // null terminate for comparison
+        ASSERT_EQ(std::string(buffer, *result), "a");
     }
 } // namespace

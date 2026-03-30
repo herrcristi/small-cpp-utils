@@ -56,7 +56,7 @@ namespace small {
         inline void lock()
         {
             // Atomically changes the state of a std::atomic_flag to set (true) and returns the value it held before.
-            for (int count = 0; m_lock.test_and_set(std::memory_order_acquire); ++count) {
+            for (unsigned int count = 0; m_lock.test_and_set(std::memory_order_acquire); ++count) {
                 // lock is true but is not set in this lock
                 if (count >= m_spin_count) {
                     // wait
