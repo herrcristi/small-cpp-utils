@@ -54,10 +54,10 @@ jobs:
 
             # Upload SARIF file to GitHub Code Scanning Alerts
             - name: Upload SARIF to GitHub
-              uses: github/codeql-action/upload-sarif@v3
+              uses: github/codeql-action/upload-sarif@v4
               with:
                   sarif_file: ${{ steps.run-analysis.outputs.sarif }}
-                  category: 'msvc-cpp-${{ github.run_id }}'
+                  category: 'msvc-cpp-${{ github.run_id }}-${{ github.run_attempt }}'
 
             # Upload SARIF file as an Artifact to download and view
             # - name: Upload SARIF as an Artifact
