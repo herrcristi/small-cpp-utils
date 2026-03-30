@@ -108,7 +108,12 @@ namespace small {
             clear();
         }
 
-        // extract buffer - be sure to call free after you use it
+        /**
+         * @brief Extract pointer from buffer
+         * @warning Pointer becomes invalid when buffer is destroyed
+         * @note Call buffer::free() to release memory or use extracted_buffer which will automatically free memory when it goes out of scope
+         * @return Raw pointer to buffer data
+         */
         inline char* extract()
         {
             char* b = nullptr;

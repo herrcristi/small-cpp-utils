@@ -1,5 +1,6 @@
 #pragma once
 
+#include <assert.h>
 #include <atomic>
 #include <chrono>
 #include <thread>
@@ -24,10 +25,13 @@ namespace small {
         //
         // spinlock
         //
-        spinlock(const int& spin_count = 4000, const int& wait_in_micro_seconds = 1000 /*1 millisecond*/)
-            : m_spin_count(std::max(0, spin_count)),
-              m_wait_in_microseconds(std::max(0, wait_in_micro_seconds))
+        spinlock(const unsigned int& spin_count = 4000, const unsigned int& wait_in_micro_seconds = 1000 /*1 millisecond*/)
+            : m_spin_count(spin_count),
+              m_wait_in_microseconds(wait_in_micro_seconds)
         {
+            // show warning for negative values, even if are set to 0
+            assert(m_spin_count >= 0);
+            assert(m_wait_in_microseconds >= 0);
         }
 
         spinlock(const spinlock& o) : spinlock() { operator=(o); };
@@ -80,7 +84,7 @@ namespace small {
     private:
         // members
         mutable std::atomic_flag m_lock{};
-        int                      m_spin_count{};
-        int                      m_wait_in_microseconds{};
+        unsigned int             m_spin_count{};
+        unsigned int             m_wait_in_microseconds{};
     };
 } // namespace small

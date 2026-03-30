@@ -635,7 +635,7 @@ The following functions are available
 
 `stricmp, struct icasecmp`
 
-`to_lower_case`, `to_upper_case`, `to_capitalize_case`, `to_hex`, `to_hex_fill with 0 prefill`
+`to_lower_case`, `to_lower_case_inplace`, `to_upper_case`, `to_upper_case_inplce`, `to_capitalize_case`, `to_capitalize_case_inplace`, `to_hex`, `to_hex_fill with 0 prefill`
 
 Use it like this
 
@@ -645,7 +645,7 @@ int r = small::stricmp( "a", "C" );
 std::map<std::string, int, small::icasecmp> m;
 ...
 std::string s = "Some text";
-small::to_lower_case(&s);
+small::to_lower_case_inplace(s);
 
 ```
 

@@ -44,7 +44,7 @@ namespace small {
 
     inline std::string uuid_to_uppercase(std::string& u)
     {
-        return small::to_upper_case(&u);
+        return small::to_upper_case_inplace(u);
     }
 
     struct config_uuid

@@ -109,27 +109,42 @@ namespace small {
 
     //
     // conversion to_lower_case, to_upper_case
-    // the string is modified in place and returned for chaining
     //
-    inline std::string to_lower_case(std::string* u)
+    // the string is modified in place and returned for chaining
+    inline std::string to_lower_case_inplace(std::string& u)
     {
-        std::transform(u->begin(), u->end(), u->begin(), ::tolower);
-        return *u;
+        std::transform(u.begin(), u.end(), u.begin(), ::tolower);
+        return u;
+    }
+    inline std::string to_lower_case(const std::string& u)
+    {
+        std::string u_lower = u;
+        return to_lower_case_inplace(u_lower);
     }
 
-    inline std::string to_upper_case(std::string* u)
+    inline std::string to_upper_case_inplace(std::string& u)
     {
-        std::transform(u->begin(), u->end(), u->begin(), ::toupper);
-        return *u;
+        std::transform(u.begin(), u.end(), u.begin(), ::toupper);
+        return u;
+    }
+    inline std::string to_upper_case(const std::string& u)
+    {
+        std::string u_upper = u;
+        return to_upper_case_inplace(u_upper);
     }
 
-    inline std::string to_capitalize_case(std::string* u)
+    inline std::string to_capitalize_case_inplace(std::string& u)
     {
-        std::transform(u->begin(), u->end(), u->begin(), ::tolower);
-        if (u->begin() != u->end()) {
-            *u->begin() = static_cast<char>(::toupper(*u->begin()));
+        std::transform(u.begin(), u.end(), u.begin(), ::tolower);
+        if (u.begin() != u.end()) {
+            *u.begin() = static_cast<char>(::toupper(*u.begin()));
         }
-        return *u;
+        return u;
+    }
+    inline std::string to_capitalize_case(const std::string& u)
+    {
+        std::string u_capitalized = u;
+        return to_capitalize_case_inplace(u_capitalized);
     }
 
     //
