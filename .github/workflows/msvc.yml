@@ -52,11 +52,11 @@ jobs:
                   ruleset: NativeRecommendedRules.ruleset
 
             # Upload SARIF file to GitHub Code Scanning Alerts
-            # - name: Upload SARIF to GitHub
-            #   uses: github/codeql-action/upload-sarif@v4
-            #   with:
-            #       sarif_file: ${{ steps.run-analysis.outputs.sarif }}
-            #       category: '${{ github.workflow }}-msvc'
+            - name: Upload SARIF to GitHub
+              uses: github/codeql-action/upload-sarif@v4
+              with:
+                  sarif_file: ${{ steps.run-analysis.outputs.sarif }}
+                  category: '${{ github.workflow }}-msvc'
                   
 
             # Upload SARIF file as an Artifact to download and view
