@@ -235,7 +235,7 @@ namespace small {
 
             if (chunks_needed > std::numeric_limits<std::size_t>::max() / chunk_size) {
                 init();
-                return 0;
+                throw std::overflow_error("Buffer size is too large");
             }
 
             std::size_t new_alloc_size = chunks_needed * chunk_size;
@@ -259,7 +259,7 @@ namespace small {
             // failure
             if (m_chunk_buffer_data == nullptr) {
                 init();
-                return 0;
+                throw std::bad_alloc();
             }
             // return new_length of the buffer
             m_chunk_buffer_data[new_size] = '\0';
