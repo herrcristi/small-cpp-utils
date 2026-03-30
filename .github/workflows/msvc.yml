@@ -51,12 +51,29 @@ jobs:
                   # Ruleset file that will determine what checks will be run
                   ruleset: NativeRecommendedRules.ruleset
 
+            - name: Consolidate SARIF
+              shell: powershell
+              run: |
+                $sarif = Get-Content "${{ steps.run-analysis.outputs.sarif }}" -Raw | ConvertFrom-Json
+                
+                # Merge all runs into the first run
+                if ($sarif.runs.Count -gt 1) {
+                    $firstRun = $sarif.runs[0]
+                    for ($i = 1; $i -lt $sarif.runs.Count; $i++) {
+                        $firstRun.results += $sarif.runs[$i].results
+                    }
+                    $sarif.runs = @($firstRun)
+                }
+                
+                $sarif | ConvertTo-Json -Depth 100 | Set-Content "${{ steps.run-analysis.outputs.sarif }}"
+
+
             # Upload SARIF file to GitHub Code Scanning Alerts
             - name: Upload SARIF to GitHub
               uses: github/codeql-action/upload-sarif@v4
               with:
                   sarif_file: ${{ steps.run-analysis.outputs.sarif }}
-                  category: '${{ github.workflow }}-msvc'
+                  category: 'msvc-cpp'
                   
 
             # Upload SARIF file as an Artifact to download and view
