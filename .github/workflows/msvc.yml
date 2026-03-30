@@ -39,9 +39,8 @@ jobs:
             - name: Configure CMake
               run: cmake -B ${{ env.build }}
 
-            # Build is not required unless generated source files are used
-            # - name: Build CMake
-            #   run: cmake --build ${{ env.build }}
+            - name: Build CMake
+              run: cmake --build ${{ env.build }}
 
             - name: Initialize MSVC Code Analysis
               uses: microsoft/msvc-code-analysis-action@04825f6d9e00f87422d6bf04e1a38b1f3ed60d99
@@ -52,12 +51,43 @@ jobs:
                   # Ruleset file that will determine what checks will be run
                   ruleset: NativeRecommendedRules.ruleset
 
+            - name: Consolidate SARIF
+              shell: powershell
+              run: |
+                $sarif = Get-Content "${{ steps.run-analysis.outputs.sarif }}" -Raw | ConvertFrom-Json
+                
+                # Merge all runs into the first run
+                if ($sarif.runs.Count -gt 1) {
+                    $firstRun = $sarif.runs[0]
+                    for ($i = 1; $i -lt $sarif.runs.Count; $i++) {
+                        $firstRun.results += $sarif.runs[$i].results
+                    }
+                    $sarif.runs = @($firstRun)
+                }
+                
+                $sarif | ConvertTo-Json -Depth 100 | Set-Content "${{ steps.run-analysis.outputs.sarif }}"
+
+            # - name: Merge SARIF runs
+            #   run: |
+            #     pip install sarif-tools
+            #     python -c "
+            #       import json, glob
+            #       merged = {'version':'2.1.0','runs':[]}
+            #       for f in glob.glob('build/*.sarif'):
+            #         with open(f) as s: 
+            #           merged['runs'] += json.load(s)['runs']
+            #       with open('build/results.sarif','w') as out: 
+            #         json.dump(merged, out)
+            #           "
+
+
             # Upload SARIF file to GitHub Code Scanning Alerts
             - name: Upload SARIF to GitHub
-              uses: github/codeql-action/upload-sarif@v3
+              uses: github/codeql-action/upload-sarif@v4
               with:
                   sarif_file: ${{ steps.run-analysis.outputs.sarif }}
                   category: 'msvc-cpp'
+                  
 
             # Upload SARIF file as an Artifact to download and view
             # - name: Upload SARIF as an Artifact
