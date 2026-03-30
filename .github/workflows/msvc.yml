@@ -57,7 +57,8 @@ jobs:
               uses: github/codeql-action/upload-sarif@v4
               with:
                   sarif_file: ${{ steps.run-analysis.outputs.sarif }}
-                  category: 'msvc-cpp-${{ github.run_id }}-${{ github.run_attempt }}'
+                  # category: 'msvc-cpp-${{ github.run_id }}-${{ github.run_attempt }}'
+                  category: 'msvc-cpp'
 
             # Upload SARIF file as an Artifact to download and view
             # - name: Upload SARIF as an Artifact
