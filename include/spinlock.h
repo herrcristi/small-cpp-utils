@@ -1,6 +1,5 @@
 #pragma once
 
-#include <assert.h>
 #include <atomic>
 #include <chrono>
 #include <thread>
@@ -29,9 +28,6 @@ namespace small {
             : m_spin_count(spin_count),
               m_wait_in_microseconds(wait_in_micro_seconds)
         {
-            // show warning for negative values, even if are set to 0
-            assert(m_spin_count >= 0);
-            assert(m_wait_in_microseconds >= 0);
         }
 
         spinlock(const spinlock& o) : spinlock() { operator=(o); };
